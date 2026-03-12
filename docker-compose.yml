@@ -1,0 +1,88 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/entrypoint.sh:/docker-entrypoint.d/10-generate-certs.sh:ro
+      - ./certs:/etc/nginx/certs
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - public
+      - internal
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    env_file:
+      - ./docker/env/frontend.env
+    expose:
+      - "5173"
+    depends_on:
+      - backend
+    networks:
+      - internal
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file:
+      - ./docker/env/backend.env
+    volumes:
+      - uploads_data:/app/storage/uploads
+    expose:
+      - "3000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - internal
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    env_file:
+      - ./docker/env/backend.env
+    command: ["npm", "run", "worker"]
+    volumes:
+      - uploads_data:/app/storage/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - internal
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    env_file:
+      - ./docker/env/postgres.env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:
+  uploads_data:
+
+networks:
+  internal:
+    internal: true
+  public:
+    internal: false
