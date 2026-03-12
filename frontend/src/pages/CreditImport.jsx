@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
@@ -16,13 +17,13 @@ import {
   Typography,
   Chip,
   Paper,
-  Grid,
   Autocomplete,
   TextField
 } from '@mui/material';
 import { CloudUpload, Refresh, PlayArrow, CheckCircle, ArrowBack, ArrowForward } from '@mui/icons-material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
+import { buildRoutePath } from '../routes/paths.js';
 import useNotify from '../hooks/useNotify.jsx';
 import { listPortfolios } from '../services/portfolios.js';
 import {
@@ -911,7 +912,7 @@ export default function CreditImport() {
     <BaseTable
       dense
       columns={(preview.headers || []).map((h) => ({ id: h, label: h }))}
-      rows={(preview.rows || []).map((row, idx) => {
+      rows={(preview.rows || []).slice(0, 5).map((row, idx) => {
         const data = {};
         preview.headers?.forEach((header, hIdx) => {
           data[header] = row[hIdx];
@@ -939,9 +940,6 @@ export default function CreditImport() {
             ))}
           </Select>
         </FormControl>
-        <Button variant="outlined" onClick={saveMappingAndNext}>
-          Guardar mapeo
-        </Button>
       </Stack>
       <Alert severity="info">
         <Stack spacing={0.5}>
@@ -1117,6 +1115,7 @@ export default function CreditImport() {
           ref={fileInputRef}
           type="file"
           accept=".csv, .xlsx"
+          hidden
           className="crm-credit-import__file-input"
           onChange={handleFileSelect}
         />
@@ -1205,14 +1204,18 @@ const stepContent = () => {
     if (activeStep === 0) return !!portfolioId;
     if (activeStep === 1) return preview.rows?.length > 0;
     if (activeStep === 2) return preview.rows?.length > 0;
-    if (activeStep === 3) return mappingSaved;
+    if (activeStep === 3) return !!sessionId && mappedHeaders.length > 0;
     if (activeStep === 4) return validated;
     return false;
   };
 
-  const goNext = () => {
+  const goNext = async () => {
     if (activeStep === 2) {
       setActiveStep(3);
+      return;
+    }
+    if (activeStep === 3) {
+      await saveMappingAndNext();
       return;
     }
     if (activeStep < steps.length - 1) {
@@ -1229,12 +1232,16 @@ const stepContent = () => {
   return (
     <Page>
       <PageHeader
+        breadcrumbs={[
+          { label: 'Inicio', href: buildRoutePath('dashboard') },
+          { label: 'Importación de información' }
+        ]}
         title="Importación de información"
-        description="Asistente para cargar clientes, créditos, teléfonos, correos, direcciones y saldos con mapeo y validación previa."
+        subtitle="Asistente para cargar clientes, créditos, teléfonos, correos, direcciones y saldos con mapeo y validación previa."
       />
       <PageContent>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems="stretch">
+          <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
             <Card variant="outlined">
               <CardContent>
                 <Stepper activeStep={activeStep} alternativeLabel>
@@ -1268,25 +1275,24 @@ const stepContent = () => {
                 </Stack>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Stack spacing={2}>
-              {sidePanel}
-              <BaseDialog
-                open={Boolean(errors)}
-                title="Error"
-                onClose={() => setErrors('')}
-                actions={
-                  <Button onClick={() => setErrors('')} color="primary">
-                    Cerrar
-                  </Button>
-                }
-              >
-                <Typography variant="body2">{errors}</Typography>
-              </BaseDialog>
-            </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+          <Stack spacing={2} sx={{ width: { xs: '100%', lg: 340 }, flexShrink: 0 }}>
+            {sidePanel}
+          </Stack>
+        </Stack>
+
+        <BaseDialog
+          open={Boolean(errors)}
+          title="Error"
+          onClose={() => setErrors('')}
+          actions={
+            <Button onClick={() => setErrors('')} color="primary">
+              Cerrar
+            </Button>
+          }
+        >
+          <Typography variant="body2">{errors}</Typography>
+        </BaseDialog>
       </PageContent>
     </Page>
   );

@@ -369,10 +369,10 @@ export const getComponents = (mode = 'light') => {
             gap: theme.spacing(1.25),
             padding: theme.spacing(0.65, 1.6),
             borderRadius: 15,
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.26)}`,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.76 : 0.62),
-            backdropFilter: 'blur(14px) saturate(145%)',
-            WebkitBackdropFilter: 'blur(14px) saturate(145%)',
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.34)}`,
+            backgroundColor: theme.palette.background.paper,
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
             boxShadow: `0 8px 22px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.34)}`,
             transition: theme.transitions.create(['border-color', 'box-shadow', 'transform'], {
               duration: microMotionMs
