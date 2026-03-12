@@ -1,6 +1,5 @@
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardContent,
@@ -1133,33 +1132,6 @@ export default function CreditImport() {
     </Card>
   );
 
-  const sidePanel = (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Resumen
-        </Typography>
-        <Stack spacing={1}>
-          <Typography variant="body2">
-            Portafolio:{' '}
-            <strong>
-              {portfolios.find((p) => p.id === Number(portfolioId))?.name || '-'}
-            </strong>
-          </Typography>
-          <Typography variant="body2">
-            Archivo: <strong>{session?.filename || file?.name || '-'}</strong>
-          </Typography>
-          <Typography variant="body2">
-            Estrategia: <strong>{strategy}</strong>
-          </Typography>
-          <Typography variant="body2">
-            Estado: <strong>{session?.status || (running ? 'RUNNING' : '-')}</strong>
-          </Typography>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-
 const stepContent = () => {
     switch (activeStep) {
       case 0:
@@ -1240,46 +1212,39 @@ const stepContent = () => {
         subtitle="Asistente para cargar clientes, créditos, teléfonos, correos, direcciones y saldos con mapeo y validación previa."
       />
       <PageContent>
-        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems="stretch">
-          <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
-            <Card variant="outlined">
-              <CardContent>
-                <Stepper activeStep={activeStep} alternativeLabel>
-                  {steps.map((label) => (
-                    <Step key={label}>
-                      <StepLabel>{label}</StepLabel>
-                    </Step>
-                  ))}
-                </Stepper>
-                <Divider className="crm-credit-import__divider" />
-                {stepContent()}
-                <Divider className="crm-credit-import__divider" />
-                <Stack direction="row" spacing={2} justifyContent="space-between">
-                  <Button
-                    startIcon={<ArrowBack />}
-                    onClick={goBack}
-                    disabled={activeStep === 0}
-                  >
-                    Atrás
-                  </Button>
-                  {activeStep < steps.length - 1 && (
-                    <Button
-                      variant="contained"
-                      endIcon={<ArrowForward />}
-                      onClick={goNext}
-                      disabled={!canContinue()}
-                    >
-                      Continuar
-                    </Button>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Box>
-          <Stack spacing={2} sx={{ width: { xs: '100%', lg: 340 }, flexShrink: 0 }}>
-            {sidePanel}
-          </Stack>
-        </Stack>
+        <Card variant="outlined">
+          <CardContent>
+            <Stepper activeStep={activeStep} alternativeLabel>
+              {steps.map((label) => (
+                <Step key={label}>
+                  <StepLabel>{label}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+            <Divider className="crm-credit-import__divider" />
+            {stepContent()}
+            <Divider className="crm-credit-import__divider" />
+            <Stack direction="row" spacing={2} justifyContent="space-between">
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={goBack}
+                disabled={activeStep === 0}
+              >
+                Atrás
+              </Button>
+              {activeStep < steps.length - 1 && (
+                <Button
+                  variant="contained"
+                  endIcon={<ArrowForward />}
+                  onClick={goNext}
+                  disabled={!canContinue()}
+                >
+                  Continuar
+                </Button>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
 
         <BaseDialog
           open={Boolean(errors)}
