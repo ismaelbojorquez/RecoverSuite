@@ -513,19 +513,19 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             minHeight: '100vh',
             backgroundColor: 'transparent',
-            paddingBottom: theme.spacing(3)
+            paddingBottom: theme.spacing(2)
           },
           '.MuiBox-root.crm-app-shell__content': {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(pageGap),
-            paddingTop: theme.spacing(1)
+            paddingTop: theme.spacing(0.5)
           },
           '.MuiToolbar-root.crm-app-shell__offset': {
-            minHeight: 72,
+            minHeight: 64,
             [theme.breakpoints.up('md')]: {
-              minHeight: 78
+              minHeight: 70
             }
           },
 
@@ -554,14 +554,14 @@ export const getComponents = (mode = 'light') => {
             marginLeft: 0
           },
           '.MuiToolbar-root.crm-app-bar__toolbar': {
-            minHeight: 72,
-            gap: theme.spacing(2),
-            paddingLeft: theme.spacing(2),
-            paddingRight: theme.spacing(2),
+            minHeight: 64,
+            gap: theme.spacing(1.25),
+            paddingLeft: theme.spacing(1.25),
+            paddingRight: theme.spacing(1.25),
             [theme.breakpoints.up('md')]: {
-              minHeight: 78,
-              paddingLeft: theme.spacing(3),
-              paddingRight: theme.spacing(3)
+              minHeight: 70,
+              paddingLeft: theme.spacing(2),
+              paddingRight: theme.spacing(2)
             }
           },
           '.MuiContainer-root.crm-app-bar__inner': {
@@ -570,14 +570,14 @@ export const getComponents = (mode = 'light') => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: theme.spacing(2)
+            gap: theme.spacing(1.25)
           },
           '.MuiStack-root.crm-app-bar__left': {
             flex: 1,
             minWidth: 0,
             maxWidth: '100%',
             [theme.breakpoints.up('md')]: {
-              maxWidth: 640
+              maxWidth: 580
             }
           },
           '.MuiBox-root.crm-app-bar__search': {
@@ -587,10 +587,10 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-app-bar__user-area': {
             marginLeft: 'auto',
-            gap: theme.spacing(1),
+            gap: theme.spacing(0.75),
             flexShrink: 0,
             [theme.breakpoints.down('sm')]: {
-              gap: theme.spacing(0.65)
+              gap: theme.spacing(0.5)
             }
           },
           '.MuiButton-root.crm-app-bar__quick-trigger': {
@@ -643,7 +643,7 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiButton-root.crm-app-bar__user-trigger': {
-            padding: theme.spacing(0.42, 0.95),
+            padding: theme.spacing(0.3, 0.75),
             borderRadius: 15,
             textTransform: 'none',
             color: theme.palette.text.primary,
@@ -655,7 +655,7 @@ export const getComponents = (mode = 'light') => {
             },
             [theme.breakpoints.down('sm')]: {
               minWidth: 0,
-              padding: theme.spacing(0.3, 0.45),
+              padding: theme.spacing(0.24, 0.4),
               '& .MuiButton-endIcon': {
                 display: 'none'
               }
@@ -776,7 +776,7 @@ export const getComponents = (mode = 'light') => {
             zIndex: 1
           },
           '.MuiBox-root.crm-app-shell__drawer-header': {
-            padding: theme.spacing(2.35, 2),
+            padding: theme.spacing(1.7, 1.5),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -786,11 +786,11 @@ export const getComponents = (mode = 'light') => {
             })
           },
           '.MuiBox-root.crm-app-shell__drawer-header--collapsed': {
-            padding: theme.spacing(2.1, 1.1),
+            padding: theme.spacing(1.5, 0.9),
             justifyContent: 'center'
           },
           '.MuiDivider-root.crm-app-shell__drawer-divider': {
-            margin: theme.spacing(0, 1.4),
+            margin: theme.spacing(0, 1),
             borderColor: alpha(theme.palette.primary.main, isLight ? 0.2 : 0.3),
             opacity: 0.92
           },
@@ -811,7 +811,7 @@ export const getComponents = (mode = 'light') => {
           },
 
           '.MuiList-root.crm-app-shell__nav-list': {
-            padding: theme.spacing(2.15, 1.25, 2.35),
+            padding: theme.spacing(1.5, 0.95, 1.75),
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(0.28),
@@ -819,11 +819,11 @@ export const getComponents = (mode = 'light') => {
             overflowX: 'hidden'
           },
           '.MuiList-root.crm-app-shell__nav-list--collapsed': {
-            paddingLeft: theme.spacing(0.95),
-            paddingRight: theme.spacing(0.95)
+            paddingLeft: theme.spacing(0.75),
+            paddingRight: theme.spacing(0.75)
           },
           '.MuiListSubheader-root.crm-app-shell__section-title': {
-            padding: theme.spacing(1.15, 1.1, 0.5),
+            padding: theme.spacing(0.75, 0.95, 0.4),
             margin: 0,
             lineHeight: 1.2,
             fontSize: theme.typography.caption.fontSize,
@@ -834,17 +834,17 @@ export const getComponents = (mode = 'light') => {
             backgroundColor: 'transparent'
           },
           '.MuiDivider-root.crm-app-shell__section-divider': {
-            margin: theme.spacing(1, 1.15),
+            margin: theme.spacing(0.75, 0.9),
             borderColor: sidebarDivider,
             opacity: 0.74
           },
 
           '.MuiListItemButton-root.crm-app-shell__nav-item': {
-            marginBottom: theme.spacing(0.4),
-            padding: theme.spacing(0.72, 1.05),
-            borderRadius: 16,
+            marginBottom: theme.spacing(0.25),
+            padding: theme.spacing(0.58, 0.85),
+            borderRadius: 14,
             justifyContent: 'flex-start',
-            minHeight: 52,
+            minHeight: 46,
             color: sidebarTextPrimary,
             position: 'relative',
             overflow: 'hidden',
@@ -857,9 +857,9 @@ export const getComponents = (mode = 'light') => {
             '&::before': {
               content: '""',
               position: 'absolute',
-              left: theme.spacing(0.55),
-              top: theme.spacing(0.72),
-              bottom: theme.spacing(0.72),
+              left: theme.spacing(0.45),
+              top: theme.spacing(0.58),
+              bottom: theme.spacing(0.58),
               width: 3,
               borderRadius: 999,
               backgroundColor: 'transparent',
@@ -926,7 +926,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiListItemIcon-root.crm-app-shell__nav-icon': {
             minWidth: 0,
-            marginRight: theme.spacing(1.35),
+            marginRight: theme.spacing(1),
             color: sidebarIconColor,
             transition: `color ${microMotion}, transform ${microMotion}, margin ${microMotion}`,
             '& .MuiSvgIcon-root, & .crm-icon': {
@@ -939,9 +939,9 @@ export const getComponents = (mode = 'light') => {
             marginRight: 0
           },
           '.MuiBox-root.crm-app-shell__nav-icon-shell': {
-            width: 34,
-            height: 34,
-            borderRadius: 11,
+            width: 30,
+            height: 30,
+            borderRadius: 10,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -974,7 +974,7 @@ export const getComponents = (mode = 'light') => {
             margin: 0,
             minWidth: 0,
             flex: '1 1 auto',
-            maxWidth: 188,
+            maxWidth: 174,
             opacity: 1,
             transform: 'translateX(0)',
             transition: theme.transitions.create(['max-width', 'opacity', 'transform'], {
@@ -1009,12 +1009,12 @@ export const getComponents = (mode = 'light') => {
           },
 
           '.MuiAvatar-root.crm-avatar--sm': {
-            width: 33,
-            height: 33
+            width: 30,
+            height: 30
           },
           '.MuiAvatar-root.crm-avatar--md': {
-            width: 38,
-            height: 38
+            width: 35,
+            height: 35
           },
 
           '.MuiBox-root.crm-page': {

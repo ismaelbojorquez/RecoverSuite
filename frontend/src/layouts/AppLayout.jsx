@@ -13,7 +13,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  Menu as MenuIcon,
+  Menu,
   MenuItem,
   Stack,
   Tooltip,
@@ -28,13 +28,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Menu,
   MoonStar,
-  Plus,
-  Rocket,
-  Sparkles,
   Sun,
-  Upload,
   UserRound
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
@@ -48,33 +43,6 @@ import { buildRoutePath } from '../routes/paths.js';
 import useAuth from '../hooks/useAuth.js';
 import useNavigation from '../hooks/useNavigation.js';
 import { useThemeMode } from '../theme.js';
-
-const quickActionCatalog = [
-  {
-    id: 'dashboard',
-    label: 'Abrir dashboard',
-    description: 'Vista ejecutiva principal',
-    routeId: 'dashboard',
-    permission: 'dashboard.read',
-    icon: Rocket
-  },
-  {
-    id: 'portfolios',
-    label: 'Gestionar portafolios',
-    description: 'Administrar portafolios activos',
-    routeId: 'portfolios',
-    permission: 'portfolios.read',
-    icon: Sparkles
-  },
-  {
-    id: 'creditImport',
-    label: 'Importar información',
-    description: 'Cargar datos masivos',
-    routeId: 'creditImport',
-    permission: 'imports.write',
-    icon: Upload
-  }
-];
 
 const notificationFeed = [
   {
@@ -154,7 +122,6 @@ export default function AppLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(readCollapsePref);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
-  const [quickMenuAnchor, setQuickMenuAnchor] = useState(null);
   const [notificationMenuAnchor, setNotificationMenuAnchor] = useState(null);
   const { user, logout } = useAuth();
   const { pathname, navigate } = useNavigation();
@@ -192,14 +159,6 @@ export default function AppLayout({ children }) {
     [hasPermission, navStructure]
   );
 
-  const visibleQuickActions = useMemo(
-    () =>
-      quickActionCatalog.filter(
-        (action) => !action.permission || hasPermission(action.permission)
-      ),
-    [hasPermission]
-  );
-
   const unreadNotificationCount = useMemo(
     () => notificationFeed.filter((entry) => entry.unread).length,
     []
@@ -212,13 +171,8 @@ export default function AppLayout({ children }) {
   }, [isCollapsed]);
 
   const toggleCollapse = () => setIsCollapsed((prev) => !prev);
-  const toggleMobile = () => setMobileOpen((prev) => !prev);
-
   const handleOpenUserMenu = (event) => setUserMenuAnchor(event.currentTarget);
   const handleCloseUserMenu = () => setUserMenuAnchor(null);
-
-  const handleOpenQuickMenu = (event) => setQuickMenuAnchor(event.currentTarget);
-  const handleCloseQuickMenu = () => setQuickMenuAnchor(null);
 
   const handleOpenNotificationMenu = (event) =>
     setNotificationMenuAnchor(event.currentTarget);
@@ -234,13 +188,7 @@ export default function AppLayout({ children }) {
     logout();
   };
 
-  const handleQuickAction = (routeId) => {
-    handleCloseQuickMenu();
-    navigate(buildRoutePath(routeId));
-  };
-
   const isUserMenuOpen = Boolean(userMenuAnchor);
-  const isQuickMenuOpen = Boolean(quickMenuAnchor);
   const isNotificationMenuOpen = Boolean(notificationMenuAnchor);
 
   const drawerContent = (
@@ -369,16 +317,6 @@ export default function AppLayout({ children }) {
         <Toolbar className="crm-app-bar__toolbar" disableGutters>
           <Container maxWidth="lg" className="crm-app-bar__inner">
             <Stack direction="row" spacing={1.5} alignItems="center" className="crm-app-bar__left">
-              {!isDesktop && (
-                <IconButton
-                  edge="start"
-                  color="inherit"
-                  onClick={toggleMobile}
-                  aria-label="Abrir navegación"
-                >
-                  <IconRenderer icon={MenuIcon} size="sm" />
-                </IconButton>
-              )}
               <Box className="crm-app-bar__search">
                 <Can permission="search.read">
                   <GlobalSearch />
@@ -392,45 +330,6 @@ export default function AppLayout({ children }) {
               alignItems="center"
               className="crm-app-bar__user-area"
             >
-              <Button
-                color="inherit"
-                variant="outlined"
-                startIcon={<IconRenderer icon={Plus} size="sm" />}
-                onClick={handleOpenQuickMenu}
-                className="crm-app-bar__quick-trigger"
-              >
-                Acciones
-              </Button>
-              <Menu
-                id="crm-quick-actions-menu"
-                anchorEl={quickMenuAnchor}
-                open={isQuickMenuOpen}
-                onClose={handleCloseQuickMenu}
-                PaperProps={{ className: 'crm-app-bar__menu crm-app-bar__quick-menu' }}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              >
-                {visibleQuickActions.length === 0 ? (
-                  <MenuItem disabled>No hay acciones disponibles</MenuItem>
-                ) : (
-                  visibleQuickActions.map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <MenuItem
-                        key={action.id}
-                        className="crm-app-bar__menu-item"
-                        onClick={() => handleQuickAction(action.routeId)}
-                      >
-                        <ListItemIcon>
-                          <IconRenderer icon={Icon} size="sm" />
-                        </ListItemIcon>
-                        <ListItemText primary={action.label} secondary={action.description} />
-                      </MenuItem>
-                    );
-                  })
-                )}
-              </Menu>
-
               <Tooltip title="Notificaciones" arrow>
                 <IconButton
                   color="inherit"
@@ -547,7 +446,7 @@ export default function AppLayout({ children }) {
       <Drawer
         variant={isDesktop ? 'permanent' : 'temporary'}
         open={isDesktop ? true : mobileOpen}
-        onClose={toggleMobile}
+        onClose={() => setMobileOpen(false)}
         ModalProps={{ keepMounted: true }}
         className={[
           'crm-app-drawer',

@@ -19,25 +19,25 @@ export const layoutTokens = Object.freeze({
   container: Object.freeze({
     maxWidth: 1380,
     paddingY: Object.freeze({
-      xs: 5,
-      md: 7
+      xs: 3.5,
+      md: 4.5
     }),
     paddingX: Object.freeze({
-      xs: 3,
-      md: 5
+      xs: 2,
+      md: 3
     })
   }),
   page: Object.freeze({
-    gap: 5,
-    sectionGap: 4,
-    sectionDenseGap: 3,
-    headerGap: 3,
+    gap: 3.25,
+    sectionGap: 2.5,
+    sectionDenseGap: 1.75,
+    headerGap: 2,
     headerCopyGap: 1,
-    headerActionsGap: 2,
-    footerMarginTop: 4
+    headerActionsGap: 1.25,
+    footerMarginTop: 2.75
   }),
   grid: Object.freeze({
-    gap: 3,
+    gap: 2.25,
     columns: Object.freeze({
       xs: 1,
       sm: 2,
