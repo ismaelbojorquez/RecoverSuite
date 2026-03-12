@@ -1,0 +1,56 @@
+# OS
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+**/node_modules/
+
+# Build outputs and caches
+**/dist/
+**/build/
+**/.vite/
+**/.cache/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+docker/env/*.env
+!docker/env/*.env.example
+
+# Runtime data
+backend/storage/*
+!backend/storage/.gitkeep
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+
+# Certificates and private keys
+certs/*.pem
+certs/*.key
+certs/*.crt
+certs/*.p12
+certs/*.pfx
+certs/*.csr
+
+# Local databases and temp files
+*.sqlite
+*.sqlite3
+*.db
+tmp/
+temp/
