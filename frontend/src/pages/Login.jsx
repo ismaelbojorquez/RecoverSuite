@@ -53,14 +53,9 @@ export default function Login() {
       <PageContent>
         <Stack spacing={3}>
           <Stack spacing={1.5} className="crm-auth-header">
-            <Box className="crm-auth-logo">
-              <BrandMark />
-            </Box>
             <PageHeader
               align="center"
-              breadcrumbs={[{ label: 'Acceso' }]}
-              title="Acceso seguro"
-              subtitle="Plataforma de cobranza empresarial con control granular y auditoria integrada."
+              title="CRM"
             />
           </Stack>
 
@@ -72,17 +67,17 @@ export default function Login() {
 
           <Stack component="form" spacing={2} onSubmit={handleSubmit}>
             <TextField
-            label="Correo corporativo (username)"
+            label="Correo"
             type="email"
             value={form.username}
             onChange={handleChange('username')}
-            placeholder="tu.nombre@empresa.com"
+            placeholder="tu.correo@dominio.com"
             autoComplete="username"
             required
               fullWidth
             />
             <TextField
-              label="Contrasena"
+              label="Contraseña"
               type="password"
               value={form.password}
               onChange={handleChange('password')}
@@ -100,23 +95,6 @@ export default function Login() {
             >
               Iniciar sesion
             </Button>
-          </Stack>
-
-          <Stack spacing={1} className="crm-auth-footer">
-            <Typography variant="caption" color="text.secondary">
-              Acceso protegido con MFA y registro de auditoria ISO.
-            </Typography>
-            <Link
-              href={buildRoutePath('recover')}
-              underline="hover"
-              className="crm-auth-link"
-              onClick={(event) => {
-                event.preventDefault();
-                navigate(buildRoutePath('recover'));
-              }}
-            >
-              Olvidaste tu contrasena?
-            </Link>
           </Stack>
         </Stack>
       </PageContent>
