@@ -324,12 +324,12 @@ export const getComponents = (mode = 'light') => {
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(Math.max(pageGap - 1.25, 2)),
-            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 1.5, 1.5)),
+            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 2, 1)),
             paddingBottom: theme.spacing(Math.max(containerPaddingY.xs - 0.5, 2)),
             paddingLeft: theme.spacing(containerPaddingX.xs),
             paddingRight: theme.spacing(containerPaddingX.xs),
             [theme.breakpoints.up('md')]: {
-              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 2, 2.5)),
+              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 2.5, 2)),
               paddingBottom: theme.spacing(Math.max(containerPaddingY.md - 1, 3)),
               paddingLeft: theme.spacing(containerPaddingX.md),
               paddingRight: theme.spacing(containerPaddingX.md)
@@ -1568,7 +1568,7 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-page__content': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 1.5, 1.75)),
+            gap: theme.spacing(Math.max(pageGap - 1.85, 1.35)),
             width: '100%'
           },
           '.MuiBox-root.crm-page__section': {
@@ -1581,9 +1581,9 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-page__header': {
             width: '100%',
-            gap: theme.spacing(Math.max(pageHeaderGap - 1, 1)),
+            gap: theme.spacing(0.7),
             position: 'relative',
-            paddingBottom: theme.spacing(1.15),
+            paddingBottom: theme.spacing(0.8),
             marginBottom: 0,
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`
           },
@@ -1599,28 +1599,24 @@ export const getComponents = (mode = 'light') => {
             justifyContent: 'center'
           },
           '.MuiStack-root.crm-page__header-copy': {
-            gap: theme.spacing(Math.max(pageHeaderCopyGap - 0.25, 0.45)),
-            maxWidth: 760
+            gap: theme.spacing(0.35),
+            maxWidth: 720
           },
           '.MuiStack-root.crm-page__header-actions': {
-            gap: theme.spacing(pageHeaderActionsGap),
+            gap: theme.spacing(0.8),
             flexWrap: 'wrap',
-            alignSelf: 'stretch',
+            alignSelf: 'flex-start',
             justifyContent: 'flex-start',
             minWidth: 0,
             '& > *': {
               maxWidth: '100%'
-            },
-            [theme.breakpoints.up('md')]: {
-              alignSelf: 'flex-start',
-              justifyContent: 'flex-end'
             }
           },
           '.MuiBox-root.crm-page__breadcrumbs-shell': {
             display: 'inline-flex',
             alignItems: 'center',
             alignSelf: 'flex-start',
-            padding: theme.spacing(0.18, 0.5),
+            padding: theme.spacing(0.1, 0.42),
             borderRadius: 999,
             border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             backgroundColor: surface.cardSoft || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.84),
