@@ -186,6 +186,59 @@ export const listCreditsWithBalancesByClient = async ({ clienteId, portafolioId 
   return result.rows;
 };
 
+export const listCreditSaldosWithFieldsByClient = async ({ clienteId, portafolioId }) => {
+  const availability = await pool.query(
+    `SELECT
+       to_regclass('credit_saldos') IS NOT NULL AS has_credit_saldos,
+       to_regclass('saldo_fields') IS NOT NULL AS has_saldo_fields`
+  );
+
+  if (
+    !availability.rows[0]?.has_credit_saldos ||
+    !availability.rows[0]?.has_saldo_fields
+  ) {
+    return [];
+  }
+
+  const result = await pool.query(
+    `SELECT
+       c.id AS credit_id,
+       c.cliente_id,
+       c.numero_credito_externo,
+       cl.public_id AS cliente_public_id,
+       c.portafolio_id,
+       c.numero_credito,
+       c.producto,
+       c.estado,
+       c.created_at,
+       c.updated_at,
+       csv.id AS saldo_id,
+       csv.saldo_field_id AS campo_saldo_id,
+       COALESCE(
+         CASE WHEN csv.value_number IS NOT NULL THEN csv.value_number::text END,
+         csv.value_text,
+         CASE WHEN csv.value_date IS NOT NULL THEN csv.value_date::text END,
+         CASE WHEN csv.value_time IS NOT NULL THEN csv.value_time::text END,
+         CASE WHEN csv.value_datetime IS NOT NULL THEN csv.value_datetime::text END
+       ) AS valor,
+       csv.updated_at AS fecha_actualizacion,
+       sf.key AS nombre_campo,
+       sf.label AS etiqueta_visual,
+       sf.field_type AS tipo_dato,
+       sf.order_index AS orden,
+       sf.visible AS activo
+     FROM credits c
+     JOIN clients cl ON cl.id = c.cliente_id
+     LEFT JOIN credit_saldos csv ON csv.credit_id = c.id
+     LEFT JOIN saldo_fields sf ON sf.id = csv.saldo_field_id
+     WHERE c.cliente_id = $1 AND c.portafolio_id = $2
+     ORDER BY c.id, sf.order_index NULLS LAST, csv.id`,
+    [clienteId, portafolioId]
+  );
+
+  return result.rows;
+};
+
 export const getCreditWithBalances = async (id) => {
   const result = await pool.query(
     `SELECT

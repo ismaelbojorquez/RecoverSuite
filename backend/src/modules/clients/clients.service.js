@@ -10,7 +10,10 @@ import {
 import { listPhonesByClient } from './phones.repository.js';
 import { listEmailsByClient } from './emails.repository.js';
 import { listAddressesByClient } from './addresses.repository.js';
-import { listCreditsWithBalancesByClient } from '../credits/credits.repository.js';
+import {
+  listCreditsWithBalancesByClient,
+  listCreditSaldosWithFieldsByClient
+} from '../credits/credits.repository.js';
 import {
   buildCacheKey,
   cacheGet,
@@ -102,6 +105,84 @@ const handleDatabaseError = (err) => {
   }
 
   throw err;
+};
+
+const normalizeComparableText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const buildBalanceFieldId = (source, fieldId) =>
+  fieldId === undefined || fieldId === null ? null : `${source}:${fieldId}`;
+
+const inferDynamicPrimaryFlag = (row) => {
+  const fieldType = normalizeComparableText(row?.tipo_dato);
+  if (!['currency', 'number'].includes(fieldType)) {
+    return false;
+  }
+
+  const text = normalizeComparableText(
+    `${row?.nombre_campo || ''} ${row?.etiqueta_visual || ''}`
+  );
+
+  if (!text) {
+    return false;
+  }
+
+  const looksOverdue =
+    text.includes('venc') ||
+    text.includes('atras') ||
+    text.includes('mora') ||
+    text.includes('overdue') ||
+    text.includes('delinq');
+
+  if (looksOverdue) {
+    return false;
+  }
+
+  return (
+    text.includes('saldo actual') ||
+    text.includes('saldo total') ||
+    text.includes('saldo insoluto') ||
+    text.includes('deuda') ||
+    text.includes('adeudo') ||
+    text.includes('capital') ||
+    text.includes('restante') ||
+    text.includes('total')
+  );
+};
+
+const appendBalanceToCredit = (credit, row, source) => {
+  if (!credit || !row?.saldo_id || !row?.campo_saldo_id) {
+    return;
+  }
+
+  const fieldId = buildBalanceFieldId(source, row.campo_saldo_id);
+  if (!fieldId) {
+    return;
+  }
+
+  credit.balances.push({
+    id: `${source}:${row.saldo_id}`,
+    credito_id: row.credit_id,
+    campo_saldo_id: fieldId,
+    valor: row.valor,
+    fecha_actualizacion: row.fecha_actualizacion,
+    campo_saldo: {
+      id: fieldId,
+      nombre_campo: row.nombre_campo,
+      etiqueta_visual: row.etiqueta_visual,
+      tipo_dato: row.tipo_dato,
+      orden: row.orden,
+      es_principal:
+        source === 'legacy'
+          ? Boolean(row.es_principal)
+          : inferDynamicPrimaryFlag(row),
+      activo: row.activo ?? true
+    }
+  });
 };
 
 export const listClientsService = async ({ portafolioId, limit, offset, query }) => {
@@ -315,11 +396,15 @@ export const getClientDetailService = async ({ clientId, portafolioId }) => {
 
   const internalId = ensurePositiveId(client.internal_id, 'cliente');
 
-  const [phones, emails, addresses, creditRows] = await Promise.all([
+  const [phones, emails, addresses, creditRows, dynamicCreditRows] = await Promise.all([
     listPhonesByClient({ clientId: internalId }),
     listEmailsByClient({ clientId: internalId }),
     listAddressesByClient({ clientId: internalId }),
     listCreditsWithBalancesByClient({
+      clienteId: internalId,
+      portafolioId: resolvedPortafolioId
+    }),
+    listCreditSaldosWithFieldsByClient({
       clienteId: internalId,
       portafolioId: resolvedPortafolioId
     })
@@ -349,26 +434,12 @@ export const getClientDetailService = async ({ clientId, portafolioId }) => {
       credits.push(credit);
     }
 
-    if (row.saldo_id) {
-      credit.balances.push({
-        id: row.saldo_id,
-        credito_id: row.credit_id,
-        campo_saldo_id: row.campo_saldo_id,
-        valor: row.valor,
-        fecha_actualizacion: row.fecha_actualizacion,
-        campo_saldo: row.campo_saldo_id
-          ? {
-              id: row.campo_saldo_id,
-              nombre_campo: row.nombre_campo,
-              etiqueta_visual: row.etiqueta_visual,
-              tipo_dato: row.tipo_dato,
-              orden: row.orden,
-              es_principal: row.es_principal,
-              activo: row.activo
-            }
-          : null
-      });
-    }
+    appendBalanceToCredit(credit, row, 'legacy');
+  }
+
+  for (const row of dynamicCreditRows) {
+    const credit = creditMap.get(row.credit_id);
+    appendBalanceToCredit(credit, row, 'dynamic');
   }
 
   const { internal_id, ...clientPublic } = client;

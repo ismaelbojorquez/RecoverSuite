@@ -2913,18 +2913,59 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-credit-detail__item': {
             minWidth: 0
           },
+          '.MuiBox-root.crm-credit-detail__item-scroll': {
+            width: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch'
+          },
+          '.MuiBox-root.crm-credit-detail__row': {
+            display: 'flex',
+            alignItems: 'stretch',
+            gap: theme.spacing(0.8),
+            minWidth: 'max-content'
+          },
+          '.MuiBox-root.crm-credit-detail__lead': {
+            ...getInsetSurface(theme, {
+              radius: 14,
+              backgroundAlpha: isLight ? 0.82 : 0.62,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.04 : 0.1
+            }),
+            width: 220,
+            minWidth: 220,
+            padding: theme.spacing(0.85, 1),
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: theme.spacing(0.18)
+          },
+          '.MuiBox-root.crm-credit-detail__inline-strip': {
+            display: 'flex',
+            alignItems: 'stretch',
+            gap: theme.spacing(0.72),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-credit-detail__info-item': {
+            ...getInsetSurface(theme, {
+              radius: 13,
+              backgroundAlpha: isLight ? 0.78 : 0.58,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.04 : 0.1
+            }),
+            minWidth: 132,
+            padding: theme.spacing(0.78, 0.9),
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: theme.spacing(0.14)
+          },
           '.MuiTypography-root.crm-credit-detail__section-label': {
             fontWeight: 700,
             fontSize: '0.68rem',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             color: alpha(theme.palette.text.secondary, 0.88)
-          },
-          '.MuiBox-root.crm-credit-detail__balances-grid': {
-            display: 'grid',
-            gap: theme.spacing(0.72),
-            gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',
-            minWidth: 0
           },
           '.MuiBox-root.crm-credit-detail__balance-item': {
             ...getInsetSurface(theme, {
@@ -2939,6 +2980,9 @@ export const getComponents = (mode = 'light') => {
             flexDirection: 'column',
             gap: theme.spacing(0.14),
             justifyContent: 'center'
+          },
+          '.MuiBox-root.crm-credit-detail__balance-item--empty': {
+            minWidth: 180
           },
           '.MuiTypography-root.crm-credit-detail__balance-label': {
             fontWeight: 650,

@@ -116,67 +116,62 @@ function CreditsWidget({
                 variant="outlined"
                 className="crm-credit-detail__item crm-surface-card__list-item"
               >
-                <Stack spacing={1.3}>
-                  <Stack className="crm-surface-card__header crm-surface-card__header--split">
-                    <Stack className="crm-surface-card__header-main">
+                <Box className="crm-credit-detail__item-scroll">
+                  <Box className="crm-credit-detail__row">
+                    <Box className="crm-credit-detail__lead">
                       <Typography variant="subtitle1" className="crm-surface-card__title">
                         {credit.numero_credito || `Crédito ${credit.id}`}
                       </Typography>
                       <Typography variant="body2" className="crm-surface-card__subtitle">
-                        {credit.producto || 'Sin producto'}{credit.numero_credito_externo
-                          ? ` · Ref. ${credit.numero_credito_externo}`
-                          : ''}
+                        {credit.producto || 'Sin producto'}
                       </Typography>
-                    </Stack>
-                  </Stack>
+                    </Box>
 
-                  <Box className="crm-surface-card__meta-grid crm-surface-card__meta-grid--wide">
-                    <Box className="crm-surface-card__meta-item">
-                      <Typography variant="caption" className="crm-surface-card__meta-label">
-                        Producto
-                      </Typography>
-                      <Typography variant="body2" className="crm-surface-card__meta-value">
-                        {credit.producto || '-'}
-                      </Typography>
-                    </Box>
-                    <Box className="crm-surface-card__meta-item">
-                      <Typography variant="caption" className="crm-surface-card__meta-label">
-                        Crédito externo
-                      </Typography>
-                      <Typography variant="body2" className="crm-surface-card__meta-value">
-                        {credit.numero_credito_externo || '-'}
-                      </Typography>
-                    </Box>
-                    <Box className="crm-surface-card__meta-item">
-                      <Typography variant="caption" className="crm-surface-card__meta-label">
-                        Estado
-                      </Typography>
-                      <Typography variant="body2" className="crm-surface-card__meta-value">
-                        {credit.estado || credit.status || '-'}
-                      </Typography>
-                    </Box>
-                    <Box className="crm-surface-card__meta-item">
-                      <Typography variant="caption" className="crm-surface-card__meta-label">
-                        Creado
-                      </Typography>
-                      <Typography variant="body2" className="crm-surface-card__meta-value">
-                        {formatDate(credit.created_at)}
-                      </Typography>
-                    </Box>
-                  </Box>
+                    <Box className="crm-credit-detail__inline-strip">
+                      <Box className="crm-credit-detail__info-item">
+                        <Typography variant="caption" className="crm-credit-detail__balance-label">
+                          Producto
+                        </Typography>
+                        <Typography variant="body2" className="crm-credit-detail__balance-value">
+                          {credit.producto || '-'}
+                        </Typography>
+                      </Box>
+                      <Box className="crm-credit-detail__info-item">
+                        <Typography variant="caption" className="crm-credit-detail__balance-label">
+                          Crédito externo
+                        </Typography>
+                        <Typography variant="body2" className="crm-credit-detail__balance-value">
+                          {credit.numero_credito_externo || '-'}
+                        </Typography>
+                      </Box>
+                      <Box className="crm-credit-detail__info-item">
+                        <Typography variant="caption" className="crm-credit-detail__balance-label">
+                          Estado
+                        </Typography>
+                        <Typography variant="body2" className="crm-credit-detail__balance-value">
+                          {credit.estado || credit.status || '-'}
+                        </Typography>
+                      </Box>
+                      <Box className="crm-credit-detail__info-item">
+                        <Typography variant="caption" className="crm-credit-detail__balance-label">
+                          Creado
+                        </Typography>
+                        <Typography variant="body2" className="crm-credit-detail__balance-value">
+                          {formatDate(credit.created_at)}
+                        </Typography>
+                      </Box>
 
-                  <Stack spacing={0.8}>
-                    <Typography variant="caption" className="crm-credit-detail__section-label">
-                      Campos de saldo
-                    </Typography>
-
-                    {safeBalanceColumns.length === 0 ? (
-                      <Typography variant="body2" color="text.secondary">
-                        No hay campos de saldo configurados para este crédito.
-                      </Typography>
-                    ) : (
-                      <Box className="crm-credit-detail__balances-grid">
-                        {safeBalanceColumns.map((column) => {
+                      {safeBalanceColumns.length === 0 ? (
+                        <Box className="crm-credit-detail__balance-item crm-credit-detail__balance-item--empty">
+                          <Typography variant="caption" className="crm-credit-detail__balance-label">
+                            Saldos
+                          </Typography>
+                          <Typography variant="body2" className="crm-credit-detail__balance-value">
+                            Sin campos configurados
+                          </Typography>
+                        </Box>
+                      ) : (
+                        safeBalanceColumns.map((column) => {
                           const balance = resolveBalanceValue(balancesByCredit, credit.id, column);
 
                           return (
@@ -200,11 +195,11 @@ function CreditsWidget({
                               ) : null}
                             </Box>
                           );
-                        })}
-                      </Box>
-                    )}
-                  </Stack>
-                </Stack>
+                        })
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
               </Paper>
             ))}
           </Stack>
