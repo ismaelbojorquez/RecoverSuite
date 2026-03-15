@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS portfolios (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE portfolios
+  ADD COLUMN IF NOT EXISTS debt_total_saldo_field_id BIGINT;
+
 CREATE INDEX IF NOT EXISTS idx_portfolios_name ON portfolios (name);
 CREATE INDEX IF NOT EXISTS idx_portfolios_is_active ON portfolios (is_active);
 CREATE INDEX IF NOT EXISTS idx_portfolios_debt_total_saldo_field_id
