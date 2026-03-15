@@ -411,20 +411,7 @@ export default function AppLayout({ children }) {
       >
         <Toolbar className="crm-app-bar__toolbar" disableGutters>
           <Container maxWidth="lg" className="crm-app-bar__inner">
-            <Stack direction="row" spacing={1.5} alignItems="center" className="crm-app-bar__left">
-              {!isDesktop && (
-                <IconButton
-                  color="inherit"
-                  onClick={() => setMobileOpen(true)}
-                  className="crm-app-bar__menu-trigger"
-                  aria-label="Abrir navegación"
-                >
-                  <IconRenderer icon={PanelLeft} size="sm" />
-                </IconButton>
-              )}
-              <Box className="crm-app-bar__brand">
-                <BrandMark collapsed={isDesktop} />
-              </Box>
+            <Stack direction="row" spacing={0} alignItems="center" className="crm-app-bar__left">
               {canSearch ? (
                 <Box className="crm-app-bar__search">
                   <GlobalSearch />
@@ -438,6 +425,16 @@ export default function AppLayout({ children }) {
               alignItems="center"
               className="crm-app-bar__user-area"
             >
+              {!isDesktop && (
+                <IconButton
+                  color="inherit"
+                  onClick={() => setMobileOpen(true)}
+                  className="crm-app-bar__menu-trigger"
+                  aria-label="Abrir navegación"
+                >
+                  <IconRenderer icon={PanelLeft} size="sm" />
+                </IconButton>
+              )}
               <Tooltip title="Notificaciones" arrow>
                 <IconButton
                   color="inherit"

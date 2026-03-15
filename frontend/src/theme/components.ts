@@ -323,14 +323,14 @@ export const getComponents = (mode = 'light') => {
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 0.5, 2.5)),
-            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 1, 2)),
-            paddingBottom: theme.spacing(containerPaddingY.xs),
+            gap: theme.spacing(Math.max(pageGap - 1.25, 2)),
+            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 1.5, 1.5)),
+            paddingBottom: theme.spacing(Math.max(containerPaddingY.xs - 0.5, 2)),
             paddingLeft: theme.spacing(containerPaddingX.xs),
             paddingRight: theme.spacing(containerPaddingX.xs),
             [theme.breakpoints.up('md')]: {
-              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 1, 3)),
-              paddingBottom: theme.spacing(containerPaddingY.md),
+              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 2, 2.5)),
+              paddingBottom: theme.spacing(Math.max(containerPaddingY.md - 1, 3)),
               paddingLeft: theme.spacing(containerPaddingX.md),
               paddingRight: theme.spacing(containerPaddingX.md)
             },
@@ -353,18 +353,18 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiTypography-root.crm-page-title': {
             fontWeight: pageTypography.title.fontWeight,
-            fontSize: 'clamp(1.7rem, 2.1vw, 2.05rem)',
-            lineHeight: 1.08,
+            fontSize: 'clamp(1.5rem, 1.8vw, 1.88rem)',
+            lineHeight: 1.06,
             letterSpacing: pageTypography.title.letterSpacing,
             color: theme.palette.text.primary
           },
           '.MuiTypography-root.crm-page-subtitle': {
             fontWeight: pageTypography.subtitle.fontWeight,
-            fontSize: pageTypography.subtitle.fontSize,
-            lineHeight: pageTypography.subtitle.lineHeight,
+            fontSize: '0.95rem',
+            lineHeight: 1.56,
             letterSpacing: pageTypography.subtitle.letterSpacing,
             color: theme.palette.text.secondary,
-            maxWidth: 760
+            maxWidth: 680
           },
           '.MuiTypography-root.crm-section-title': {
             fontWeight: sectionTypography.title.fontWeight,
@@ -973,27 +973,27 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 0.75, 2.25)),
-            paddingTop: theme.spacing(0.45),
-            paddingBottom: theme.spacing(0.25)
+            gap: theme.spacing(Math.max(pageGap - 1.5, 1.75)),
+            paddingTop: theme.spacing(0.2),
+            paddingBottom: 0
           },
           '.MuiToolbar-root.crm-app-shell__offset': {
-            minHeight: layoutTokens.headerHeight.xs + 14,
+            minHeight: layoutTokens.headerHeight.xs + 10,
             [theme.breakpoints.up('md')]: {
-              minHeight: layoutTokens.headerHeight.md + 16
+              minHeight: layoutTokens.headerHeight.md + 12
             }
           },
 
           '.MuiAppBar-root.crm-app-bar': {
             zIndex: theme.zIndex.drawer + 1,
-            top: 10,
-            right: 10,
+            top: 8,
+            right: 8,
             left: 'auto',
             border: `1px solid ${headerBorder}`,
             backdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             WebkitBackdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             backgroundColor: headerSurface,
-            borderRadius: 18,
+            borderRadius: 16,
             boxShadow: shadow.sm || `0 10px 24px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.18)}`,
             transition: theme.transitions.create(['width', 'margin-left'], {
               duration: motionTokens.standardDurationMs,
@@ -1001,26 +1001,26 @@ export const getComponents = (mode = 'light') => {
             })
           },
           '.MuiAppBar-root.crm-app-bar--expanded': {
-            width: `calc(100% - ${layoutTokens.drawerExpanded + 20}px)`,
-            marginLeft: layoutTokens.drawerExpanded + 10
+            width: `calc(100% - ${layoutTokens.drawerExpanded + 16}px)`,
+            marginLeft: layoutTokens.drawerExpanded + 8
           },
           '.MuiAppBar-root.crm-app-bar--collapsed': {
-            width: `calc(100% - ${layoutTokens.drawerCollapsed + 20}px)`,
-            marginLeft: layoutTokens.drawerCollapsed + 10
+            width: `calc(100% - ${layoutTokens.drawerCollapsed + 16}px)`,
+            marginLeft: layoutTokens.drawerCollapsed + 8
           },
           '.MuiAppBar-root.crm-app-bar--mobile': {
-            width: 'calc(100% - 20px)',
-            marginLeft: 10
+            width: 'calc(100% - 16px)',
+            marginLeft: 8
           },
           '.MuiToolbar-root.crm-app-bar__toolbar': {
-            minHeight: layoutTokens.headerHeight.xs,
-            gap: theme.spacing(1.25),
-            paddingLeft: theme.spacing(1.25),
-            paddingRight: theme.spacing(1.25),
+            minHeight: 60,
+            gap: theme.spacing(0.9),
+            paddingLeft: theme.spacing(1),
+            paddingRight: theme.spacing(1),
             [theme.breakpoints.up('md')]: {
-              minHeight: layoutTokens.headerHeight.md,
-              paddingLeft: theme.spacing(2),
-              paddingRight: theme.spacing(2)
+              minHeight: 64,
+              paddingLeft: theme.spacing(1.5),
+              paddingRight: theme.spacing(1.5)
             }
           },
           '.MuiContainer-root.crm-app-bar__inner': {
@@ -1029,16 +1029,13 @@ export const getComponents = (mode = 'light') => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: theme.spacing(1.25)
+            gap: theme.spacing(0.9)
           },
           '.MuiStack-root.crm-app-bar__left': {
             flex: 1,
             minWidth: 0,
             maxWidth: '100%',
-            gap: theme.spacing(1),
-            [theme.breakpoints.up('lg')]: {
-              gap: theme.spacing(1.4)
-            }
+            gap: 0
           },
           '.MuiBox-root.crm-app-bar__brand': {
             display: 'flex',
@@ -1102,13 +1099,7 @@ export const getComponents = (mode = 'light') => {
             flexGrow: 1,
             minWidth: 0,
             width: '100%',
-            maxWidth: '100%',
-            [theme.breakpoints.up('md')]: {
-              maxWidth: 520
-            },
-            [theme.breakpoints.up('xl')]: {
-              maxWidth: 560
-            }
+            maxWidth: '100%'
           },
           '.MuiBox-root.crm-app-bar__search .MuiPaper-root.crm-global-search__input-shell': {
             minHeight: 46,
@@ -1119,11 +1110,11 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-app-bar__user-area': {
             marginLeft: 'auto',
-            gap: theme.spacing(0.75),
+            gap: theme.spacing(0.6),
             flexShrink: 0,
             minWidth: 0,
             [theme.breakpoints.down('sm')]: {
-              gap: theme.spacing(0.5)
+              gap: theme.spacing(0.35)
             }
           },
           '.MuiButton-root.crm-app-bar__quick-trigger': {
@@ -1577,22 +1568,22 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-page__content': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(pageGap),
+            gap: theme.spacing(Math.max(pageGap - 1.5, 1.75)),
             width: '100%'
           },
           '.MuiBox-root.crm-page__section': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(sectionGap)
+            gap: theme.spacing(Math.max(sectionGap - 0.75, 1.5))
           },
           '.MuiBox-root.crm-page__section--dense': {
-            gap: theme.spacing(sectionDenseGap)
+            gap: theme.spacing(Math.max(sectionDenseGap - 0.5, 1.2))
           },
           '.MuiStack-root.crm-page__header': {
             width: '100%',
-            gap: theme.spacing(Math.max(pageHeaderGap - 0.5, 1.25)),
+            gap: theme.spacing(Math.max(pageHeaderGap - 1, 1)),
             position: 'relative',
-            paddingBottom: theme.spacing(1.6),
+            paddingBottom: theme.spacing(1.15),
             marginBottom: 0,
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`
           },
@@ -1608,8 +1599,8 @@ export const getComponents = (mode = 'light') => {
             justifyContent: 'center'
           },
           '.MuiStack-root.crm-page__header-copy': {
-            gap: theme.spacing(pageHeaderCopyGap),
-            maxWidth: 820
+            gap: theme.spacing(Math.max(pageHeaderCopyGap - 0.25, 0.45)),
+            maxWidth: 760
           },
           '.MuiStack-root.crm-page__header-actions': {
             gap: theme.spacing(pageHeaderActionsGap),
@@ -1620,7 +1611,7 @@ export const getComponents = (mode = 'light') => {
             '& > *': {
               maxWidth: '100%'
             },
-            [theme.breakpoints.up('lg')]: {
+            [theme.breakpoints.up('md')]: {
               alignSelf: 'flex-start',
               justifyContent: 'flex-end'
             }
@@ -1629,7 +1620,7 @@ export const getComponents = (mode = 'light') => {
             display: 'inline-flex',
             alignItems: 'center',
             alignSelf: 'flex-start',
-            padding: theme.spacing(0.28, 0.6),
+            padding: theme.spacing(0.18, 0.5),
             borderRadius: 999,
             border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             backgroundColor: surface.cardSoft || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.84),
