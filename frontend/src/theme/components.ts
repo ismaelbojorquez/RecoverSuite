@@ -2460,8 +2460,372 @@ export const getComponents = (mode = 'light') => {
             background: `linear-gradient(120deg, ${theme.palette.info.main} 0%, ${alpha(theme.palette.info.main, 0.72)} 100%)`
           },
 
+          '.MuiBox-root.crm-client-detail-page': {
+            position: 'relative',
+            isolation: 'isolate',
+            minHeight: 0,
+            height: 'calc(100dvh - var(--layout-header-height) - var(--layout-content-padding-y) - var(--layout-content-padding-y) - 12px)',
+            maxHeight:
+              'calc(100dvh - var(--layout-header-height) - var(--layout-content-padding-y) - var(--layout-content-padding-y) - 12px)',
+            overflow: 'hidden'
+          },
+          '.MuiBox-root.crm-client-detail__shell': {
+            height: '100%',
+            minHeight: 0,
+            display: 'grid',
+            gridTemplateRows: 'minmax(0, 35%) minmax(0, 65%)',
+            gap: theme.spacing(1.15)
+          },
+          '.MuiBox-root.crm-client-detail__header-zone, .MuiBox-root.crm-client-detail__operations-zone': {
+            minHeight: 0
+          },
+          '.MuiBox-root.crm-client-detail__floating-actions': {
+            position: 'absolute',
+            right: theme.spacing(1.15),
+            bottom: `calc(${theme.spacing(1.15)} + env(safe-area-inset-bottom, 0px))`,
+            zIndex: 5,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            pointerEvents: 'none',
+            [theme.breakpoints.down('sm')]: {
+              right: theme.spacing(0.9),
+              bottom: `calc(${theme.spacing(0.9)} + env(safe-area-inset-bottom, 0px))`
+            }
+          },
+          '.MuiStack-root.crm-client-detail__floating-actions-menu': {
+            gap: theme.spacing(0.55),
+            marginBottom: theme.spacing(0.65),
+            pointerEvents: 'auto',
+            animation: `crm-fade-in ${microMotion}`
+          },
+          '.MuiStack-root.crm-client-detail__floating-action-row': {
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: theme.spacing(0.55)
+          },
+          '.MuiBox-root.crm-client-detail__floating-action-label': {
+            ...getInsetSurface(theme, {
+              radius: 999,
+              backgroundAlpha: isLight ? 0.86 : 0.68,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            }),
+            pointerEvents: 'auto',
+            padding: theme.spacing(0.4, 0.8),
+            fontSize: '0.72rem',
+            fontWeight: 620,
+            lineHeight: 1,
+            color: theme.palette.text.primary,
+            whiteSpace: 'nowrap'
+          },
+          '.MuiIconButton-root.crm-client-detail__floating-action-button': {
+            pointerEvents: 'auto',
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            color: theme.palette.text.primary,
+            backgroundColor:
+              (getVisualTokens(theme).surface || {}).floating ||
+              alpha(theme.palette.background.paper, isLight ? 0.94 : 0.86),
+            border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            boxShadow: shadow.sm || `0 10px 20px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.18)}`,
+            backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(${surface.saturate || 140}%)`,
+            WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(${surface.saturate || 140}%)`,
+            position: 'relative',
+            overflow: 'hidden',
+            transition: theme.transitions.create(
+              ['transform', 'box-shadow', 'background-color', 'border-color'],
+              { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
+            ),
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.24 : 0.06)} 0%, transparent 38%)`
+            },
+            '&:hover': {
+              transform: 'translateY(-2px) scale(1.03)',
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.2 : 0.3),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14),
+              boxShadow: shadow.lg || `0 16px 28px ${alpha(theme.palette.text.primary, isLight ? 0.1 : 0.22)}`
+            },
+            '&.Mui-disabled': {
+              opacity: 0.46,
+              boxShadow: 'none'
+            }
+          },
+          '.MuiIconButton-root.crm-client-detail__floating-action-button--primary': {
+            width: 54,
+            height: 54,
+            color: theme.palette.primary.contrastText,
+            backgroundImage: gradients.buttonPrimary,
+            backgroundColor: theme.palette.primary.main,
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.46),
+            boxShadow: shadow.glow || `0 16px 28px ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.28)}`,
+            '&:hover': {
+              backgroundImage: gradients.buttonPrimary,
+              backgroundColor: theme.palette.primary.main,
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.42 : 0.54),
+              boxShadow: shadow.lg || `0 18px 34px ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.32)}`
+            }
+          },
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
             ...getCardSurface(theme, { soft: true })
+          },
+          '.MuiPaper-root.crm-client-detail__header-shell': {
+            ...getCardSurface(theme, { soft: true }),
+            height: '100%',
+            minHeight: 0,
+            overflow: 'hidden',
+            padding: theme.spacing(1.05),
+            display: 'flex',
+            flexDirection: 'column'
+          },
+          '.MuiBox-root.crm-client-detail__header-grid': {
+            display: 'grid',
+            gap: theme.spacing(0.95),
+            gridTemplateColumns: 'minmax(0, 1.28fr) minmax(0, 0.92fr) minmax(0, 1fr)',
+            minHeight: 0,
+            height: '100%',
+            alignItems: 'stretch',
+            [theme.breakpoints.down('lg')]: {
+              gridAutoFlow: 'column',
+              gridAutoColumns: 'minmax(260px, 76vw)',
+              gridTemplateColumns: 'none',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarGutter: 'stable both-edges',
+              paddingBottom: theme.spacing(0.2)
+            }
+          },
+          '.MuiPaper-root.crm-client-detail__header-card': {
+            ...getInsetSurface(theme, {
+              radius: 18,
+              backgroundAlpha: isLight ? 0.8 : 0.6,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            }),
+            height: '100%',
+            minHeight: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.65),
+            padding: theme.spacing(1.05, 1.1)
+          },
+          '.MuiStack-root.crm-client-detail__header-card-head': {
+            gap: theme.spacing(0.55),
+            minWidth: 0
+          },
+          '.MuiStack-root.crm-client-detail__header-card-copy': {
+            gap: theme.spacing(0.22),
+            minWidth: 0,
+            flex: 1
+          },
+          '.MuiTypography-root.crm-client-detail__header-title': {
+            fontWeight: 680,
+            fontSize: 'clamp(1.12rem, 1.3vw, 1.42rem)',
+            lineHeight: 1.04,
+            letterSpacing: '-0.028em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-client-detail__header-subtitle, .MuiTypography-root.crm-client-detail__header-section-subtitle': {
+            color: alpha(theme.palette.text.secondary, 0.9),
+            fontSize: '0.82rem',
+            lineHeight: 1.4
+          },
+          '.MuiTypography-root.crm-client-detail__header-section-title': {
+            fontWeight: 630,
+            fontSize: '0.96rem',
+            lineHeight: 1.2,
+            letterSpacing: '-0.012em',
+            color: theme.palette.text.primary
+          },
+          '.MuiButton-root.crm-client-detail__back-button': {
+            minHeight: 34,
+            padding: theme.spacing(0.55, 1.05),
+            borderRadius: 12,
+            flexShrink: 0
+          },
+          '.MuiBox-root.crm-client-detail__header-summary-grid': {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: theme.spacing(0.7),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-client-detail__header-summary-grid--compact': {
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            [theme.breakpoints.down('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-client-detail__header-summary-item': {
+            ...getInsetSurface(theme, {
+              radius: 14,
+              backgroundAlpha: isLight ? 0.78 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.04 : 0.1
+            }),
+            minWidth: 0,
+            padding: theme.spacing(0.8, 0.9),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.18),
+            justifyContent: 'center'
+          },
+          '.MuiBox-root.crm-client-detail__indicator-grid': {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: theme.spacing(0.55),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-client-detail__indicator-card': {
+            ...getInsetSurface(theme, {
+              radius: 13,
+              backgroundAlpha: isLight ? 0.82 : 0.6,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.04 : 0.1
+            }),
+            minWidth: 0,
+            padding: theme.spacing(0.68, 0.78),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.22),
+            justifyContent: 'center'
+          },
+          '.MuiBox-root.crm-client-detail__indicator-card--success': {
+            backgroundColor: alpha(theme.palette.success.main, isLight ? 0.08 : 0.12),
+            borderColor: alpha(theme.palette.success.main, isLight ? 0.14 : 0.24)
+          },
+          '.MuiBox-root.crm-client-detail__indicator-card--warning': {
+            backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.09 : 0.13),
+            borderColor: alpha(theme.palette.warning.main, isLight ? 0.16 : 0.26)
+          },
+          '.MuiBox-root.crm-client-detail__indicator-card--danger': {
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.08 : 0.12),
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.14 : 0.24)
+          },
+          '.MuiTypography-root.crm-client-detail__indicator-label': {
+            fontSize: '0.62rem',
+            fontWeight: 700,
+            lineHeight: 1.2,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: alpha(theme.palette.text.secondary, 0.86)
+          },
+          '.MuiTypography-root.crm-client-detail__indicator-value': {
+            fontWeight: 670,
+            fontSize: '0.9rem',
+            lineHeight: 1.18,
+            letterSpacing: '-0.01em',
+            color: theme.palette.text.primary
+          },
+          '.MuiStack-root.crm-client-detail__header-chip-row': {
+            marginTop: 'auto',
+            alignItems: 'center',
+            gap: theme.spacing(0.55)
+          },
+          '.MuiStack-root.crm-client-detail__contact-groups, .MuiStack-root.crm-client-detail__credit-preview-list': {
+            gap: theme.spacing(0.5),
+            minHeight: 0
+          },
+          '.MuiStack-root.crm-client-detail__contact-group': {
+            gap: theme.spacing(0.28),
+            minWidth: 0
+          },
+          '.MuiTypography-root.crm-client-detail__contact-group-title': {
+            fontSize: '0.66rem',
+            fontWeight: 700,
+            letterSpacing: '0.07em',
+            textTransform: 'uppercase',
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiStack-root.crm-client-detail__contact-card-list': {
+            gap: theme.spacing(0.34),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-client-detail__contact-card, .MuiBox-root.crm-client-detail__credit-preview-item': {
+            ...getInsetSurface(theme, {
+              radius: 13,
+              backgroundAlpha: isLight ? 0.78 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.035 : 0.09
+            }),
+            minWidth: 0,
+            padding: theme.spacing(0.4, 0.55),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing(0.55)
+          },
+          '.MuiBox-root.crm-client-detail__contact-card--empty': {
+            justifyContent: 'flex-start',
+            minHeight: 32
+          },
+          '.MuiSvgIcon-root.crm-client-detail__contact-icon': {
+            color: alpha(theme.palette.primary.main, 0.9),
+            flexShrink: 0
+          },
+          '.MuiTypography-root.crm-client-detail__contact-card-value': {
+            flex: 1,
+            minWidth: 0,
+            fontWeight: 600,
+            fontSize: '0.78rem',
+            lineHeight: 1.2,
+            color: theme.palette.text.primary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          },
+          '.MuiStack-root.crm-client-detail__contact-card-actions': {
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: theme.spacing(0.28)
+          },
+          '.MuiButton-root.crm-client-detail__contact-action': {
+            minHeight: 24,
+            minWidth: 0,
+            padding: theme.spacing(0.18, 0.65),
+            borderRadius: 999,
+            fontSize: '0.68rem',
+            lineHeight: 1,
+            letterSpacing: '0.01em',
+            color: alpha(theme.palette.text.secondary, 0.96),
+            '&.Mui-disabled': {
+              color: alpha(theme.palette.text.secondary, 0.46)
+            }
+          },
+          '.MuiTypography-root.crm-client-detail__contact-more': {
+            fontSize: '0.68rem',
+            fontWeight: 600,
+            letterSpacing: '0.01em',
+            color: alpha(theme.palette.text.secondary, 0.84),
+            paddingLeft: theme.spacing(0.2)
+          },
+          '.MuiBox-root.crm-client-detail__credit-preview-item': {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing(0.8)
+          },
+          '.MuiTypography-root.crm-client-detail__credit-preview-value': {
+            flexShrink: 0,
+            fontWeight: 650,
+            color: theme.palette.text.primary,
+            fontVariantNumeric: 'tabular-nums'
+          },
+          '.MuiPaper-root.crm-client-detail__operations-shell': {
+            ...getCardSurface(theme, { soft: true }),
+            minHeight: 0,
+            height: '100%',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: theme.spacing(0.55)
           },
           '.MuiPaper-root.crm-client-detail__hero': {
             padding: theme.spacing(2.1)
@@ -2485,16 +2849,215 @@ export const getComponents = (mode = 'light') => {
               justifyContent: 'flex-start'
             }
           },
-          '.MuiPaper-root.crm-client-detail__tabs-shell': {
-            padding: theme.spacing(0.55),
+          '.MuiPaper-root.crm-client-detail__tabs-shell, .MuiBox-root.crm-client-detail__tabs-shell': {
+            flexShrink: 0,
+            padding: theme.spacing(0, 0.2),
             overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch'
+            WebkitOverflowScrolling: 'touch',
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
+          },
+          '.MuiTabs-root.crm-client-detail__tabs': {
+            width: '100%',
+            minHeight: 40,
+            '& .MuiTabs-scroller': {
+              width: '100%'
+            },
+            '& .MuiTabs-flexContainer': {
+              width: 'max-content',
+              minWidth: '100%',
+              gap: theme.spacing(0.1),
+              [theme.breakpoints.up('md')]: {
+                width: '100%'
+              }
+            },
+            '& .MuiTabs-indicator': {
+              height: 2,
+              borderRadius: 999,
+              backgroundColor: theme.palette.primary.main,
+              transition: theme.transitions.create(['left', 'width'], {
+                duration: motionTokens.microDurationMs,
+                easing: motionTokens.microEasing
+              })
+            },
+            '& .MuiTab-root': {
+              minHeight: 40,
+              minWidth: 0,
+              padding: theme.spacing(0.85, 1.15),
+              borderRadius: 0,
+              flex: '0 0 auto',
+              color: alpha(theme.palette.text.secondary, 0.82),
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+              textTransform: 'none',
+              transition: theme.transitions.create(['color', 'background-color'], {
+                duration: motionTokens.microDurationMs,
+                easing: motionTokens.microEasing
+              }),
+              [theme.breakpoints.up('md')]: {
+                flex: '1 1 0',
+                maxWidth: 'none'
+              },
+              '&:hover': {
+                backgroundColor: 'transparent',
+                color: alpha(theme.palette.text.primary, 0.92)
+              },
+              '&.Mui-selected': {
+                color: theme.palette.text.primary
+              }
+            }
+          },
+          '.MuiBox-root.crm-client-detail__operations-content': {
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            padding: theme.spacing(1, 0.25, 0.25),
+            scrollbarGutter: 'stable both-edges',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain'
           },
           '.MuiBox-root.crm-client-detail__tab-panel': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(2),
+            gap: theme.spacing(1.25),
+            minWidth: 0,
+            minHeight: '100%'
+          },
+          '.MuiStack-root.crm-gestiones__quick-actions': {
+            gap: theme.spacing(0.65)
+          },
+          '.MuiStack-root.crm-gestiones__quick-actions .MuiButton-root': {
+            minHeight: 32,
+            padding: theme.spacing(0.45, 1),
+            borderRadius: 11,
+            fontSize: '0.74rem'
+          },
+          '.MuiPaper-root.crm-gestiones__composer': {
+            ...getInsetSurface(theme, {
+              radius: 16,
+              backgroundAlpha: isLight ? 0.82 : 0.62,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            }),
+            padding: theme.spacing(1.1)
+          },
+          '.MuiChip-root.crm-gestiones__badge': {
+            height: 24,
+            borderRadius: 999,
+            fontSize: '0.68rem',
+            fontWeight: 650,
+            letterSpacing: '0.01em',
+            borderWidth: 1
+          },
+          '.MuiChip-root.crm-gestiones__badge--success': {
+            color: theme.palette.success.main,
+            backgroundColor: alpha(theme.palette.success.main, isLight ? 0.09 : 0.16),
+            borderColor: alpha(theme.palette.success.main, isLight ? 0.18 : 0.28)
+          },
+          '.MuiChip-root.crm-gestiones__badge--warning': {
+            color: theme.palette.warning.main,
+            backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.1 : 0.18),
+            borderColor: alpha(theme.palette.warning.main, isLight ? 0.2 : 0.3)
+          },
+          '.MuiChip-root.crm-gestiones__badge--danger': {
+            color: theme.palette.error.main,
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.08 : 0.16),
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.18 : 0.28)
+          },
+          '.MuiChip-root.crm-gestiones__badge--neutral': {
+            color: alpha(theme.palette.text.secondary, 0.96),
+            backgroundColor: alpha(theme.palette.text.secondary, isLight ? 0.08 : 0.16),
+            borderColor: alpha(theme.palette.text.secondary, isLight ? 0.14 : 0.24)
+          },
+          '.MuiChip-root.crm-gestiones__badge--default': {
+            color: theme.palette.text.secondary,
+            backgroundColor: alpha(theme.palette.text.secondary, isLight ? 0.06 : 0.12),
+            borderColor: alpha(theme.palette.text.secondary, isLight ? 0.12 : 0.2)
+          },
+          '.MuiStack-root.crm-gestiones__note-stack': {
+            gap: theme.spacing(0.2),
             minWidth: 0
+          },
+          '.MuiTypography-root.crm-gestiones__note-text': {
+            color: theme.palette.text.primary,
+            lineHeight: 1.42,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          },
+          '.MuiTypography-root.crm-gestiones__note-text--expanded': {
+            display: 'block',
+            WebkitLineClamp: 'unset',
+            overflow: 'visible'
+          },
+          '.MuiButton-root.crm-gestiones__note-toggle': {
+            alignSelf: 'flex-start',
+            minHeight: 22,
+            padding: theme.spacing(0.08, 0.25),
+            borderRadius: 8,
+            fontSize: '0.68rem',
+            color: alpha(theme.palette.text.secondary, 0.94)
+          },
+          '.MuiBox-root.crm-gestiones__table-actions': {
+            display: 'flex',
+            justifyContent: 'flex-end'
+          },
+          '.MuiPaper-root.crm-promises__progress-card': {
+            ...getInsetSurface(theme, {
+              radius: 16,
+              backgroundAlpha: isLight ? 0.82 : 0.62,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            }),
+            padding: theme.spacing(1, 1.1)
+          },
+          '.MuiStack-root.crm-promises__summary-grid': {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: theme.spacing(0.8),
+            [theme.breakpoints.down('sm')]: {
+              gridTemplateColumns: 'repeat(1, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-promises__summary-item': {
+            minWidth: 0
+          },
+          '.MuiLinearProgress-root.crm-promises__progress': {
+            height: 8,
+            borderRadius: 999,
+            backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.12 : 0.2),
+            '& .MuiLinearProgress-bar': {
+              borderRadius: 999,
+              background: `linear-gradient(90deg, ${theme.palette.success.main} 0%, ${theme.palette.primary.main} 100%)`
+            }
+          },
+          '.MuiChip-root.crm-promises__badge': {
+            height: 24,
+            borderRadius: 999,
+            fontSize: '0.68rem',
+            fontWeight: 650,
+            letterSpacing: '0.01em',
+            borderWidth: 1
+          },
+          '.MuiChip-root.crm-promises__badge--success': {
+            color: theme.palette.success.main,
+            backgroundColor: alpha(theme.palette.success.main, isLight ? 0.09 : 0.16),
+            borderColor: alpha(theme.palette.success.main, isLight ? 0.18 : 0.3)
+          },
+          '.MuiChip-root.crm-promises__badge--warning': {
+            color: theme.palette.warning.main,
+            backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.1 : 0.18),
+            borderColor: alpha(theme.palette.warning.main, isLight ? 0.2 : 0.3)
+          },
+          '.MuiChip-root.crm-promises__badge--danger': {
+            color: theme.palette.error.main,
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.09 : 0.16),
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.18 : 0.3)
+          },
+          '.MuiBox-root.crm-promises__table-actions': {
+            display: 'flex',
+            justifyContent: 'flex-end'
           },
           '.MuiStack-root.crm-layout-admin-panel__content': {
             position: 'relative',
@@ -2522,7 +3085,7 @@ export const getComponents = (mode = 'light') => {
           },
 
           '.MuiBox-root.crm-client-detail__hero-meta, .MuiBox-root.crm-client-detail__summary-grid, .MuiBox-root.crm-client-detail__financial-grid': {
-            gap: theme.spacing(2)
+            gap: theme.spacing(1.4)
           },
           '.MuiBox-root.crm-client-detail__hero-meta': {
             display: 'grid',

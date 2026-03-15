@@ -1,4 +1,11 @@
-import { Send } from '@mui/icons-material';
+import {
+  AddTask,
+  ExpandLess,
+  ExpandMore,
+  PaymentsOutlined,
+  Send,
+  WhatsApp
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -10,13 +17,30 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { memo } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import BaseTable from '../../../components/BaseTable.jsx';
 import EmptyState from '../../../components/EmptyState.jsx';
 import FormActions from '../../../components/form/FormActions.jsx';
 import FormField from '../../../components/form/FormField.jsx';
 import FormSection from '../../../components/form/FormSection.jsx';
 
-const dateFormatter = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' });
+const dateFormatter = new Intl.DateTimeFormat('es-MX', {
+  dateStyle: 'short',
+  timeStyle: 'short'
+});
+const currencyFormatter = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN'
+});
+
+const defaultForm = {
+  resultado_id: '',
+  comentario: '',
+  promesa_monto: '',
+  promesa_fecha: ''
+};
+
+const resolveForm = (value) => ({ ...defaultForm, ...(value || {}) });
 
 const formatDate = (value) => {
   if (!value) {
@@ -31,22 +55,106 @@ const formatDate = (value) => {
   return dateFormatter.format(date);
 };
 
-const defaultForm = {
-  resultado_id: '',
-  comentario: '',
-  promesa_monto: '',
-  promesa_fecha: ''
-};
-
-const resolveForm = (value) => ({ ...defaultForm, ...(value || {}) });
-
-const buildPromesaLabel = (gestion) => {
-  if (!gestion?.promesa_monto_detalle) {
-    return '';
+const formatAmount = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return '-';
   }
 
-  return `Promesa $${gestion.promesa_monto_detalle} - ${formatDate(gestion.promesa_fecha_detalle)}`;
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return String(value);
+  }
+
+  return currencyFormatter.format(numeric);
 };
+
+const normalizeText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const resolveQuickPromiseResult = (results) =>
+  (Array.isArray(results) ? results : []).find((item) => Boolean(item?.requiere_promesa)) || null;
+
+const resolveGestionDictamen = (gestion) => {
+  const hayPromesa = Boolean(gestion?.promesa_monto_detalle || gestion?.promesa_fecha_detalle);
+  const text = [gestion?.resultado_tipo, gestion?.resultado_nombre].map(normalizeText).join(' ');
+
+  if (hayPromesa || text.includes('promesa')) {
+    return { label: 'Promesa', tone: 'warning' };
+  }
+
+  if (
+    text.includes('pago') ||
+    text.includes('abono') ||
+    text.includes('liquidacion') ||
+    text.includes('liquidacion')
+  ) {
+    return { label: 'Pago', tone: 'success' };
+  }
+
+  if (
+    text.includes('sin contacto') ||
+    text.includes('no contacto') ||
+    text.includes('no contesta') ||
+    text.includes('no responde') ||
+    text.includes('sin respuesta') ||
+    text.includes('no localizado')
+  ) {
+    return { label: 'Sin contacto', tone: 'danger' };
+  }
+
+  if (text.includes('buzon') || text.includes('voicemail') || text.includes('casilla')) {
+    return { label: 'Buzon', tone: 'neutral' };
+  }
+
+  return {
+    label: gestion?.resultado_tipo || 'Gestion',
+    tone: 'default'
+  };
+};
+
+function NotesCell({ gestionId, note, expanded, onToggle }) {
+  const trimmed = String(note || '').trim();
+  const isLong = trimmed.length > 88;
+
+  if (!trimmed) {
+    return (
+      <Typography variant="body2" color="text.secondary">
+        -
+      </Typography>
+    );
+  }
+
+  return (
+    <Stack className="crm-gestiones__note-stack">
+      <Typography
+        variant="body2"
+        className={[
+          'crm-gestiones__note-text',
+          expanded ? 'crm-gestiones__note-text--expanded' : ''
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {trimmed}
+      </Typography>
+      {isLong ? (
+        <Button
+          size="small"
+          variant="ghost"
+          onClick={() => onToggle(gestionId)}
+          endIcon={expanded ? <ExpandLess fontSize="inherit" /> : <ExpandMore fontSize="inherit" />}
+          className="crm-gestiones__note-toggle"
+        >
+          {expanded ? 'Menos' : 'Ver mas'}
+        </Button>
+      ) : null}
+    </Stack>
+  );
+}
 
 function GestionesWidget({
   title = 'Gestiones',
@@ -68,12 +176,49 @@ function GestionesWidget({
   onGestionesErrorClear,
   gestionesHasNext = false,
   onLoadMore,
+  onQuickWhatsapp,
+  quickActionRequest,
+  focusReturnToken,
   showForm = true,
   showHistory = true
 }) {
   const safeForm = resolveForm(form);
   const safeResultados = Array.isArray(resultados) ? resultados : [];
   const safeGestiones = Array.isArray(gestiones) ? gestiones : [];
+  const promiseResult = useMemo(
+    () => resolveQuickPromiseResult(safeResultados),
+    [safeResultados]
+  );
+  const composerRef = useRef(null);
+  const quickActionsRef = useRef(null);
+  const resultadoFieldRef = useRef(null);
+  const comentarioFieldRef = useRef(null);
+  const latestQuickActionRef = useRef(null);
+  const [composerMode, setComposerMode] = useState(null);
+  const [expandedNotes, setExpandedNotes] = useState([]);
+
+  const paymentResult = useMemo(
+    () =>
+      safeResultados.find((item) => {
+        const resultText = normalizeText(
+          `${item?.nombre || ''} ${item?.tipo || ''} ${item?.descripcion || ''}`
+        );
+
+        return (
+          resultText.includes('pago') ||
+          resultText.includes('abono') ||
+          resultText.includes('liquidacion') ||
+          resultText.includes('deposito')
+        );
+      }) || null,
+    [safeResultados]
+  );
+
+  useEffect(() => {
+    if (!showForm) {
+      setComposerMode(null);
+    }
+  }, [showForm]);
 
   const updateField = (field, value) => {
     if (typeof onFormChange === 'function') {
@@ -92,6 +237,199 @@ function GestionesWidget({
     }
   };
 
+  const showComposer = showForm && canLog && Boolean(composerMode);
+  const showPromiseFields = Boolean(requierePromesa || composerMode === 'promesa');
+
+  const focusComposerTarget = (focusTarget = 'resultado') => {
+    const preferredField =
+      focusTarget === 'comentario' ? comentarioFieldRef.current : resultadoFieldRef.current;
+    const fallbackField =
+      focusTarget === 'comentario' ? resultadoFieldRef.current : comentarioFieldRef.current;
+
+    preferredField?.focus?.();
+    if (document.activeElement !== preferredField) {
+      fallbackField?.focus?.();
+    }
+  };
+
+  const revealComposer = (nextMode, { focusTarget = 'resultado' } = {}) => {
+    if (!showForm || !canLog) {
+      return;
+    }
+
+    setComposerMode(nextMode);
+
+    window.requestAnimationFrame(() => {
+      composerRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      focusComposerTarget(focusTarget);
+    });
+  };
+
+  const handleQuickGestion = () => {
+    revealComposer('gestion');
+  };
+
+  const handleQuickPromesa = () => {
+    if (promiseResult && String(safeForm.resultado_id || '') !== String(promiseResult.id)) {
+      updateField('resultado_id', String(promiseResult.id));
+    }
+
+    revealComposer('promesa', {
+      focusTarget: promiseResult ? 'comentario' : 'resultado'
+    });
+  };
+
+  const handleQuickPago = () => {
+    if (paymentResult && String(safeForm.resultado_id || '') !== String(paymentResult.id)) {
+      updateField('resultado_id', String(paymentResult.id));
+    }
+
+    revealComposer('pago', {
+      focusTarget: paymentResult ? 'comentario' : 'resultado'
+    });
+  };
+
+  useEffect(() => {
+    const token = quickActionRequest?.token;
+    const mode = quickActionRequest?.mode;
+
+    if (!token || token === latestQuickActionRef.current || !showForm || !canLog) {
+      return;
+    }
+
+    latestQuickActionRef.current = token;
+
+    if (mode === 'promesa') {
+      if (promiseResult && String(safeForm.resultado_id || '') !== String(promiseResult.id)) {
+        updateField('resultado_id', String(promiseResult.id));
+      }
+      revealComposer('promesa', {
+        focusTarget: promiseResult ? 'comentario' : 'resultado'
+      });
+      return;
+    }
+
+    if (mode === 'pago') {
+      if (paymentResult && String(safeForm.resultado_id || '') !== String(paymentResult.id)) {
+        updateField('resultado_id', String(paymentResult.id));
+      }
+      revealComposer('pago', {
+        focusTarget: paymentResult ? 'comentario' : 'resultado'
+      });
+      return;
+    }
+
+    revealComposer('gestion');
+  }, [
+    canLog,
+    paymentResult,
+    promiseResult,
+    quickActionRequest,
+    safeForm.resultado_id,
+    showForm
+  ]);
+
+  useEffect(() => {
+    if (!focusReturnToken) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      if (showComposer) {
+        composerRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        focusComposerTarget(composerMode === 'gestion' ? 'resultado' : 'comentario');
+        return;
+      }
+
+      quickActionsRef.current?.focus?.();
+    });
+  }, [composerMode, focusReturnToken, showComposer]);
+
+  const toggleExpandedNote = (gestionId) => {
+    setExpandedNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(gestionId)) {
+        next.delete(gestionId);
+      } else {
+        next.add(gestionId);
+      }
+      return Array.from(next);
+    });
+  };
+
+  const historyColumns = useMemo(
+    () => [
+      {
+        id: 'fecha',
+        label: 'Fecha',
+        minWidth: 118,
+        render: (row) => formatDate(row.fecha_gestion)
+      },
+      {
+        id: 'agente',
+        label: 'Agente',
+        minWidth: 140,
+        render: (row) => row.agente_email || row.agente_nombre || '-'
+      },
+      {
+        id: 'dictamen',
+        label: 'Dictamen',
+        minWidth: 128,
+        render: (row) => {
+          const dictamen = resolveGestionDictamen(row);
+          return (
+            <Chip
+              size="small"
+              label={dictamen.label}
+              className={[
+                'crm-gestiones__badge',
+                `crm-gestiones__badge--${dictamen.tone}`
+              ].join(' ')}
+            />
+          );
+        }
+      },
+      {
+        id: 'resultado',
+        label: 'Resultado',
+        minWidth: 170,
+        render: (row) => (
+          <Stack spacing={0.2}>
+            <Typography variant="body2" className="crm-text-strong">
+              {row.resultado_nombre || 'Gestion'}
+            </Typography>
+            {row.resultado_tipo ? (
+              <Typography variant="caption" color="text.secondary">
+                {row.resultado_tipo}
+              </Typography>
+            ) : null}
+          </Stack>
+        )
+      },
+      {
+        id: 'monto',
+        label: 'Monto',
+        align: 'right',
+        minWidth: 118,
+        render: (row) => formatAmount(row.promesa_monto_detalle || row.monto || row.monto_detalle)
+      },
+      {
+        id: 'notas',
+        label: 'Notas',
+        minWidth: 280,
+        render: (row) => (
+          <NotesCell
+            gestionId={row.id}
+            note={row.comentario}
+            expanded={expandedNotes.includes(row.id)}
+            onToggle={toggleExpandedNote}
+          />
+        )
+      }
+    ],
+    [expandedNotes]
+  );
+
   if (!canLog && !canViewGestiones) {
     return (
       <Paper variant="panel-sm">
@@ -108,120 +446,211 @@ function GestionesWidget({
   }
 
   return (
-    <Stack spacing={2}>
-      {showForm && canLog && (
+    <Stack spacing={1.5}>
+      {showForm && (
         <Paper variant="panel-sm">
-          <Stack spacing={2}>
+          <Stack spacing={1.5}>
             <Stack className="crm-surface-card__header">
               <Stack className="crm-surface-card__header-main">
                 <Typography variant="overline" className="crm-surface-card__eyebrow">
-                  Operación
+                  Operación rápida
                 </Typography>
                 <Typography variant="subtitle1" className="crm-surface-card__title">
-                  Registrar gestion
+                  {title}
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__subtitle">
-                  Documenta el resultado del contacto y, cuando aplique, registra la promesa de pago.
+                  Acciones de alta frecuencia para agentes de cobranza.
                 </Typography>
               </Stack>
             </Stack>
 
-            {formError && (
-              <Alert severity="error" onClose={() => onFormErrorClear && onFormErrorClear()}>
-                {formError}
-              </Alert>
-            )}
-
-            <FormSection
-              title="Detalle de la gestion"
-              subtitle="Selecciona el resultado y documenta el contexto del contacto."
+            <Stack
+              direction="row"
+              useFlexGap
+              flexWrap="wrap"
+              spacing={1}
+              className="crm-gestiones__quick-actions"
+              ref={quickActionsRef}
+              tabIndex={-1}
             >
-              <Box className="crm-form__grid">
-                <FormField
-                  component={TextField}
-                  select
-                  label="Resultado"
-                  value={safeForm.resultado_id}
-                  onChange={(event) => updateField('resultado_id', event.target.value)}
-                  required
-                  SelectProps={{ native: true }}
-                  disabled={resultadosLoading}
-                >
-                  <option value="">Selecciona un resultado</option>
-                  {safeResultados.map((resultado) => (
-                    <option key={resultado.id} value={resultado.id}>
-                      {resultado.nombre} ({resultado.tipo})
-                    </option>
-                  ))}
-                </FormField>
-
-                <FormField
-                  label="Comentario"
-                  value={safeForm.comentario}
-                  onChange={(event) => updateField('comentario', event.target.value)}
-                  required
-                  multiline
-                  minRows={3}
-                  placeholder="Detalle breve de la gestion"
-                />
-              </Box>
-            </FormSection>
-
-            {requierePromesa && (
-              <FormSection
-                title="Promesa de pago"
-                subtitle="Captura monto y fecha compromiso cuando el resultado lo requiera."
-              >
-                <Box className="crm-form__grid">
-                  <FormField
-                    label="Monto de promesa"
-                    type="number"
-                    value={safeForm.promesa_monto}
-                    onChange={(event) => updateField('promesa_monto', event.target.value)}
-                    required
-                    inputProps={{ min: 0, step: '0.01' }}
-                  />
-
-                  <FormField
-                    component={TextField}
-                    label="Fecha promesa"
-                    type="datetime-local"
-                    value={safeForm.promesa_fecha}
-                    onChange={(event) => updateField('promesa_fecha', event.target.value)}
-                    required
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Box>
-              </FormSection>
-            )}
-
-            <FormActions spacing={1.5} className="crm-surface-card__action-row">
               <Button
                 variant="contained"
-                startIcon={<Send />}
-                onClick={handleSubmit}
-                disabled={savingGestion}
+                size="small"
+                startIcon={<AddTask />}
+                onClick={handleQuickGestion}
+                disabled={!canLog}
               >
-                Registrar
+                Nueva Gestión
               </Button>
-            </FormActions>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Send />}
+                onClick={handleQuickPromesa}
+                disabled={!canLog || !promiseResult}
+              >
+                Registrar Promesa
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PaymentsOutlined />}
+                onClick={handleQuickPago}
+                disabled={!canLog}
+              >
+                Registrar Pago
+              </Button>
+              <Button
+                variant="ghost"
+                size="small"
+                startIcon={<WhatsApp />}
+                onClick={() => onQuickWhatsapp && onQuickWhatsapp()}
+                disabled={typeof onQuickWhatsapp !== 'function'}
+              >
+                Enviar WhatsApp
+              </Button>
+            </Stack>
+
+            {showComposer ? (
+              <Paper ref={composerRef} variant="outlined" className="crm-gestiones__composer">
+                <Stack spacing={1.6}>
+                  <Stack className="crm-surface-card__header">
+                    <Stack className="crm-surface-card__header-main">
+                      <Typography variant="overline" className="crm-surface-card__eyebrow">
+                        {composerMode === 'promesa' ? 'Promesa' : 'Gestion'}
+                      </Typography>
+                      <Typography variant="subtitle1" className="crm-surface-card__title">
+                        {composerMode === 'promesa' ? 'Registrar promesa' : 'Nueva gestion'}
+                      </Typography>
+                      <Typography variant="body2" className="crm-surface-card__subtitle">
+                        {composerMode === 'promesa'
+                          ? 'Captura el compromiso de pago y deja contexto operativo.'
+                          : 'Documenta el contacto y su resultado en pocos campos.'}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  {formError ? (
+                    <Alert severity="error" onClose={() => onFormErrorClear && onFormErrorClear()}>
+                      {formError}
+                    </Alert>
+                  ) : null}
+
+                  {composerMode === 'promesa' && !promiseResult ? (
+                    <Alert severity="warning">
+                      No existe un resultado configurado para promesa en este portafolio.
+                    </Alert>
+                  ) : null}
+
+                  <FormSection
+                    title="Detalle de la gestion"
+                    subtitle="Selecciona el resultado y documenta el contexto del contacto."
+                  >
+                    <Box className="crm-form__grid">
+                      <FormField
+                        component={TextField}
+                        select
+                        label="Resultado"
+                        value={safeForm.resultado_id}
+                        onChange={(event) => updateField('resultado_id', event.target.value)}
+                        required
+                        SelectProps={{ native: true }}
+                        disabled={resultadosLoading}
+                        inputRef={resultadoFieldRef}
+                      >
+                        <option value="">Selecciona un resultado</option>
+                        {safeResultados.map((resultado) => (
+                          <option key={resultado.id} value={resultado.id}>
+                            {resultado.nombre} ({resultado.tipo})
+                          </option>
+                        ))}
+                      </FormField>
+
+                      <FormField
+                        label="Comentario"
+                        value={safeForm.comentario}
+                        onChange={(event) => updateField('comentario', event.target.value)}
+                        required
+                        multiline
+                        minRows={3}
+                        placeholder="Detalle breve de la gestion"
+                        inputRef={comentarioFieldRef}
+                      />
+                    </Box>
+                  </FormSection>
+
+                  {showPromiseFields ? (
+                    <FormSection
+                      title="Promesa de pago"
+                      subtitle="Captura monto y fecha compromiso cuando el resultado lo requiera."
+                    >
+                      <Box className="crm-form__grid">
+                        <FormField
+                          label="Monto de promesa"
+                          type="number"
+                          value={safeForm.promesa_monto}
+                          onChange={(event) => updateField('promesa_monto', event.target.value)}
+                          required={requierePromesa}
+                          inputProps={{ min: 0, step: '0.01' }}
+                        />
+
+                        <FormField
+                          component={TextField}
+                          label="Fecha promesa"
+                          type="datetime-local"
+                          value={safeForm.promesa_fecha}
+                          onChange={(event) => updateField('promesa_fecha', event.target.value)}
+                          required={requierePromesa}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Box>
+                    </FormSection>
+                  ) : null}
+
+                  {composerMode === 'pago' && !paymentResult ? (
+                    <Alert severity="info">
+                      No existe un resultado preconfigurado para pago. Selecciona manualmente el
+                      resultado correcto antes de registrar la gestión.
+                    </Alert>
+                  ) : null}
+
+                  <FormActions spacing={1.2} className="crm-surface-card__action-row">
+                    <Button variant="ghost" onClick={() => setComposerMode(null)}>
+                      Cerrar
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<Send />}
+                      onClick={handleSubmit}
+                      disabled={savingGestion}
+                    >
+                      Registrar
+                    </Button>
+                  </FormActions>
+                </Stack>
+              </Paper>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Usa una acción rápida para registrar una gestion, levantar promesa o enviar contacto.
+              </Typography>
+            )}
           </Stack>
         </Paper>
       )}
 
-      {showHistory && (
+      {showHistory ? (
         <Paper variant="panel-sm">
-          <Stack spacing={2}>
+          <Stack spacing={1.5}>
             <Stack className="crm-surface-card__header">
               <Stack className="crm-surface-card__header-main">
                 <Typography variant="overline" className="crm-surface-card__eyebrow">
-                  Seguimiento
+                  Bitácora
                 </Typography>
                 <Typography variant="subtitle1" className="crm-surface-card__title">
-                  Historial
+                  Historial operativo
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__subtitle">
-                  Secuencia cronológica de gestiones y resultado de cada interacción.
+                  Vista compacta para escaneo rápido por agente.
                 </Typography>
               </Stack>
             </Stack>
@@ -230,12 +659,6 @@ function GestionesWidget({
               <Typography variant="body2" color="text.secondary">
                 No tienes permisos para ver el historial de gestiones.
               </Typography>
-            ) : gestionesLoading ? (
-              <Stack spacing={1}>
-                <Skeleton width={180} />
-                <Skeleton width="60%" />
-                <Skeleton width="40%" />
-              </Stack>
             ) : gestionesError ? (
               <Alert
                 severity="error"
@@ -243,7 +666,7 @@ function GestionesWidget({
               >
                 {gestionesError}
               </Alert>
-            ) : safeGestiones.length === 0 ? (
+            ) : safeGestiones.length === 0 && !gestionesLoading ? (
               <EmptyState
                 title="Sin gestiones"
                 description="Aun no hay gestiones registradas para este cliente."
@@ -251,57 +674,26 @@ function GestionesWidget({
                 dense
               />
             ) : (
-              <Stack spacing={2} className="crm-surface-card__list">
-                {safeGestiones.map((gestion) => (
-                  <Paper key={gestion.id} variant="outlined" className="crm-surface-card__list-item">
-                    <Stack spacing={1}>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="subtitle2" className="crm-text-strong">
-                          {gestion.resultado_nombre || 'Gestion'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(gestion.fecha_gestion)}
-                        </Typography>
-                      </Stack>
+              <Stack spacing={1}>
+                <BaseTable
+                  dense
+                  columns={historyColumns}
+                  rows={safeGestiones}
+                  loading={gestionesLoading}
+                />
 
-                      <Typography variant="body2">{gestion.comentario}</Typography>
-
-                      <Stack direction="row" spacing={2} className="crm-surface-card__badge-row">
-                        <Chip
-                          label={gestion.resultado_tipo || 'resultado'}
-                          size="small"
-                          variant="outlined"
-                        />
-
-                        {gestion.agente_email && (
-                          <Typography variant="caption" color="text.secondary">
-                            Agente: {gestion.agente_email}
-                          </Typography>
-                        )}
-
-                        {gestion.promesa_monto_detalle && (
-                          <Chip
-                            label={buildPromesaLabel(gestion)}
-                            color="warning"
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </Stack>
-                    </Stack>
-                  </Paper>
-                ))}
-
-                {gestionesHasNext && (
-                  <Button variant="outlined" onClick={() => onLoadMore && onLoadMore()}>
-                    Cargar mas
-                  </Button>
-                )}
+                {gestionesHasNext ? (
+                  <Box className="crm-gestiones__table-actions">
+                    <Button variant="outlined" size="small" onClick={() => onLoadMore && onLoadMore()}>
+                      Cargar mas
+                    </Button>
+                  </Box>
+                ) : null}
               </Stack>
             )}
           </Stack>
         </Paper>
-      )}
+      ) : null}
     </Stack>
   );
 }

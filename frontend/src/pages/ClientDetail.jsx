@@ -1,16 +1,21 @@
 import {
-  AccountBalanceWalletOutlined,
+  Add,
   ArrowBack,
-  DashboardOutlined,
-  PercentOutlined,
-  SupportAgentOutlined,
+  Close,
+  EmailOutlined,
+  PaymentsOutlined,
+  PlaceOutlined,
+  PhoneOutlined,
+  PostAddOutlined,
+  WhatsApp,
 } from '@mui/icons-material';
 import {
   Alert,
   Box,
   Button,
   Chip,
-  Divider,
+  IconButton,
+  LinearProgress,
   Paper,
   Skeleton,
   Stack,
@@ -19,7 +24,7 @@ import {
   Typography
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Can from '../components/Can.jsx';
+import BaseTable from '../components/BaseTable.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import usePermissions from '../hooks/usePermissions.js';
@@ -29,18 +34,25 @@ import { getClientDetail } from '../services/clients.js';
 import { createGestion, listHistorialGestiones, listResultadosGestion } from '../services/gestiones.js';
 import { buildRoutePath, getRouteParams } from '../routes/paths.js';
 import BalancesWidget from '../modules/clientDetail/widgets/BalancesWidget.jsx';
-import ClientInfoWidget from '../modules/clientDetail/widgets/ClientInfoWidget.jsx';
-import ContactsWidget from '../modules/clientDetail/widgets/ContactsWidget.jsx';
 import CreditsWidget from '../modules/clientDetail/widgets/CreditsWidget.jsx';
 import GestionesWidget from '../modules/clientDetail/widgets/GestionesWidget.jsx';
 import NegotiationsWidget from '../modules/clientDetail/widgets/NegotiationsWidget.jsx';
 import PaymentsWidget from '../modules/clientDetail/widgets/PaymentsWidget.jsx';
 
+const currencyFormatter = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN'
+});
+const integerFormatter = new Intl.NumberFormat('es-MX');
+
 const DETAIL_TAB_VALUES = {
-  summary: 'summary',
   gestiones: 'gestiones',
-  financiero: 'financiero',
-  negociaciones: 'negociaciones'
+  pagos: 'pagos',
+  promesas: 'promesas',
+  negociaciones: 'negociaciones',
+  creditos: 'creditos',
+  documentos: 'documentos',
+  historial: 'historial'
 };
 
 const getClientIdFromPath = () => {
@@ -57,21 +69,1215 @@ const getClientIdFromPath = () => {
 const resolveClientFullName = (client) =>
   [client?.nombre, client?.apellido_paterno, client?.apellido_materno].filter(Boolean).join(' ');
 
-const resolvePrimaryPhone = (contacts) => {
-  if (!Array.isArray(contacts?.phones) || contacts.phones.length === 0) {
+const formatAddressValue = (address) => {
+  if (!address) {
     return '';
   }
 
-  return String(contacts.phones[0]?.telefono || '').trim();
+  return [address?.linea1, address?.linea2, address?.ciudad, address?.estado, address?.codigo_postal]
+    .filter(Boolean)
+    .join(', ');
 };
 
-const resolvePrimaryEmail = (contacts) => {
-  if (!Array.isArray(contacts?.emails) || contacts.emails.length === 0) {
+const toNumber = (value) => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatCurrency = (value) => {
+  const parsed = toNumber(value);
+  if (parsed === null) {
+    return '-';
+  }
+
+  return currencyFormatter.format(parsed);
+};
+
+const normalizeStatusLabel = (value) => {
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  if (!normalized) {
     return '';
   }
 
-  return String(contacts.emails[0]?.email || '').trim();
+  if (
+    normalized.includes('pagad') ||
+    normalized.includes('liquidad') ||
+    normalized.includes('cerrad') ||
+    normalized.includes('paid')
+  ) {
+    return 'paid';
+  }
+
+  if (normalized.includes('legal') || normalized.includes('judicial')) {
+    return 'legal';
+  }
+
+  if (
+    normalized.includes('negoci') ||
+    normalized.includes('convenio') ||
+    normalized.includes('reestruct')
+  ) {
+    return 'negotiated';
+  }
+
+  if (
+    normalized.includes('activo') ||
+    normalized.includes('vigente') ||
+    normalized.includes('current') ||
+    normalized.includes('al corriente')
+  ) {
+    return 'active';
+  }
+
+  return '';
 };
+
+const resolveStatusPresentation = (value) => {
+  switch (value) {
+    case 'paid':
+      return { label: 'Paid', color: 'success' };
+    case 'legal':
+      return { label: 'Legal', color: 'error' };
+    case 'negotiated':
+      return { label: 'Negotiated', color: 'warning' };
+    case 'active':
+    default:
+      return { label: 'Active', color: 'primary' };
+  }
+};
+
+const resolvePrimaryBalanceColumn = (balanceColumns) =>
+  (Array.isArray(balanceColumns) ? balanceColumns : []).find((column) => column.es_principal) ||
+  (Array.isArray(balanceColumns) ? balanceColumns[0] : null) ||
+  null;
+
+const resolveOverdueBalanceColumns = (balanceColumns) =>
+  (Array.isArray(balanceColumns) ? balanceColumns : []).filter((column) => {
+    const label = `${column?.label || ''} ${column?.nombre_campo || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    return (
+      label.includes('venc') ||
+      label.includes('atras') ||
+      label.includes('mor') ||
+      label.includes('overdue') ||
+      label.includes('delinq')
+    );
+  });
+
+const resolveCreditBalance = (balancesByCredit, creditId, balanceColumn) => {
+  if (!balanceColumn?.id || !(balancesByCredit instanceof Map)) {
+    return null;
+  }
+
+  const creditBalances = balancesByCredit.get(creditId);
+  if (!(creditBalances instanceof Map)) {
+    return null;
+  }
+
+  return creditBalances.get(balanceColumn.id) || null;
+};
+
+const sumCreditBalances = (credits, balanceColumns, balancesByCredit) =>
+  (credits || []).reduce((sum, credit) => {
+    const creditSum = (balanceColumns || []).reduce((columnSum, column) => {
+      const balance = resolveCreditBalance(balancesByCredit, credit.id, column);
+      return columnSum + (toNumber(balance?.valor) ?? 0);
+    }, 0);
+
+    return sum + creditSum;
+  }, 0);
+
+const resolveLastPaymentDate = (client, credits) => {
+  const candidates = [
+    client?.last_payment_date,
+    client?.ultimo_pago_fecha,
+    client?.fecha_ultimo_pago,
+    ...(credits || []).flatMap((credit) => [
+      credit?.last_payment_date,
+      credit?.ultimo_pago_fecha,
+      credit?.fecha_ultimo_pago,
+      credit?.last_payment_at
+    ])
+  ].filter(Boolean);
+
+  const parsed = candidates
+    .map((value) => new Date(value))
+    .filter((date) => !Number.isNaN(date.getTime()))
+    .sort((a, b) => b.getTime() - a.getTime());
+
+  return parsed[0] || null;
+};
+
+const formatDateShort = (value) => {
+  if (!value) {
+    return '-';
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(date);
+};
+
+const parseDateValue = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const normalizePayments = (payments) =>
+  (Array.isArray(payments) ? payments : [])
+    .map((payment) => ({
+      ...payment,
+      resolvedDate:
+        parseDateValue(
+          payment?.fecha ||
+            payment?.fecha_pago ||
+            payment?.aplicado_en ||
+            payment?.created_at
+        ) || new Date(0),
+      resolvedAmount:
+        toNumber(payment?.monto ?? payment?.importe ?? payment?.monto_pago ?? payment?.monto_detalle) ??
+        0
+    }))
+    .filter((payment) => payment.resolvedAmount > 0)
+    .sort((a, b) => a.resolvedDate.getTime() - b.resolvedDate.getTime());
+
+const buildPromiseTracking = ({ gestiones = [], payments = [] }) => {
+  const normalizedPayments = normalizePayments(payments);
+  const totalPaid = normalizedPayments.reduce((sum, payment) => sum + payment.resolvedAmount, 0);
+  let cumulativePromised = 0;
+
+  const promises = (Array.isArray(gestiones) ? gestiones : [])
+    .filter((item) => item?.promesa_monto_detalle || item?.promesa_fecha_detalle)
+    .map((item, index) => {
+      const amount = toNumber(item.promesa_monto_detalle) ?? 0;
+      const promiseDate =
+        parseDateValue(item.promesa_fecha_detalle) ||
+        parseDateValue(item.promesa_fecha) ||
+        parseDateValue(item.fecha_gestion);
+
+      return {
+        id: item.id || `promise-${index}`,
+        amount,
+        promiseDate,
+        agente: item.agente_email || item.agente_nombre || '-',
+        item,
+        sortDate: promiseDate || parseDateValue(item.fecha_gestion) || new Date(0)
+      };
+    })
+    .sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime())
+    .map((entry) => {
+      cumulativePromised += entry.amount;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let status = { label: 'Pendiente', tone: 'warning' };
+      if (entry.amount > 0 && totalPaid >= cumulativePromised) {
+        status = { label: 'Cumplida', tone: 'success' };
+      } else if (entry.promiseDate && entry.promiseDate.getTime() < today.getTime()) {
+        status = { label: 'Incumplida', tone: 'danger' };
+      }
+
+      return {
+        ...entry,
+        status
+      };
+    });
+
+  const totalPromised = promises.reduce((sum, promise) => sum + promise.amount, 0);
+  const progressValue =
+    totalPromised > 0 ? Math.min((totalPaid / totalPromised) * 100, 100) : 0;
+
+  return {
+    promises: promises.slice().sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime()),
+    totalPromised,
+    totalPaid,
+    progressValue
+  };
+};
+
+const inferClientStatus = ({ client, credits, totalDebt }) => {
+  const candidates = [
+    client?.estado,
+    client?.status,
+    ...(credits || []).flatMap((credit) => [credit?.estado, credit?.status])
+  ]
+    .map(normalizeStatusLabel)
+    .filter(Boolean);
+
+  if (candidates.includes('legal')) {
+    return 'legal';
+  }
+  if (candidates.includes('negotiated')) {
+    return 'negotiated';
+  }
+  if (candidates.includes('paid')) {
+    return 'paid';
+  }
+  if (
+    totalDebt <= 0 &&
+    (credits || []).some((credit) => Array.isArray(credit?.balances) && credit.balances.length > 0)
+  ) {
+    return 'paid';
+  }
+
+  return 'active';
+};
+
+const resolveRiskLevel = ({ status, totalDebt, totalOverdue }) => {
+  if (status === 'legal') {
+    return { label: 'High Delinquency', color: 'error' };
+  }
+
+  if (totalDebt <= 0 || totalOverdue <= 0) {
+    return { label: 'Current', color: 'success' };
+  }
+
+  const ratio = totalDebt > 0 ? totalOverdue / totalDebt : 0;
+  if (ratio >= 0.35) {
+    return { label: 'High Delinquency', color: 'error' };
+  }
+
+  return { label: 'Risk', color: 'warning' };
+};
+
+const normalizeComparableText = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const resolveOverdueDaysColumns = (balanceColumns) =>
+  (Array.isArray(balanceColumns) ? balanceColumns : []).filter((column) => {
+    const text = normalizeComparableText(
+      `${column?.label || ''} ${column?.nombre_campo || ''}`
+    );
+
+    const mentionsDays = text.includes('dia') || text.includes('days');
+    const mentionsDelinquency =
+      text.includes('atras') ||
+      text.includes('mora') ||
+      text.includes('venc') ||
+      text.includes('overdue') ||
+      text.includes('delinq');
+
+    return mentionsDays && mentionsDelinquency;
+  });
+
+const resolveMaxBalanceMetric = (credits, balanceColumns, balancesByCredit) => {
+  let maxValue = null;
+
+  (credits || []).forEach((credit) => {
+    (balanceColumns || []).forEach((column) => {
+      const balance = resolveCreditBalance(balancesByCredit, credit.id, column);
+      const numeric = toNumber(balance?.valor);
+
+      if (numeric === null) {
+        return;
+      }
+
+      maxValue = maxValue === null ? numeric : Math.max(maxValue, numeric);
+    });
+  });
+
+  return maxValue;
+};
+
+const resolveDaysOverdue = ({
+  credits,
+  balanceColumns,
+  balancesByCredit,
+  lastPaymentDate,
+  totalOverdue
+}) => {
+  const explicitDays = resolveMaxBalanceMetric(
+    credits,
+    resolveOverdueDaysColumns(balanceColumns),
+    balancesByCredit
+  );
+
+  if (explicitDays !== null) {
+    return Math.max(0, Math.round(explicitDays));
+  }
+
+  if (totalOverdue <= 0) {
+    return 0;
+  }
+
+  const lastPayment = parseDateValue(lastPaymentDate);
+  if (!lastPayment) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  lastPayment.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.round((today.getTime() - lastPayment.getTime()) / 86400000);
+  return Math.max(diffDays, 0);
+};
+
+const resolveContactability = (contacts) => {
+  const phones = (Array.isArray(contacts?.phones) ? contacts.phones : []).filter((item) =>
+    Boolean(String(item?.telefono || '').trim())
+  ).length;
+  const emails = (Array.isArray(contacts?.emails) ? contacts.emails : []).filter((item) =>
+    Boolean(String(item?.email || '').trim())
+  ).length;
+  const addresses = (Array.isArray(contacts?.addresses) ? contacts.addresses : []).filter(
+    (item) => Boolean(formatAddressValue(item))
+  ).length;
+
+  const score = Math.min(
+    100,
+    phones * 40 + emails * 25 + addresses * 20 + (phones > 0 && emails > 0 ? 15 : 0)
+  );
+
+  if (score >= 80) {
+    return { label: 'Contacto Alto', tone: 'success', score };
+  }
+
+  if (score >= 45) {
+    return { label: 'Contacto Medio', tone: 'warning', score };
+  }
+
+  return {
+    label: score > 0 ? 'Contacto Bajo' : 'Sin contacto',
+    tone: 'danger',
+    score
+  };
+};
+
+const resolveCollectionScore = ({ status, totalDebt, totalOverdue, contactability, daysOverdue }) => {
+  if (totalDebt <= 0 || totalOverdue <= 0) {
+    return { label: 'Riesgo Bajo', tone: 'success' };
+  }
+
+  const ratio = totalDebt > 0 ? totalOverdue / totalDebt : 0;
+
+  if (
+    status === 'legal' ||
+    ratio >= 0.35 ||
+    (Number.isFinite(daysOverdue) && daysOverdue >= 90)
+  ) {
+    return { label: 'Riesgo Alto', tone: 'danger' };
+  }
+
+  if (
+    ratio >= 0.12 ||
+    (Number.isFinite(daysOverdue) && daysOverdue >= 30) ||
+    contactability.score < 45
+  ) {
+    return { label: 'Riesgo Medio', tone: 'warning' };
+  }
+
+  return { label: 'Riesgo Bajo', tone: 'success' };
+};
+
+const normalizePhoneForAction = (value) => String(value || '').replace(/\D/g, '');
+
+const isEditableTarget = (target) => {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (target.isContentEditable) {
+    return true;
+  }
+
+  return Boolean(
+    target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')
+  );
+};
+
+function ClientHeader({
+  loading,
+  isReady,
+  client,
+  clientId,
+  clientFullName,
+  contacts,
+  credits,
+  balanceColumns,
+  portafolioId,
+  primaryBalanceColumn,
+  balancesByCredit,
+  onBack,
+  onCopyValue
+}) {
+  const phoneItems = useMemo(
+    () => (Array.isArray(contacts?.phones) ? contacts.phones : []).slice(0, 3),
+    [contacts?.phones]
+  );
+  const hiddenPhoneCount = Math.max((contacts?.phones?.length || 0) - phoneItems.length, 0);
+  const emailItems = useMemo(
+    () => (Array.isArray(contacts?.emails) ? contacts.emails : []).slice(0, 3),
+    [contacts?.emails]
+  );
+  const hiddenEmailCount = Math.max((contacts?.emails?.length || 0) - emailItems.length, 0);
+  const addressItems = useMemo(
+    () => (Array.isArray(contacts?.addresses) ? contacts.addresses : []).slice(0, 3),
+    [contacts?.addresses]
+  );
+  const hiddenAddressCount = Math.max(
+    (contacts?.addresses?.length || 0) - addressItems.length,
+    0
+  );
+  const totalCredits = credits.length;
+  const overdueBalanceColumns = useMemo(
+    () => resolveOverdueBalanceColumns(balanceColumns),
+    [balanceColumns]
+  );
+
+  const totalDebt = useMemo(() => {
+    if (!primaryBalanceColumn) {
+      return 0;
+    }
+
+    return sumCreditBalances(credits, [primaryBalanceColumn], balancesByCredit);
+  }, [balancesByCredit, credits, primaryBalanceColumn]);
+
+  const totalOverdue = useMemo(
+    () => sumCreditBalances(credits, overdueBalanceColumns, balancesByCredit),
+    [balancesByCredit, credits, overdueBalanceColumns]
+  );
+
+  const lastPaymentDate = useMemo(
+    () => resolveLastPaymentDate(client, credits),
+    [client, credits]
+  );
+  const daysOverdue = useMemo(
+    () =>
+      resolveDaysOverdue({
+        credits,
+        balanceColumns,
+        balancesByCredit,
+        lastPaymentDate,
+        totalOverdue
+      }),
+    [balanceColumns, balancesByCredit, credits, lastPaymentDate, totalOverdue]
+  );
+
+  const status = useMemo(
+    () => inferClientStatus({ client, credits, totalDebt }),
+    [client, credits, totalDebt]
+  );
+  const statusPresentation = resolveStatusPresentation(status);
+  const contactability = useMemo(() => resolveContactability(contacts), [contacts]);
+  const collectionScore = useMemo(
+    () =>
+      resolveCollectionScore({
+        status,
+        totalDebt,
+        totalOverdue,
+        contactability,
+        daysOverdue
+      }),
+    [contactability, daysOverdue, status, totalDebt, totalOverdue]
+  );
+  const daysOverdueDisplay =
+    daysOverdue === null ? 'N/D' : `${integerFormatter.format(daysOverdue)} días`;
+
+  if (loading && !isReady) {
+    return (
+      <Paper variant="panel" className="crm-client-detail__header-shell">
+        <Box className="crm-client-detail__header-grid">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Paper key={index} variant="outlined" className="crm-client-detail__header-card">
+              <Stack spacing={1.1}>
+                <Skeleton variant="text" width="34%" />
+                <Skeleton variant="text" width="68%" height={34} />
+                <Skeleton variant="text" width="48%" />
+                <Box className="crm-client-detail__header-summary-grid">
+                  {Array.from({ length: 4 }).map((__, itemIndex) => (
+                    <Box key={itemIndex} className="crm-client-detail__header-summary-item">
+                      <Skeleton variant="text" width="56%" />
+                      <Skeleton variant="text" width="74%" />
+                    </Box>
+                  ))}
+                </Box>
+              </Stack>
+            </Paper>
+          ))}
+        </Box>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper variant="panel" className="crm-client-detail__header-shell">
+      <Box className="crm-client-detail__header-grid">
+        <Paper
+          variant="outlined"
+          className="crm-client-detail__header-card crm-client-detail__header-card--identity"
+        >
+          <Stack className="crm-client-detail__header-card-head" direction="row" spacing={1}>
+            <Stack className="crm-client-detail__header-card-copy">
+              <Typography variant="h5" className="crm-client-detail__header-title">
+                {clientFullName || client?.nombre || 'Cliente sin nombre'}
+              </Typography>
+              <Stack direction="row" spacing={0.7} useFlexGap flexWrap="wrap">
+                <Chip
+                  size="small"
+                  label={statusPresentation.label}
+                  color={statusPresentation.color}
+                  variant="outlined"
+                />
+              </Stack>
+            </Stack>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack fontSize="small" />}
+              onClick={onBack}
+              className="crm-client-detail__back-button"
+            >
+              Volver
+            </Button>
+          </Stack>
+
+          <Box className="crm-client-detail__header-summary-grid">
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Client Number
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client?.numero_cliente || client?.id || clientId || '-'}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Portfolio
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {portafolioId || '-'}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                RFC
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client?.rfc || '-'}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Status
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {statusPresentation.label}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+
+        <Paper variant="outlined" className="crm-client-detail__header-card">
+          <Stack className="crm-client-detail__header-card-head">
+            <Typography variant="subtitle1" className="crm-client-detail__header-section-title">
+              Contact Information
+            </Typography>
+          </Stack>
+
+          <Stack className="crm-client-detail__contact-groups">
+            <Stack className="crm-client-detail__contact-group">
+              <Typography variant="caption" className="crm-client-detail__contact-group-title">
+                Phones
+              </Typography>
+              <Stack className="crm-client-detail__contact-card-list">
+                {phoneItems.length === 0 ? (
+                  <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
+                    <Typography variant="body2" color="text.secondary">
+                      No phones
+                    </Typography>
+                  </Box>
+                ) : (
+                  phoneItems.map((item, index) => {
+                    const rawPhone = String(item?.telefono || '').trim();
+                    const actionPhone = normalizePhoneForAction(rawPhone);
+                    const whatsappHref = actionPhone ? `https://wa.me/${actionPhone}` : undefined;
+
+                    return (
+                      <Box
+                        key={item?.id || `${rawPhone}-${index}`}
+                        className="crm-client-detail__contact-card"
+                      >
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+                          <PhoneOutlined
+                            fontSize="small"
+                            className="crm-client-detail__contact-icon"
+                          />
+                          <Typography variant="body2" className="crm-client-detail__contact-card-value">
+                            {rawPhone || '-'}
+                          </Typography>
+                        </Stack>
+                        <Stack
+                          direction="row"
+                          spacing={0.35}
+                          useFlexGap
+                          className="crm-client-detail__contact-card-actions"
+                        >
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            component="a"
+                            href={actionPhone ? `tel:${actionPhone}` : undefined}
+                            disabled={!actionPhone}
+                            className="crm-client-detail__contact-action"
+                          >
+                            Call
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            component="a"
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            disabled={!whatsappHref}
+                            className="crm-client-detail__contact-action"
+                          >
+                            WhatsApp
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            disabled={!rawPhone}
+                            onClick={() => onCopyValue && onCopyValue(rawPhone, 'Telefono copiado')}
+                            className="crm-client-detail__contact-action"
+                          >
+                            Copy
+                          </Button>
+                        </Stack>
+                      </Box>
+                    );
+                  })
+                )}
+                {hiddenPhoneCount > 0 && (
+                  <Typography variant="caption" className="crm-client-detail__contact-more">
+                    +{hiddenPhoneCount} more
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+
+            <Stack className="crm-client-detail__contact-group">
+              <Typography variant="caption" className="crm-client-detail__contact-group-title">
+                Emails
+              </Typography>
+              <Stack className="crm-client-detail__contact-card-list">
+                {emailItems.length === 0 ? (
+                  <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
+                    <Typography variant="body2" color="text.secondary">
+                      No emails
+                    </Typography>
+                  </Box>
+                ) : (
+                  emailItems.map((item, index) => {
+                    const email = String(item?.email || '').trim();
+
+                    return (
+                      <Box
+                        key={item?.id || `${email}-${index}`}
+                        className="crm-client-detail__contact-card"
+                      >
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+                          <EmailOutlined
+                            fontSize="small"
+                            className="crm-client-detail__contact-icon"
+                          />
+                          <Typography variant="body2" className="crm-client-detail__contact-card-value">
+                            {email || '-'}
+                          </Typography>
+                        </Stack>
+                        <Stack
+                          direction="row"
+                          spacing={0.35}
+                          useFlexGap
+                          className="crm-client-detail__contact-card-actions"
+                        >
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            component="a"
+                            href={email ? `mailto:${email}` : undefined}
+                            disabled={!email}
+                            className="crm-client-detail__contact-action"
+                          >
+                            Email
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            disabled={!email}
+                            onClick={() => onCopyValue && onCopyValue(email, 'Email copiado')}
+                            className="crm-client-detail__contact-action"
+                          >
+                            Copy
+                          </Button>
+                        </Stack>
+                      </Box>
+                    );
+                  })
+                )}
+                {hiddenEmailCount > 0 && (
+                  <Typography variant="caption" className="crm-client-detail__contact-more">
+                    +{hiddenEmailCount} more
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+
+            <Stack className="crm-client-detail__contact-group">
+              <Typography variant="caption" className="crm-client-detail__contact-group-title">
+                Addresses
+              </Typography>
+              <Stack className="crm-client-detail__contact-card-list">
+                {addressItems.length === 0 ? (
+                  <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
+                    <Typography variant="body2" color="text.secondary">
+                      No addresses
+                    </Typography>
+                  </Box>
+                ) : (
+                  addressItems.map((item, index) => {
+                    const addressValue = formatAddressValue(item);
+
+                    return (
+                      <Box
+                        key={item?.id || `${addressValue}-${index}`}
+                        className="crm-client-detail__contact-card"
+                      >
+                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+                          <PlaceOutlined
+                            fontSize="small"
+                            className="crm-client-detail__contact-icon"
+                          />
+                          <Typography variant="body2" className="crm-client-detail__contact-card-value">
+                            {addressValue || '-'}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  })
+                )}
+                {hiddenAddressCount > 0 && (
+                  <Typography variant="caption" className="crm-client-detail__contact-more">
+                    +{hiddenAddressCount} more
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+          </Stack>
+        </Paper>
+
+        <Paper variant="outlined" className="crm-client-detail__header-card">
+          <Stack className="crm-client-detail__header-card-head">
+            <Typography variant="subtitle1" className="crm-client-detail__header-section-title">
+              Credit Summary
+            </Typography>
+            <Typography variant="body2" className="crm-client-detail__header-section-subtitle">
+              Collections overview for fast operational decisions.
+            </Typography>
+          </Stack>
+
+          <Box className="crm-client-detail__header-summary-grid crm-client-detail__header-summary-grid--compact">
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Total Credits
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {totalCredits}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Total Debt
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {formatCurrency(totalDebt)}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Total Overdue
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {formatCurrency(totalOverdue)}
+              </Typography>
+            </Box>
+            <Box className="crm-client-detail__header-summary-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
+                Last Payment
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {formatDateShort(lastPaymentDate)}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box className="crm-client-detail__indicator-grid">
+            <Box
+              className={[
+                'crm-client-detail__indicator-card',
+                `crm-client-detail__indicator-card--${
+                  daysOverdue !== null && daysOverdue >= 90
+                    ? 'danger'
+                    : daysOverdue !== null && daysOverdue >= 30
+                      ? 'warning'
+                      : 'success'
+                }`
+              ].join(' ')}
+            >
+              <Typography variant="caption" className="crm-client-detail__indicator-label">
+                Days overdue
+              </Typography>
+              <Typography variant="body2" className="crm-client-detail__indicator-value">
+                {daysOverdueDisplay}
+              </Typography>
+            </Box>
+
+            <Box
+              className={[
+                'crm-client-detail__indicator-card',
+                `crm-client-detail__indicator-card--${collectionScore.tone}`
+              ].join(' ')}
+            >
+              <Typography variant="caption" className="crm-client-detail__indicator-label">
+                Collection score
+              </Typography>
+              <Typography variant="body2" className="crm-client-detail__indicator-value">
+                {collectionScore.label}
+              </Typography>
+            </Box>
+
+            <Box
+              className={[
+                'crm-client-detail__indicator-card',
+                `crm-client-detail__indicator-card--${contactability.tone}`
+              ].join(' ')}
+            >
+              <Typography variant="caption" className="crm-client-detail__indicator-label">
+                Contactability
+              </Typography>
+              <Typography variant="body2" className="crm-client-detail__indicator-value">
+                {contactability.label}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
+    </Paper>
+  );
+}
+
+function ClientPromisesPanel({
+  canViewGestiones,
+  gestiones = [],
+  payments = [],
+  loading = false,
+  error = '',
+  onErrorClear,
+  hasNext = false,
+  onLoadMore
+}) {
+  const { promises, totalPromised, totalPaid, progressValue } = useMemo(
+    () => buildPromiseTracking({ gestiones, payments }),
+    [gestiones, payments]
+  );
+  const promiseColumns = useMemo(
+    () => [
+      {
+        id: 'fecha_promesa',
+        label: 'Fecha promesa',
+        minWidth: 140,
+        render: (row) => formatDateShort(row.promiseDate)
+      },
+      {
+        id: 'monto',
+        label: 'Monto',
+        minWidth: 130,
+        align: 'right',
+        render: (row) => formatCurrency(row.amount)
+      },
+      {
+        id: 'agente',
+        label: 'Agente',
+        minWidth: 170,
+        render: (row) => row.agente
+      },
+      {
+        id: 'estado',
+        label: 'Estado',
+        minWidth: 140,
+        render: (row) => (
+          <Chip
+            size="small"
+            label={row.status.label}
+            className={[
+              'crm-promises__badge',
+              `crm-promises__badge--${row.status.tone}`
+            ].join(' ')}
+          />
+        )
+      }
+    ],
+    []
+  );
+
+  return (
+    <Paper variant="panel-sm">
+      <Stack spacing={1.6}>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Seguimiento
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              Promesas de pago
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Compromisos capturados en gestiones recientes para seguimiento operativo.
+            </Typography>
+          </Stack>
+        </Stack>
+
+        {!canViewGestiones ? (
+          <Typography variant="body2" color="text.secondary">
+            No tienes permisos para consultar promesas registradas.
+          </Typography>
+        ) : loading ? (
+          <Stack spacing={1}>
+            <Skeleton width={180} />
+            <Skeleton width="60%" />
+            <Skeleton width="40%" />
+          </Stack>
+        ) : error ? (
+          <Alert severity="error" onClose={() => onErrorClear && onErrorClear()}>
+            {error}
+          </Alert>
+        ) : promises.length === 0 ? (
+          <EmptyState
+            title="Sin promesas"
+            description="Aun no existen promesas de pago registradas para este cliente."
+            icon={null}
+            dense
+          />
+        ) : (
+          <Stack spacing={1.2}>
+            <Paper variant="outlined" className="crm-promises__progress-card">
+              <Stack spacing={1.1}>
+                <Stack direction="row" spacing={1.2} className="crm-promises__summary-grid">
+                  <Box className="crm-promises__summary-item">
+                    <Typography variant="caption" className="crm-surface-card__meta-label">
+                      Total promised
+                    </Typography>
+                    <Typography variant="body2" className="crm-surface-card__meta-value">
+                      {formatCurrency(totalPromised)}
+                    </Typography>
+                  </Box>
+                  <Box className="crm-promises__summary-item">
+                    <Typography variant="caption" className="crm-surface-card__meta-label">
+                      Total paid
+                    </Typography>
+                    <Typography variant="body2" className="crm-surface-card__meta-value">
+                      {formatCurrency(totalPaid)}
+                    </Typography>
+                  </Box>
+                  <Box className="crm-promises__summary-item">
+                    <Typography variant="caption" className="crm-surface-card__meta-label">
+                      Coverage
+                    </Typography>
+                    <Typography variant="body2" className="crm-surface-card__meta-value">
+                      {Math.round(progressValue)}%
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Stack spacing={0.45}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    spacing={1}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Total promised vs paid
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatCurrency(totalPaid)} / {formatCurrency(totalPromised)}
+                    </Typography>
+                  </Stack>
+                  <LinearProgress
+                    variant="determinate"
+                    value={progressValue}
+                    className="crm-promises__progress"
+                  />
+                </Stack>
+              </Stack>
+            </Paper>
+
+            <BaseTable dense columns={promiseColumns} rows={promises} loading={loading} />
+
+            {hasNext ? (
+              <Box className="crm-promises__table-actions">
+                <Button variant="outlined" size="small" onClick={() => onLoadMore && onLoadMore()}>
+                  Cargar mas
+                </Button>
+              </Box>
+            ) : null}
+          </Stack>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
+function ClientDocumentsPanel() {
+  return (
+    <Paper variant="panel-sm">
+      <Stack spacing={2}>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Expediente
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              Documentos
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Esta vista conserva el espacio operativo para documentos cuando el expediente los
+              tenga disponibles.
+            </Typography>
+          </Stack>
+        </Stack>
+
+        <EmptyState
+          title="Sin documentos"
+          description="No hay documentos asociados a este cliente en la vista actual."
+          icon={null}
+          dense
+        />
+      </Stack>
+    </Paper>
+  );
+}
+
+function ClientOperationsTabs({ activeTab, onTabChange, error, onErrorClear, tabs = [] }) {
+  return (
+    <Paper variant="panel" className="crm-client-detail__operations-shell">
+      <Box className="crm-client-detail__tabs-shell">
+        <Tabs
+          value={activeTab}
+          onChange={onTabChange}
+          variant="scrollable"
+          className="crm-client-detail__tabs"
+        >
+          {tabs.map((tab) => (
+            <Tab key={tab.value} value={tab.value} label={tab.label} />
+          ))}
+        </Tabs>
+      </Box>
+
+      <Box className="crm-client-detail__operations-content">
+        <Stack spacing={1.2}>
+          {error && (
+            <Alert severity="error" onClose={onErrorClear}>
+            {error}
+          </Alert>
+        )}
+
+          {tabs.find((tab) => tab.value === activeTab)?.content || null}
+        </Stack>
+      </Box>
+    </Paper>
+  );
+}
+
+function ClientFloatingActions({
+  open = false,
+  onToggle,
+  onCall,
+  onWhatsapp,
+  onNewGestion,
+  onRegisterPayment,
+  hasPhone = false
+}) {
+  const actions = [
+    {
+      id: 'call',
+      label: 'Call',
+      icon: <PhoneOutlined fontSize="small" />,
+      onClick: onCall,
+      disabled: !hasPhone || typeof onCall !== 'function'
+    },
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      icon: <WhatsApp fontSize="small" />,
+      onClick: onWhatsapp,
+      disabled: !hasPhone || typeof onWhatsapp !== 'function'
+    },
+    {
+      id: 'gestion',
+      label: 'Nueva gestión',
+      icon: <PostAddOutlined fontSize="small" />,
+      onClick: onNewGestion,
+      disabled: typeof onNewGestion !== 'function'
+    },
+    {
+      id: 'payment',
+      label: 'Registrar pago',
+      icon: <PaymentsOutlined fontSize="small" />,
+      onClick: onRegisterPayment,
+      disabled: typeof onRegisterPayment !== 'function'
+    }
+  ];
+
+  return (
+    <Box className="crm-client-detail__floating-actions">
+      {open ? (
+        <Stack className="crm-client-detail__floating-actions-menu">
+          {actions.map((action) => (
+            <Stack key={action.id} direction="row" className="crm-client-detail__floating-action-row">
+              <Box className="crm-client-detail__floating-action-label">{action.label}</Box>
+              <IconButton
+                onClick={action.onClick}
+                disabled={action.disabled}
+                className="crm-client-detail__floating-action-button"
+                aria-label={action.label}
+              >
+                {action.icon}
+              </IconButton>
+            </Stack>
+          ))}
+        </Stack>
+      ) : null}
+
+      <IconButton
+        onClick={onToggle}
+        className="crm-client-detail__floating-action-button crm-client-detail__floating-action-button--primary"
+        aria-label={open ? 'Close quick actions' : 'Open quick actions'}
+      >
+        {open ? <Close fontSize="small" /> : <Add fontSize="small" />}
+      </IconButton>
+    </Box>
+  );
+}
 
 export default function ClientDetail({ routeParams }) {
   const { hasPermission } = usePermissions();
@@ -118,8 +1324,10 @@ export default function ClientDetail({ routeParams }) {
   const [gestionesHasNext, setGestionesHasNext] = useState(false);
   const gestionesRowsPerPage = 20;
 
-  const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.summary);
-  const emptyPayments = useMemo(() => [], []);
+  const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.gestiones);
+  const [floatingActionsOpen, setFloatingActionsOpen] = useState(false);
+  const [gestionesQuickAction, setGestionesQuickAction] = useState(null);
+  const [gestionesFocusReturnToken, setGestionesFocusReturnToken] = useState(null);
 
   useEffect(() => {
     if (!canRead) {
@@ -165,15 +1373,10 @@ export default function ClientDetail({ routeParams }) {
   }, [canRead, clientId]);
 
   useEffect(() => {
-    if (!canRead && activeTab !== DETAIL_TAB_VALUES.summary) {
-      setActiveTab(DETAIL_TAB_VALUES.summary);
-      return;
+    if (!canRead && activeTab !== DETAIL_TAB_VALUES.gestiones) {
+      setActiveTab(DETAIL_TAB_VALUES.gestiones);
     }
-
-    if (!canReadNegotiations && activeTab === DETAIL_TAB_VALUES.negociaciones) {
-      setActiveTab(DETAIL_TAB_VALUES.summary);
-    }
-  }, [activeTab, canRead, canReadNegotiations]);
+  }, [activeTab, canRead]);
 
   const loadGestiones = useCallback(
     async (opts = {}) => {
@@ -234,20 +1437,20 @@ export default function ClientDetail({ routeParams }) {
   const client = detail?.client;
   const credits = detail?.credits || [];
   const contacts = detail?.contacts || { phones: [], emails: [], addresses: [] };
+  const payments = useMemo(
+    () =>
+      Array.isArray(detail?.payments)
+        ? detail.payments
+        : Array.isArray(detail?.pagos)
+          ? detail.pagos
+          : [],
+    [detail]
+  );
   const isReady = Boolean(detail);
   const clientFullName = resolveClientFullName(client);
-  const primaryPhone = resolvePrimaryPhone(contacts);
-  const primaryEmail = resolvePrimaryEmail(contacts);
-
-  const detailMetrics = useMemo(
-    () => [
-      { id: 'portfolio', label: `Portafolio ${portafolioId || '-'}` },
-      { id: 'credits', label: `${credits.length} creditos` },
-      { id: 'phones', label: `${contacts.phones?.length || 0} telefonos` },
-      { id: 'emails', label: `${contacts.emails?.length || 0} emails` },
-      { id: 'addresses', label: `${contacts.addresses?.length || 0} direcciones` }
-    ],
-    [contacts.addresses?.length, contacts.emails?.length, contacts.phones?.length, credits.length, portafolioId]
+  const primaryContactPhone = useMemo(
+    () => String(contacts?.phones?.[0]?.telefono || '').trim(),
+    [contacts]
   );
 
   const selectedResultado = resultados.find(
@@ -360,6 +1563,8 @@ export default function ClientDetail({ routeParams }) {
       setSavingGestion(true);
       await createGestion(payload);
       notify('Gestion registrada', { severity: 'success' });
+      setActiveTab(DETAIL_TAB_VALUES.gestiones);
+      setGestionesFocusReturnToken(Date.now());
 
       if (canViewGestiones) {
         setGestionesPage(0);
@@ -406,6 +1611,146 @@ export default function ClientDetail({ routeParams }) {
     setActiveTab(nextTab);
   }, []);
 
+  const handleToggleFloatingActions = useCallback(() => {
+    setFloatingActionsOpen((prev) => !prev);
+  }, []);
+
+  const handleQuickNewGestion = useCallback(() => {
+    if (!canLog) {
+      setActiveTab(DETAIL_TAB_VALUES.gestiones);
+      setGestionesFocusReturnToken(Date.now());
+      return;
+    }
+
+    const token = Date.now();
+    setActiveTab(DETAIL_TAB_VALUES.gestiones);
+    setGestionesQuickAction({ mode: 'gestion', token });
+    setFloatingActionsOpen(false);
+  }, [canLog]);
+
+  const handleQuickRegisterPayment = useCallback(() => {
+    if (!canLog) {
+      setActiveTab(DETAIL_TAB_VALUES.gestiones);
+      setGestionesFocusReturnToken(Date.now());
+      return;
+    }
+
+    const token = Date.now();
+    setActiveTab(DETAIL_TAB_VALUES.gestiones);
+    setGestionesQuickAction({ mode: 'pago', token });
+    setFloatingActionsOpen(false);
+  }, [canLog]);
+
+  const handleQuickCall = useCallback(() => {
+    const phone = normalizePhoneForAction(primaryContactPhone);
+
+    if (!phone || typeof window === 'undefined') {
+      notify('No hay un telefono disponible para llamar.', { severity: 'warning' });
+      return;
+    }
+
+    setActiveTab(DETAIL_TAB_VALUES.gestiones);
+    setGestionesFocusReturnToken(Date.now());
+    setFloatingActionsOpen(false);
+    window.open(`tel:${phone}`, '_self');
+  }, [notify, primaryContactPhone]);
+
+  const handleBackToClients = useCallback(() => {
+    navigate(
+      portafolioId
+        ? buildRoutePath('clients', {}, { portafolio_id: portafolioId })
+        : buildRoutePath('clients')
+    );
+  }, [navigate, portafolioId]);
+
+  const primaryBalanceColumn = useMemo(
+    () => resolvePrimaryBalanceColumn(balanceColumns),
+    [balanceColumns]
+  );
+  const remainingBalance = useMemo(() => {
+    if (!primaryBalanceColumn) {
+      return null;
+    }
+
+    return sumCreditBalances(credits, [primaryBalanceColumn], balancesByCredit);
+  }, [balancesByCredit, credits, primaryBalanceColumn]);
+
+  const handleCopyValue = useCallback(
+    async (value, message = 'Valor copiado') => {
+      if (!value || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(String(value));
+        notify(message, { severity: 'success' });
+      } catch {
+        notify('No fue posible copiar el valor.', { severity: 'error' });
+      }
+    },
+    [notify]
+  );
+
+  const handleQuickWhatsapp = useCallback(() => {
+    const phone = normalizePhoneForAction(primaryContactPhone);
+
+    if (!phone || typeof window === 'undefined') {
+      notify('No hay un telefono disponible para WhatsApp.', { severity: 'warning' });
+      return;
+    }
+
+    setActiveTab(DETAIL_TAB_VALUES.gestiones);
+    setGestionesFocusReturnToken(Date.now());
+    setFloatingActionsOpen(false);
+    window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
+  }, [notify, primaryContactPhone]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !canRead) {
+      return undefined;
+    }
+
+    const handleKeydown = (event) => {
+      if (
+        event.defaultPrevented ||
+        event.repeat ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey
+      ) {
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      const key = String(event.key || '').toLowerCase();
+
+      if (key === 'g') {
+        event.preventDefault();
+        handleQuickNewGestion();
+        return;
+      }
+
+      if (key === 'p') {
+        event.preventDefault();
+        handleQuickRegisterPayment();
+        return;
+      }
+
+      if (key === 'w') {
+        event.preventDefault();
+        handleQuickWhatsapp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [canRead, handleQuickNewGestion, handleQuickRegisterPayment, handleQuickWhatsapp]);
+
   if (!canRead) {
     return (
       <Page>
@@ -430,302 +1775,201 @@ export default function ClientDetail({ routeParams }) {
     );
   }
 
-  const breadcrumbs = [
-    { label: 'Inicio', href: buildRoutePath('dashboard') },
-    {
-      label: 'Clientes',
-      href: portafolioId
-        ? buildRoutePath('clients', {}, { portafolio_id: portafolioId })
-        : buildRoutePath('clients')
-    },
-    { label: 'Detalle' }
-  ];
-
   return (
     <Page>
-      <PageHeader
-        breadcrumbs={breadcrumbs}
-        title="Detalle del cliente"
-        subtitle={portafolioId ? `Portafolio ${portafolioId}` : 'Vista integral del cliente'}
-        actions={
-          <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
-            <Can permission="clients.read">
-              <Button
-                variant="outlined"
-                startIcon={<ArrowBack />}
-                onClick={() =>
-                  navigate(
-                    portafolioId
-                      ? buildRoutePath('clients', {}, { portafolio_id: portafolioId })
-                      : buildRoutePath('clients')
-                  )
-                }
-              >
-                Volver
-              </Button>
-            </Can>
-          </Stack>
-        }
-      />
-
       <PageContent>
-        {error && (
-          <Alert severity="error" onClose={() => setError('')}>
-            {error}
-          </Alert>
-        )}
-
-        <Paper variant="panel" className="crm-client-detail__hero">
-          {loading && !isReady ? (
-            <Stack spacing={2}>
-              <Skeleton variant="text" width="28%" height={28} />
-              <Skeleton variant="text" width="56%" height={42} />
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={index} variant="rounded" width={120} height={26} />
-                ))}
-              </Stack>
-              <Divider />
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <Box key={index} className="crm-client-detail__hero-meta-item">
-                    <Skeleton variant="text" width={90} />
-                    <Skeleton variant="text" width={180} />
-                  </Box>
-                ))}
-              </Stack>
-            </Stack>
-          ) : (
-            <Stack spacing={2.25}>
-              <Stack
-                direction={{ xs: 'column', lg: 'row' }}
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', lg: 'center' }}
-                spacing={2}
-                className="crm-client-detail__hero-header"
-              >
-                <Stack spacing={0.5} className="crm-client-detail__hero-copy">
-                  <Typography variant="overline" className="crm-label">
-                    Ficha del cliente
-                  </Typography>
-                  <Typography variant="h4" className="crm-client-detail__hero-title">
-                    {clientFullName || client?.nombre || 'Cliente sin nombre'}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    className="crm-client-detail__hero-subtitle"
-                  >
-                    {client?.numero_cliente
-                      ? `No. cliente ${client.numero_cliente}`
-                      : `ID cliente ${client?.id || clientId || '-'}`}
-                  </Typography>
-                </Stack>
-
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  flexWrap="wrap"
-                  useFlexGap
-                  className="crm-client-detail__hero-chip-row"
-                >
-                  {detailMetrics.map((metric) => (
-                    <Chip key={metric.id} label={metric.label} variant="outlined" />
-                  ))}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              <Box className="crm-client-detail__hero-meta">
-                <Box className="crm-client-detail__hero-meta-item">
-                  <Typography variant="caption" color="text.secondary">
-                    RFC
-                  </Typography>
-                  <Typography variant="body2">{client?.rfc || '-'}</Typography>
-                </Box>
-                <Box className="crm-client-detail__hero-meta-item">
-                  <Typography variant="caption" color="text.secondary">
-                    CURP
-                  </Typography>
-                  <Typography variant="body2">{client?.curp || '-'}</Typography>
-                </Box>
-                <Box className="crm-client-detail__hero-meta-item">
-                  <Typography variant="caption" color="text.secondary">
-                    Telefono principal
-                  </Typography>
-                  <Typography variant="body2">{primaryPhone || '-'}</Typography>
-                </Box>
-                <Box className="crm-client-detail__hero-meta-item">
-                  <Typography variant="caption" color="text.secondary">
-                    Email principal
-                  </Typography>
-                  <Typography variant="body2">{primaryEmail || '-'}</Typography>
-                </Box>
-                <Box className="crm-client-detail__hero-meta-item">
-                  <Typography variant="caption" color="text.secondary">
-                    ID publico
-                  </Typography>
-                  <Typography variant="body2">{client?.id || '-'}</Typography>
-                </Box>
-              </Box>
-            </Stack>
-          )}
-        </Paper>
-
-        <Paper variant="panel-sm" className="crm-client-detail__tabs-shell">
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            className="crm-client-detail__tabs"
-          >
-            <Tab
-              icon={<DashboardOutlined fontSize="small" />}
-              iconPosition="start"
-              value={DETAIL_TAB_VALUES.summary}
-              label="Resumen"
-            />
-            <Tab
-              icon={<SupportAgentOutlined fontSize="small" />}
-              iconPosition="start"
-              value={DETAIL_TAB_VALUES.gestiones}
-              label="Gestiones"
-            />
-            <Tab
-              icon={<AccountBalanceWalletOutlined fontSize="small" />}
-              iconPosition="start"
-              value={DETAIL_TAB_VALUES.financiero}
-              label="Financiero"
-            />
-            {canReadNegotiations && (
-              <Tab
-                icon={<PercentOutlined fontSize="small" />}
-                iconPosition="start"
-                value={DETAIL_TAB_VALUES.negociaciones}
-                label="Negociaciones"
+        <Box className="crm-client-detail-page">
+          <Box className="crm-client-detail__shell">
+            <Box className="crm-client-detail__header-zone">
+              <ClientHeader
+                loading={loading}
+                isReady={isReady}
+                client={client}
+                clientId={clientId}
+                clientFullName={clientFullName}
+                contacts={contacts}
+                credits={credits}
+                balanceColumns={balanceColumns}
+                portafolioId={portafolioId}
+                primaryBalanceColumn={primaryBalanceColumn}
+                balancesByCredit={balancesByCredit}
+                onBack={handleBackToClients}
+                onCopyValue={handleCopyValue}
               />
-            )}
-          </Tabs>
-        </Paper>
+            </Box>
 
-        {activeTab === DETAIL_TAB_VALUES.summary && (
-          <Box className="crm-client-detail__tab-panel">
-            <Box className="crm-client-detail__summary-grid">
-              <Box className="crm-client-detail__summary-col crm-client-detail__summary-col--wide">
-                <ClientInfoWidget
-                  client={client}
-                  contacts={contacts}
-                  credits={credits}
-                  loading={loading}
-                  title="Datos del cliente"
-                />
-              </Box>
+            <Box className="crm-client-detail__operations-zone">
+              <ClientOperationsTabs
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                error={error}
+                onErrorClear={() => setError('')}
+                tabs={[
+                  {
+                    value: DETAIL_TAB_VALUES.gestiones,
+                    label: 'Gestiones',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <GestionesWidget
+                          title="Gestiones"
+                          canLog={canLog}
+                          canViewGestiones={canViewGestiones}
+                          form={form}
+                          setForm={setForm}
+                          formError={formError}
+                          onFormErrorClear={handleClearFormError}
+                          resultados={resultados}
+                          resultadosLoading={resultadosLoading}
+                          requierePromesa={requierePromesa}
+                          savingGestion={savingGestion}
+                          onSubmit={handleRegisterGestion}
+                          gestiones={gestiones}
+                          gestionesLoading={gestionesLoading}
+                          gestionesError={gestionesError}
+                          onGestionesErrorClear={handleClearGestionesError}
+                          gestionesHasNext={gestionesHasNext}
+                          onLoadMore={handleLoadMoreGestiones}
+                          onQuickWhatsapp={primaryContactPhone ? handleQuickWhatsapp : undefined}
+                          quickActionRequest={gestionesQuickAction}
+                          focusReturnToken={gestionesFocusReturnToken}
+                          showForm={canLog}
+                          showHistory
+                        />
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.pagos,
+                    label: 'Pagos',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <PaymentsWidget
+                          title="Pagos del cliente"
+                          payments={payments}
+                          credits={credits}
+                          remainingBalance={remainingBalance}
+                          loading={loading && !isReady}
+                        />
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.promesas,
+                    label: 'Promesas',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <ClientPromisesPanel
+                          canViewGestiones={canViewGestiones}
+                          gestiones={gestiones}
+                          payments={payments}
+                          loading={gestionesLoading}
+                          error={gestionesError}
+                          onErrorClear={handleClearGestionesError}
+                          hasNext={gestionesHasNext}
+                          onLoadMore={handleLoadMoreGestiones}
+                        />
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.negociaciones,
+                    label: 'Negociaciones',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <NegotiationsWidget
+                          clientId={clientId}
+                          portafolioId={portafolioId}
+                          credits={credits}
+                          canRead={canReadNegotiations}
+                          canWrite={canWriteNegotiations}
+                        />
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.creditos,
+                    label: 'Créditos',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <Box className="crm-client-detail__financial-grid">
+                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
+                            <CreditsWidget
+                              title="Creditos y producto"
+                              credits={credits}
+                              balanceColumns={balanceColumns}
+                              balancesByCredit={balancesByCredit}
+                              loading={loading}
+                              isReady={isReady}
+                            />
+                          </Box>
 
-              <Box className="crm-client-detail__summary-col crm-client-detail__summary-col--narrow">
-                <ContactsWidget
-                  title="Contactabilidad"
-                  contacts={contacts}
-                  loading={loading}
-                  isReady={isReady}
-                />
-              </Box>
-
-              <Box className="crm-client-detail__summary-col crm-client-detail__summary-col--wide">
-                <CreditsWidget
-                  title="Creditos"
-                  credits={credits}
-                  balanceColumns={balanceColumns}
-                  balancesByCredit={balancesByCredit}
-                  loading={loading}
-                  isReady={isReady}
-                />
-              </Box>
-
-              <Box className="crm-client-detail__summary-col crm-client-detail__summary-col--narrow">
-                <BalancesWidget
-                  title="Saldos principales"
-                  credits={credits}
-                  balanceColumns={balanceColumns}
-                  balancesByCredit={balancesByCredit}
-                  loading={loading && !isReady}
-                />
-              </Box>
+                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
+                            <BalancesWidget
+                              title="Detalle de saldos"
+                              credits={credits}
+                              balanceColumns={balanceColumns}
+                              balancesByCredit={balancesByCredit}
+                              loading={loading && !isReady}
+                            />
+                          </Box>
+                        </Box>
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.documentos,
+                    label: 'Documentos',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <ClientDocumentsPanel />
+                      </Box>
+                    )
+                  },
+                  {
+                    value: DETAIL_TAB_VALUES.historial,
+                    label: 'Historial',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <GestionesWidget
+                          title="Historial operativo"
+                          canLog={canLog}
+                          canViewGestiones={canViewGestiones}
+                          form={form}
+                          setForm={setForm}
+                          formError={formError}
+                          onFormErrorClear={handleClearFormError}
+                          resultados={resultados}
+                          resultadosLoading={resultadosLoading}
+                          requierePromesa={requierePromesa}
+                          savingGestion={savingGestion}
+                          onSubmit={handleRegisterGestion}
+                          gestiones={gestiones}
+                          gestionesLoading={gestionesLoading}
+                          gestionesError={gestionesError}
+                          onGestionesErrorClear={handleClearGestionesError}
+                          gestionesHasNext={gestionesHasNext}
+                          onLoadMore={handleLoadMoreGestiones}
+                          showForm={false}
+                          showHistory
+                        />
+                      </Box>
+                    )
+                  }
+                ]}
+              />
             </Box>
           </Box>
-        )}
 
-        {activeTab === DETAIL_TAB_VALUES.gestiones && (
-          <Box className="crm-client-detail__tab-panel">
-            <GestionesWidget
-              title="Gestiones y seguimiento"
-              canLog={canLog}
-              canViewGestiones={canViewGestiones}
-              form={form}
-              setForm={setForm}
-              formError={formError}
-              onFormErrorClear={handleClearFormError}
-              resultados={resultados}
-              resultadosLoading={resultadosLoading}
-              requierePromesa={requierePromesa}
-              savingGestion={savingGestion}
-              onSubmit={handleRegisterGestion}
-              gestiones={gestiones}
-              gestionesLoading={gestionesLoading}
-              gestionesError={gestionesError}
-              onGestionesErrorClear={handleClearGestionesError}
-              gestionesHasNext={gestionesHasNext}
-              onLoadMore={handleLoadMoreGestiones}
-              showForm={canLog}
-              showHistory
-            />
-          </Box>
-        )}
-
-        {activeTab === DETAIL_TAB_VALUES.financiero && (
-          <Box className="crm-client-detail__tab-panel">
-            <Box className="crm-client-detail__financial-grid">
-              <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
-                <CreditsWidget
-                  title="Creditos y producto"
-                  credits={credits}
-                  balanceColumns={balanceColumns}
-                  balancesByCredit={balancesByCredit}
-                  loading={loading}
-                  isReady={isReady}
-                />
-              </Box>
-
-              <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
-                <BalancesWidget
-                  title="Detalle de saldos"
-                  credits={credits}
-                  balanceColumns={balanceColumns}
-                  balancesByCredit={balancesByCredit}
-                  loading={loading && !isReady}
-                />
-              </Box>
-
-              <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--full">
-                <PaymentsWidget title="Pagos del cliente" payments={emptyPayments} loading={false} />
-              </Box>
-            </Box>
-          </Box>
-        )}
-
-        {activeTab === DETAIL_TAB_VALUES.negociaciones && canReadNegotiations && (
-          <Box className="crm-client-detail__tab-panel">
-            <NegotiationsWidget
-              clientId={clientId}
-              portafolioId={portafolioId}
-              credits={credits}
-              canRead={canReadNegotiations}
-              canWrite={canWriteNegotiations}
-            />
-          </Box>
-        )}
-
+          <ClientFloatingActions
+            open={floatingActionsOpen}
+            onToggle={handleToggleFloatingActions}
+            onCall={handleQuickCall}
+            onWhatsapp={handleQuickWhatsapp}
+            onNewGestion={handleQuickNewGestion}
+            onRegisterPayment={handleQuickRegisterPayment}
+            hasPhone={Boolean(primaryContactPhone)}
+          />
+        </Box>
       </PageContent>
     </Page>
   );
