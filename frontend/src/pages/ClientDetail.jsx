@@ -15,7 +15,6 @@ import {
   Button,
   Chip,
   IconButton,
-  LinearProgress,
   Paper,
   Skeleton,
   Stack,
@@ -24,7 +23,6 @@ import {
   Typography
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import BaseTable from '../components/BaseTable.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import usePermissions from '../hooks/usePermissions.js';
@@ -48,11 +46,9 @@ const integerFormatter = new Intl.NumberFormat('es-MX');
 const DETAIL_TAB_VALUES = {
   gestiones: 'gestiones',
   pagos: 'pagos',
-  promesas: 'promesas',
   negociaciones: 'negociaciones',
   creditos: 'creditos',
-  documentos: 'documentos',
-  historial: 'historial'
+  documentos: 'documentos'
 };
 
 const getClientIdFromPath = () => {
@@ -236,78 +232,6 @@ const parseDateValue = (value) => {
 
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
-};
-
-const normalizePayments = (payments) =>
-  (Array.isArray(payments) ? payments : [])
-    .map((payment) => ({
-      ...payment,
-      resolvedDate:
-        parseDateValue(
-          payment?.fecha ||
-            payment?.fecha_pago ||
-            payment?.aplicado_en ||
-            payment?.created_at
-        ) || new Date(0),
-      resolvedAmount:
-        toNumber(payment?.monto ?? payment?.importe ?? payment?.monto_pago ?? payment?.monto_detalle) ??
-        0
-    }))
-    .filter((payment) => payment.resolvedAmount > 0)
-    .sort((a, b) => a.resolvedDate.getTime() - b.resolvedDate.getTime());
-
-const buildPromiseTracking = ({ gestiones = [], payments = [] }) => {
-  const normalizedPayments = normalizePayments(payments);
-  const totalPaid = normalizedPayments.reduce((sum, payment) => sum + payment.resolvedAmount, 0);
-  let cumulativePromised = 0;
-
-  const promises = (Array.isArray(gestiones) ? gestiones : [])
-    .filter((item) => item?.promesa_monto_detalle || item?.promesa_fecha_detalle)
-    .map((item, index) => {
-      const amount = toNumber(item.promesa_monto_detalle) ?? 0;
-      const promiseDate =
-        parseDateValue(item.promesa_fecha_detalle) ||
-        parseDateValue(item.promesa_fecha) ||
-        parseDateValue(item.fecha_gestion);
-
-      return {
-        id: item.id || `promise-${index}`,
-        amount,
-        promiseDate,
-        agente: item.agente_email || item.agente_nombre || '-',
-        item,
-        sortDate: promiseDate || parseDateValue(item.fecha_gestion) || new Date(0)
-      };
-    })
-    .sort((a, b) => a.sortDate.getTime() - b.sortDate.getTime())
-    .map((entry) => {
-      cumulativePromised += entry.amount;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      let status = { label: 'Pendiente', tone: 'warning' };
-      if (entry.amount > 0 && totalPaid >= cumulativePromised) {
-        status = { label: 'Cumplida', tone: 'success' };
-      } else if (entry.promiseDate && entry.promiseDate.getTime() < today.getTime()) {
-        status = { label: 'Incumplida', tone: 'danger' };
-      }
-
-      return {
-        ...entry,
-        status
-      };
-    });
-
-  const totalPromised = promises.reduce((sum, promise) => sum + promise.amount, 0);
-  const progressValue =
-    totalPromised > 0 ? Math.min((totalPaid / totalPromised) * 100, 100) : 0;
-
-  return {
-    promises: promises.slice().sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime()),
-    totalPromised,
-    totalPaid,
-    progressValue
-  };
 };
 
 const inferClientStatus = ({ client, credits, totalDebt }) => {
@@ -860,14 +784,17 @@ function ClientHeader({
                     return (
                       <Box
                         key={item?.id || `${addressValue}-${index}`}
-                        className="crm-client-detail__contact-card"
+                        className="crm-client-detail__contact-card crm-client-detail__contact-card--address"
                       >
                         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
                           <PlaceOutlined
                             fontSize="small"
                             className="crm-client-detail__contact-icon"
                           />
-                          <Typography variant="body2" className="crm-client-detail__contact-card-value">
+                          <Typography
+                            variant="body2"
+                            className="crm-client-detail__contact-card-value crm-client-detail__contact-card-value--multiline"
+                          >
                             {addressValue || '-'}
                           </Typography>
                         </Stack>
@@ -981,168 +908,6 @@ function ClientHeader({
           </Box>
         </Paper>
       </Box>
-    </Paper>
-  );
-}
-
-function ClientPromisesPanel({
-  canViewGestiones,
-  gestiones = [],
-  payments = [],
-  loading = false,
-  error = '',
-  onErrorClear,
-  hasNext = false,
-  onLoadMore
-}) {
-  const { promises, totalPromised, totalPaid, progressValue } = useMemo(
-    () => buildPromiseTracking({ gestiones, payments }),
-    [gestiones, payments]
-  );
-  const promiseColumns = useMemo(
-    () => [
-      {
-        id: 'fecha_promesa',
-        label: 'Fecha promesa',
-        minWidth: 140,
-        render: (row) => formatDateShort(row.promiseDate)
-      },
-      {
-        id: 'monto',
-        label: 'Monto',
-        minWidth: 130,
-        align: 'right',
-        render: (row) => formatCurrency(row.amount)
-      },
-      {
-        id: 'agente',
-        label: 'Agente',
-        minWidth: 170,
-        render: (row) => row.agente
-      },
-      {
-        id: 'estado',
-        label: 'Estado',
-        minWidth: 140,
-        render: (row) => (
-          <Chip
-            size="small"
-            label={row.status.label}
-            className={[
-              'crm-promises__badge',
-              `crm-promises__badge--${row.status.tone}`
-            ].join(' ')}
-          />
-        )
-      }
-    ],
-    []
-  );
-
-  return (
-    <Paper variant="panel-sm">
-      <Stack spacing={1.6}>
-        <Stack className="crm-surface-card__header">
-          <Stack className="crm-surface-card__header-main">
-            <Typography variant="overline" className="crm-surface-card__eyebrow">
-              Seguimiento
-            </Typography>
-            <Typography variant="subtitle1" className="crm-surface-card__title">
-              Promesas de pago
-            </Typography>
-            <Typography variant="body2" className="crm-surface-card__subtitle">
-              Compromisos capturados en gestiones recientes para seguimiento operativo.
-            </Typography>
-          </Stack>
-        </Stack>
-
-        {!canViewGestiones ? (
-          <Typography variant="body2" color="text.secondary">
-            No tienes permisos para consultar promesas registradas.
-          </Typography>
-        ) : loading ? (
-          <Stack spacing={1}>
-            <Skeleton width={180} />
-            <Skeleton width="60%" />
-            <Skeleton width="40%" />
-          </Stack>
-        ) : error ? (
-          <Alert severity="error" onClose={() => onErrorClear && onErrorClear()}>
-            {error}
-          </Alert>
-        ) : promises.length === 0 ? (
-          <EmptyState
-            title="Sin promesas"
-            description="Aun no existen promesas de pago registradas para este cliente."
-            icon={null}
-            dense
-          />
-        ) : (
-          <Stack spacing={1.2}>
-            <Paper variant="outlined" className="crm-promises__progress-card">
-              <Stack spacing={1.1}>
-                <Stack direction="row" spacing={1.2} className="crm-promises__summary-grid">
-                  <Box className="crm-promises__summary-item">
-                    <Typography variant="caption" className="crm-surface-card__meta-label">
-                      Total promised
-                    </Typography>
-                    <Typography variant="body2" className="crm-surface-card__meta-value">
-                      {formatCurrency(totalPromised)}
-                    </Typography>
-                  </Box>
-                  <Box className="crm-promises__summary-item">
-                    <Typography variant="caption" className="crm-surface-card__meta-label">
-                      Total paid
-                    </Typography>
-                    <Typography variant="body2" className="crm-surface-card__meta-value">
-                      {formatCurrency(totalPaid)}
-                    </Typography>
-                  </Box>
-                  <Box className="crm-promises__summary-item">
-                    <Typography variant="caption" className="crm-surface-card__meta-label">
-                      Coverage
-                    </Typography>
-                    <Typography variant="body2" className="crm-surface-card__meta-value">
-                      {Math.round(progressValue)}%
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Stack spacing={0.45}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    spacing={1}
-                  >
-                    <Typography variant="caption" color="text.secondary">
-                      Total promised vs paid
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatCurrency(totalPaid)} / {formatCurrency(totalPromised)}
-                    </Typography>
-                  </Stack>
-                  <LinearProgress
-                    variant="determinate"
-                    value={progressValue}
-                    className="crm-promises__progress"
-                  />
-                </Stack>
-              </Stack>
-            </Paper>
-
-            <BaseTable dense columns={promiseColumns} rows={promises} loading={loading} />
-
-            {hasNext ? (
-              <Box className="crm-promises__table-actions">
-                <Button variant="outlined" size="small" onClick={() => onLoadMore && onLoadMore()}>
-                  Cargar mas
-                </Button>
-              </Box>
-            ) : null}
-          </Stack>
-        )}
-      </Stack>
     </Paper>
   );
 }
@@ -1324,7 +1089,7 @@ export default function ClientDetail({ routeParams }) {
   const [gestionesHasNext, setGestionesHasNext] = useState(false);
   const gestionesRowsPerPage = 20;
 
-  const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.gestiones);
+  const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.creditos);
   const [floatingActionsOpen, setFloatingActionsOpen] = useState(false);
   const [gestionesQuickAction, setGestionesQuickAction] = useState(null);
   const [gestionesFocusReturnToken, setGestionesFocusReturnToken] = useState(null);
@@ -1373,8 +1138,8 @@ export default function ClientDetail({ routeParams }) {
   }, [canRead, clientId]);
 
   useEffect(() => {
-    if (!canRead && activeTab !== DETAIL_TAB_VALUES.gestiones) {
-      setActiveTab(DETAIL_TAB_VALUES.gestiones);
+    if (!canRead && activeTab !== DETAIL_TAB_VALUES.creditos) {
+      setActiveTab(DETAIL_TAB_VALUES.creditos);
     }
   }, [activeTab, canRead]);
 
@@ -1806,6 +1571,36 @@ export default function ClientDetail({ routeParams }) {
                 onErrorClear={() => setError('')}
                 tabs={[
                   {
+                    value: DETAIL_TAB_VALUES.creditos,
+                    label: 'Créditos',
+                    content: (
+                      <Box className="crm-client-detail__tab-panel">
+                        <Box className="crm-client-detail__financial-grid">
+                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
+                            <CreditsWidget
+                              title="Creditos y producto"
+                              credits={credits}
+                              balanceColumns={balanceColumns}
+                              balancesByCredit={balancesByCredit}
+                              loading={loading}
+                              isReady={isReady}
+                            />
+                          </Box>
+
+                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
+                            <BalancesWidget
+                              title="Detalle de saldos"
+                              credits={credits}
+                              balanceColumns={balanceColumns}
+                              balancesByCredit={balancesByCredit}
+                              loading={loading && !isReady}
+                            />
+                          </Box>
+                        </Box>
+                      </Box>
+                    )
+                  },
+                  {
                     value: DETAIL_TAB_VALUES.gestiones,
                     label: 'Gestiones',
                     content: (
@@ -1854,24 +1649,6 @@ export default function ClientDetail({ routeParams }) {
                     )
                   },
                   {
-                    value: DETAIL_TAB_VALUES.promesas,
-                    label: 'Promesas',
-                    content: (
-                      <Box className="crm-client-detail__tab-panel">
-                        <ClientPromisesPanel
-                          canViewGestiones={canViewGestiones}
-                          gestiones={gestiones}
-                          payments={payments}
-                          loading={gestionesLoading}
-                          error={gestionesError}
-                          onErrorClear={handleClearGestionesError}
-                          hasNext={gestionesHasNext}
-                          onLoadMore={handleLoadMoreGestiones}
-                        />
-                      </Box>
-                    )
-                  },
-                  {
                     value: DETAIL_TAB_VALUES.negociaciones,
                     label: 'Negociaciones',
                     content: (
@@ -1887,71 +1664,11 @@ export default function ClientDetail({ routeParams }) {
                     )
                   },
                   {
-                    value: DETAIL_TAB_VALUES.creditos,
-                    label: 'Créditos',
-                    content: (
-                      <Box className="crm-client-detail__tab-panel">
-                        <Box className="crm-client-detail__financial-grid">
-                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
-                            <CreditsWidget
-                              title="Creditos y producto"
-                              credits={credits}
-                              balanceColumns={balanceColumns}
-                              balancesByCredit={balancesByCredit}
-                              loading={loading}
-                              isReady={isReady}
-                            />
-                          </Box>
-
-                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
-                            <BalancesWidget
-                              title="Detalle de saldos"
-                              credits={credits}
-                              balanceColumns={balanceColumns}
-                              balancesByCredit={balancesByCredit}
-                              loading={loading && !isReady}
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
-                    )
-                  },
-                  {
                     value: DETAIL_TAB_VALUES.documentos,
                     label: 'Documentos',
                     content: (
                       <Box className="crm-client-detail__tab-panel">
                         <ClientDocumentsPanel />
-                      </Box>
-                    )
-                  },
-                  {
-                    value: DETAIL_TAB_VALUES.historial,
-                    label: 'Historial',
-                    content: (
-                      <Box className="crm-client-detail__tab-panel">
-                        <GestionesWidget
-                          title="Historial operativo"
-                          canLog={canLog}
-                          canViewGestiones={canViewGestiones}
-                          form={form}
-                          setForm={setForm}
-                          formError={formError}
-                          onFormErrorClear={handleClearFormError}
-                          resultados={resultados}
-                          resultadosLoading={resultadosLoading}
-                          requierePromesa={requierePromesa}
-                          savingGestion={savingGestion}
-                          onSubmit={handleRegisterGestion}
-                          gestiones={gestiones}
-                          gestionesLoading={gestionesLoading}
-                          gestionesError={gestionesError}
-                          onGestionesErrorClear={handleClearGestionesError}
-                          gestionesHasNext={gestionesHasNext}
-                          onLoadMore={handleLoadMoreGestiones}
-                          showForm={false}
-                          showHistory
-                        />
                       </Box>
                     )
                   }

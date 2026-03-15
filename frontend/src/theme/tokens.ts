@@ -9,7 +9,7 @@ export const normalizeThemeMode = (mode) =>
   mode === THEME_MODES.light ? THEME_MODES.light : THEME_MODES.dark;
 
 export const themeBehaviorTokens = Object.freeze({
-  defaultMode: THEME_MODES.dark
+  defaultMode: THEME_MODES.light
 });
 
 export const layoutTokens = Object.freeze({

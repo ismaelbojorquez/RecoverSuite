@@ -2596,7 +2596,7 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-client-detail__header-grid': {
             display: 'grid',
             gap: theme.spacing(0.95),
-            gridTemplateColumns: 'minmax(0, 1.28fr) minmax(0, 0.92fr) minmax(0, 1fr)',
+            gridTemplateColumns: 'minmax(0, 1.08fr) minmax(0, 1.16fr) minmax(0, 0.96fr)',
             minHeight: 0,
             height: '100%',
             alignItems: 'stretch',
@@ -2623,8 +2623,8 @@ export const getComponents = (mode = 'light') => {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(0.65),
-            padding: theme.spacing(1.05, 1.1)
+            gap: theme.spacing(0.52),
+            padding: theme.spacing(0.92, 1)
           },
           '.MuiStack-root.crm-client-detail__header-card-head': {
             gap: theme.spacing(0.55),
@@ -2637,7 +2637,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiTypography-root.crm-client-detail__header-title': {
             fontWeight: 680,
-            fontSize: 'clamp(1.12rem, 1.3vw, 1.42rem)',
+            fontSize: 'clamp(1.06rem, 1.15vw, 1.34rem)',
             lineHeight: 1.04,
             letterSpacing: '-0.028em',
             color: theme.palette.text.primary
@@ -2667,10 +2667,7 @@ export const getComponents = (mode = 'light') => {
             minWidth: 0
           },
           '.MuiBox-root.crm-client-detail__header-summary-grid--compact': {
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            [theme.breakpoints.down('sm')]: {
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
-            }
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
           },
           '.MuiBox-root.crm-client-detail__header-summary-item': {
             ...getInsetSurface(theme, {
@@ -2685,6 +2682,11 @@ export const getComponents = (mode = 'light') => {
             flexDirection: 'column',
             gap: theme.spacing(0.18),
             justifyContent: 'center'
+          },
+          '.MuiBox-root.crm-client-detail__header-summary-item .MuiTypography-root.crm-surface-card__meta-value': {
+            whiteSpace: 'normal',
+            overflowWrap: 'anywhere',
+            lineHeight: 1.24
           },
           '.MuiBox-root.crm-client-detail__indicator-grid': {
             display: 'grid',
@@ -2739,23 +2741,36 @@ export const getComponents = (mode = 'light') => {
             gap: theme.spacing(0.55)
           },
           '.MuiStack-root.crm-client-detail__contact-groups, .MuiStack-root.crm-client-detail__credit-preview-list': {
-            gap: theme.spacing(0.5),
+            gap: theme.spacing(0.42),
             minHeight: 0
           },
           '.MuiStack-root.crm-client-detail__contact-group': {
-            gap: theme.spacing(0.28),
-            minWidth: 0
+            display: 'grid',
+            gridTemplateColumns: '68px minmax(0, 1fr)',
+            alignItems: 'start',
+            gap: theme.spacing(0.45),
+            minWidth: 0,
+            minHeight: 0
           },
           '.MuiTypography-root.crm-client-detail__contact-group-title': {
             fontSize: '0.66rem',
             fontWeight: 700,
             letterSpacing: '0.07em',
             textTransform: 'uppercase',
-            color: alpha(theme.palette.text.secondary, 0.9)
+            color: alpha(theme.palette.text.secondary, 0.9),
+            paddingTop: theme.spacing(0.45)
           },
           '.MuiStack-root.crm-client-detail__contact-card-list': {
+            flexDirection: 'row',
+            alignItems: 'stretch',
             gap: theme.spacing(0.34),
-            minWidth: 0
+            minWidth: 0,
+            minHeight: 0,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarGutter: 'stable both-edges',
+            paddingBottom: theme.spacing(0.18)
           },
           '.MuiBox-root.crm-client-detail__contact-card, .MuiBox-root.crm-client-detail__credit-preview-item': {
             ...getInsetSurface(theme, {
@@ -2765,13 +2780,19 @@ export const getComponents = (mode = 'light') => {
               shadowAlpha: isLight ? 0.035 : 0.09
             }),
             minWidth: 0,
+            flex: '0 0 clamp(182px, 19vw, 246px)',
             padding: theme.spacing(0.4, 0.55),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing(0.55)
           },
+          '.MuiBox-root.crm-client-detail__contact-card--address': {
+            flexBasis: 'clamp(220px, 26vw, 340px)',
+            alignItems: 'flex-start'
+          },
           '.MuiBox-root.crm-client-detail__contact-card--empty': {
+            flex: '1 1 auto',
             justifyContent: 'flex-start',
             minHeight: 32
           },
@@ -2789,6 +2810,12 @@ export const getComponents = (mode = 'light') => {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
+          },
+          '.MuiTypography-root.crm-client-detail__contact-card-value--multiline': {
+            whiteSpace: 'normal',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
           },
           '.MuiStack-root.crm-client-detail__contact-card-actions': {
             flexShrink: 0,
