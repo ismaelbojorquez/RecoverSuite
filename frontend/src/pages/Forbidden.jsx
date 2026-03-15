@@ -1,5 +1,7 @@
-import { Paper, Stack, Typography, Button } from '@mui/material';
+import { Button, Stack } from '@mui/material';
+import { ShieldAlert } from 'lucide-react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { buildRoutePath } from '../routes/paths.js';
 import useNavigation from '../hooks/useNavigation.js';
 
@@ -17,13 +19,13 @@ export default function Forbidden() {
         ]}
       />
       <PageContent>
-        <Paper variant="page">
-          <Stack spacing={2}>
-            <Typography variant="h5">403 - Sin permiso</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Verifica tus roles y permisos con un administrador o regresa al panel.
-            </Typography>
-            <Stack direction="row" spacing={1.5}>
+        <EmptyState
+          eyebrow="403"
+          title="Sin permiso para continuar"
+          description="Verifica tus roles con un administrador o vuelve al panel principal para seguir trabajando."
+          icon={ShieldAlert}
+          action={
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <Button
                 variant="contained"
                 onClick={() => navigate(buildRoutePath('dashboard'), { replace: true })}
@@ -37,8 +39,8 @@ export default function Forbidden() {
                 Cambiar de usuario
               </Button>
             </Stack>
-          </Stack>
-        </Paper>
+          }
+        />
       </PageContent>
     </Page>
   );

@@ -431,7 +431,10 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             maxWidth: 440,
             padding: theme.spacing(3.1, 2.4),
-            textAlign: 'center'
+            textAlign: 'center',
+            [theme.breakpoints.down('sm')]: {
+              padding: theme.spacing(2.4, 1.5)
+            }
           },
           '.MuiBox-root.crm-empty-state__icon-shell': {
             width: 52,
@@ -453,6 +456,11 @@ export const getComponents = (mode = 'light') => {
             marginLeft: 'auto',
             marginRight: 'auto',
             gap: theme.spacing(0.55)
+          },
+          '.MuiTypography-root.crm-empty-state__eyebrow': {
+            fontWeight: 650,
+            letterSpacing: '0.08em',
+            color: alpha(theme.palette.primary.main, 0.84)
           },
           '.MuiTypography-root.crm-empty-state__title': {
             fontWeight: 650,
@@ -670,7 +678,8 @@ export const getComponents = (mode = 'light') => {
             boxShadow: shadow.xs || `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.18)}`,
             transition: theme.transitions.create(['border-color', 'box-shadow', 'transform'], {
               duration: microMotionMs
-            })
+            }),
+            minWidth: 0
           },
           '.MuiPaper-root.crm-global-search__input-shell--active': {
             borderColor: alpha(theme.palette.primary.main, isLight ? 0.36 : 0.48),
@@ -753,7 +762,10 @@ export const getComponents = (mode = 'light') => {
             gap: theme.spacing(1.2),
             padding: theme.spacing(2.05, 2.2, 1.7),
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
-            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.36 : 0.26)} 100%)`
+            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.36 : 0.26)} 100%)`,
+            [theme.breakpoints.down('sm')]: {
+              padding: theme.spacing(1.6, 1.3, 1.35)
+            }
           },
           '.MuiBox-root.crm-table-shell__toolbar::after': {
             content: '""',
@@ -807,7 +819,10 @@ export const getComponents = (mode = 'light') => {
             flexShrink: 0,
             gap: theme.spacing(0.8),
             flexWrap: 'wrap',
-            alignItems: 'center'
+            alignItems: 'center',
+            [theme.breakpoints.down('sm')]: {
+              width: '100%'
+            }
           },
           '.MuiStack-root.crm-table-toolbar__controls': {
             gap: theme.spacing(1),
@@ -835,7 +850,8 @@ export const getComponents = (mode = 'light') => {
             gap: theme.spacing(0.85),
             flexWrap: 'wrap',
             alignItems: 'center',
-            flex: '1 1 280px'
+            flex: '1 1 280px',
+            minWidth: 0
           },
           '.MuiStack-root.crm-table-toolbar__filters .MuiFormControlLabel-root': {
             margin: 0,
@@ -1057,12 +1073,16 @@ export const getComponents = (mode = 'light') => {
             fontWeight: 650,
             letterSpacing: '-0.012em',
             color: theme.palette.text.primary,
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           },
           '.MuiTypography-root.crm-app-bar__context-subtitle': {
             color: alpha(theme.palette.text.secondary, 0.86),
             lineHeight: 1.35,
             whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             [theme.breakpoints.down('xl')]: {
               display: 'none'
             }
@@ -1098,6 +1118,7 @@ export const getComponents = (mode = 'light') => {
             marginLeft: 'auto',
             gap: theme.spacing(0.75),
             flexShrink: 0,
+            minWidth: 0,
             [theme.breakpoints.down('sm')]: {
               gap: theme.spacing(0.5)
             }
@@ -1191,14 +1212,17 @@ export const getComponents = (mode = 'light') => {
               blur: 10,
               shadowAlpha: isLight ? 0.08 : 0.18
             }),
-            minWidth: 220
+            minWidth: 220,
+            maxWidth: 'calc(100vw - 24px)'
           },
           '.MuiMenu-paper.crm-app-bar__quick-menu': {
-            minWidth: 296
+            minWidth: 296,
+            width: 'min(296px, calc(100vw - 24px))'
           },
           '.MuiMenu-paper.crm-app-bar__notification-menu': {
             minWidth: 320,
-            maxWidth: 360
+            maxWidth: 360,
+            width: 'min(360px, calc(100vw - 24px))'
           },
           '.MuiMenuItem-root.crm-app-bar__menu-item': {
             minHeight: 44,
@@ -1589,6 +1613,10 @@ export const getComponents = (mode = 'light') => {
             flexWrap: 'wrap',
             alignSelf: 'stretch',
             justifyContent: 'flex-start',
+            minWidth: 0,
+            '& > *': {
+              maxWidth: '100%'
+            },
             [theme.breakpoints.up('lg')]: {
               alignSelf: 'flex-start',
               justifyContent: 'flex-end'
@@ -1602,7 +1630,8 @@ export const getComponents = (mode = 'light') => {
             borderRadius: 999,
             border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             backgroundColor: surface.cardSoft || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.84),
-            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
+            maxWidth: '100%'
           },
           '.MuiTypography-root.crm-page__eyebrow': {
             fontWeight: labelTypography.default.fontWeight,
@@ -1614,6 +1643,8 @@ export const getComponents = (mode = 'light') => {
           '.MuiBreadcrumbs-root.crm-page__breadcrumbs': {
             fontSize: theme.typography.caption.fontSize,
             color: theme.palette.text.secondary,
+            maxWidth: '100%',
+            overflow: 'hidden',
             '& .MuiBreadcrumbs-separator': {
               marginLeft: theme.spacing(0.5),
               marginRight: theme.spacing(0.5),
@@ -2425,6 +2456,39 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
             ...getCardSurface(theme, { soft: true })
           },
+          '.MuiPaper-root.crm-client-detail__hero': {
+            padding: theme.spacing(2.7)
+          },
+          '.MuiStack-root.crm-client-detail__hero-header': {
+            gap: theme.spacing(1.6)
+          },
+          '.MuiStack-root.crm-client-detail__hero-copy': {
+            maxWidth: 680
+          },
+          '.MuiTypography-root.crm-client-detail__hero-title': {
+            letterSpacing: '-0.032em'
+          },
+          '.MuiTypography-root.crm-client-detail__hero-subtitle': {
+            color: alpha(theme.palette.text.secondary, 0.92)
+          },
+          '.MuiStack-root.crm-client-detail__hero-chip-row': {
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            [theme.breakpoints.down('lg')]: {
+              justifyContent: 'flex-start'
+            }
+          },
+          '.MuiPaper-root.crm-client-detail__tabs-shell': {
+            padding: theme.spacing(0.55),
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch'
+          },
+          '.MuiBox-root.crm-client-detail__tab-panel': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(2),
+            minWidth: 0
+          },
           '.MuiStack-root.crm-layout-admin-panel__content': {
             position: 'relative',
             zIndex: 1,
@@ -2446,11 +2510,136 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-client-detail__hero-meta-item': {
             ...getInsetSurface(theme),
             minWidth: 0,
+            padding: theme.spacing(1.15, 1.2),
             gap: theme.spacing(0.4)
           },
 
           '.MuiBox-root.crm-client-detail__hero-meta, .MuiBox-root.crm-client-detail__summary-grid, .MuiBox-root.crm-client-detail__financial-grid': {
             gap: theme.spacing(2)
+          },
+          '.MuiBox-root.crm-client-detail__hero-meta': {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            },
+            [theme.breakpoints.up('xl')]: {
+              gridTemplateColumns: 'repeat(5, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-client-detail__summary-grid, .MuiBox-root.crm-client-detail__financial-grid': {
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            [theme.breakpoints.up('lg')]: {
+              gridTemplateColumns: 'minmax(0, 1.24fr) minmax(320px, 0.86fr)'
+            }
+          },
+          '.MuiBox-root.crm-client-detail__summary-col, .MuiBox-root.crm-client-detail__financial-col': {
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(2)
+          },
+          '.MuiBox-root.crm-client-detail__summary-col--full, .MuiBox-root.crm-client-detail__financial-col--full': {
+            [theme.breakpoints.up('lg')]: {
+              gridColumn: '1 / -1'
+            }
+          },
+          '.MuiPaper-root.crm-credit-import__shell': {
+            padding: theme.spacing(2.7),
+            [theme.breakpoints.down('sm')]: {
+              padding: theme.spacing(1.7, 1.3)
+            }
+          },
+          '.MuiBox-root.crm-credit-import__stepper-shell': {
+            ...getInsetSurface(theme, {
+              radius: 18,
+              backgroundAlpha: isLight ? 0.76 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.1
+            }),
+            padding: theme.spacing(1.45, 1.1),
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarGutter: 'stable both-edges'
+          },
+          '.MuiStepper-root.crm-credit-import__stepper': {
+            minWidth: 640,
+            [theme.breakpoints.up('md')]: {
+              minWidth: 0
+            }
+          },
+          '.MuiDivider-root.crm-credit-import__divider': {
+            borderColor: alpha(theme.palette.divider, isLight ? 0.78 : 0.64)
+          },
+          '.MuiBox-root.crm-credit-import__step-body': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(2)
+          },
+          '.MuiPaper-root.crm-credit-import__selection-card, .MuiPaper-root.crm-credit-import__preview-shell, .MuiPaper-root.crm-credit-import__status-panel, .MuiPaper-root.crm-credit-import__strategy-row, .MuiCard-root.crm-credit-import__mapping-group, .MuiCard-root.crm-credit-import__mapping-option': {
+            ...getInsetSurface(theme, {
+              radius: 18,
+              backgroundAlpha: isLight ? 0.8 : 0.58,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            })
+          },
+          '.MuiStack-root.crm-credit-import__mapping-stack': {
+            gap: theme.spacing(2.2)
+          },
+          '.MuiStack-root.crm-credit-import__mapping-group-list': {
+            gap: theme.spacing(1.1)
+          },
+          '.MuiStack-root.crm-credit-import__mapping-option-header': {
+            gap: theme.spacing(1),
+            paddingBottom: theme.spacing(0.15)
+          },
+          '.MuiTypography-root.crm-credit-import__mapping-hint': {
+            color: alpha(theme.palette.text.secondary, 0.92),
+            lineHeight: 1.45
+          },
+          '.MuiStack-root.crm-credit-import__mapping-badges': {
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          },
+          '.MuiPaper-root.crm-credit-import__strategy-row': {
+            padding: theme.spacing(1.5, 1.6)
+          },
+          '.MuiAlert-root.crm-credit-import__info-alert': {
+            margin: 0
+          },
+          '.MuiStack-root.crm-credit-import__upload-stack': {
+            minHeight: 280,
+            padding: theme.spacing(1.4)
+          },
+          '.MuiBox-root.crm-credit-import__upload-icon': {
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: gradients.buttonSubtle,
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)}`
+          },
+          '.MuiLinearProgress-root.crm-credit-import__upload-progress, .MuiLinearProgress-root.crm-credit-import__run-progress': {
+            width: '100%',
+            maxWidth: 260
+          },
+          '.MuiStack-root.crm-credit-import__download-actions, .MuiStack-root.crm-credit-import__navigation': {
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          },
+          '.MuiPaper-root.crm-credit-import__empty-notice': {
+            padding: theme.spacing(2.2),
+            textAlign: 'center'
+          },
+          '.MuiBox-root.crm-dynamic-grid__item': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.9),
+            height: '100%'
           },
 
           '.crm-dynamic-grid .react-grid-item.react-grid-placeholder': {
@@ -3370,7 +3559,10 @@ export const getComponents = (mode = 'light') => {
           borderSpacing: 0,
           tableLayout: 'auto',
           '&.crm-table': {
-            minWidth: 760
+            minWidth: 760,
+            [theme.breakpoints.down('sm')]: {
+              minWidth: 640
+            }
           },
           '&.crm-table--dense .MuiTableCell-root': {
             paddingTop: theme.spacing(1.2),
@@ -3388,6 +3580,10 @@ export const getComponents = (mode = 'light') => {
         root: ({ theme }) => ({
           width: '100%',
           overflowX: 'auto',
+          overflowY: 'hidden',
+          scrollbarGutter: 'stable both-edges',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorX: 'contain',
           '&.crm-table-container': {
             borderRadius: 18
           },
@@ -3695,6 +3891,80 @@ export const getComponents = (mode = 'light') => {
             backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.74),
             boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
           }
+        })
+      }
+    },
+
+    MuiStepper: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          padding: 0,
+          backgroundColor: 'transparent'
+        })
+      }
+    },
+
+    MuiStep: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          paddingLeft: theme.spacing(0.5),
+          paddingRight: theme.spacing(0.5)
+        })
+      }
+    },
+
+    MuiStepLabel: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          margin: 0
+        }),
+        labelContainer: {
+          marginTop: 0
+        },
+        label: ({ theme }) => ({
+          marginTop: theme.spacing(0.7),
+          fontSize: theme.typography.caption.fontSize,
+          fontWeight: 620,
+          letterSpacing: '0.03em',
+          color: alpha(theme.palette.text.secondary, 0.88),
+          '&.Mui-active': {
+            color: theme.palette.text.primary
+          },
+          '&.Mui-completed': {
+            color: alpha(theme.palette.text.primary, 0.96)
+          }
+        }),
+        iconContainer: ({ theme }) => ({
+          paddingRight: 0
+        })
+      }
+    },
+
+    MuiStepIcon: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          fontSize: '1.55rem',
+          color: alpha(theme.palette.text.primary, isLight ? 0.14 : 0.22),
+          '&.Mui-active': {
+            color: theme.palette.primary.main
+          },
+          '&.Mui-completed': {
+            color: theme.palette.success.main
+          }
+        }),
+        text: ({ theme }) => ({
+          fill: theme.palette.text.primary,
+          fontSize: '0.74rem',
+          fontWeight: 700
+        })
+      }
+    },
+
+    MuiStepConnector: {
+      styleOverrides: {
+        line: ({ theme }) => ({
+          borderTopWidth: 1,
+          borderColor: alpha(theme.palette.text.primary, isLight ? 0.1 : 0.16)
         })
       }
     },

@@ -2,6 +2,7 @@ import { DragIndicator } from '@mui/icons-material';
 import { Box, Paper, Skeleton, Stack, Typography, useTheme } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
+import EmptyState from '../../../components/EmptyState.jsx';
 import WidgetRegistry from './WidgetRegistry.js';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -142,12 +143,13 @@ function DynamicGridLayoutComponent({
   if (safeWidgets.length === 0) {
     return (
       <Paper variant="panel-sm">
-        <Stack spacing={1.5}>
-          <Typography variant="subtitle1">Sin widgets</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No hay widgets registrados para este dashboard.
-          </Typography>
-        </Stack>
+        <EmptyState
+          dense
+          eyebrow="Layout"
+          title="Sin widgets"
+          description="No hay widgets registrados para este dashboard."
+          icon={null}
+        />
       </Paper>
     );
   }
@@ -187,12 +189,13 @@ function DynamicGridLayoutComponent({
             return (
               <Box key={widget.id} className="crm-dynamic-grid__item">
                 <Paper variant="panel-sm">
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2">Widget no registrado</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {widget.widgetKey}
-                    </Typography>
-                  </Stack>
+                  <EmptyState
+                    dense
+                    eyebrow="Widget"
+                    title="Widget no registrado"
+                    description={widget.widgetKey}
+                    icon={null}
+                  />
                 </Paper>
               </Box>
             );

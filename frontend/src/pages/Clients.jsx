@@ -366,14 +366,24 @@ export default function Clients() {
 
   if (!canRead) {
     return (
-      <Paper variant="page">
-        <Stack spacing={1}>
-          <Typography variant="h6">Sin permisos</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No tienes acceso para ver clientes.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Clientes' }
+          ]}
+          title="Clientes"
+          subtitle="Consulta y administración del padrón operativo."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Acceso"
+            title="Sin permisos para ver clientes"
+            description="Tu perfil actual no tiene acceso a este módulo. Solicita autorización si necesitas operar sobre clientes."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 

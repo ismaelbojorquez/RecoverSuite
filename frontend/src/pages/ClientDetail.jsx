@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Can from '../components/Can.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import useNotify from '../hooks/useNotify.jsx';
@@ -407,14 +408,25 @@ export default function ClientDetail({ routeParams }) {
 
   if (!canRead) {
     return (
-      <Paper variant="page">
-        <Stack spacing={1}>
-          <Typography variant="h6">Sin permisos</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No tienes acceso para ver clientes.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Clientes' },
+            { label: 'Detalle' }
+          ]}
+          title="Detalle del cliente"
+          subtitle="Vista integral del expediente y operación del cliente."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Acceso"
+            title="Sin permisos para ver el detalle"
+            description="Tu perfil actual no puede abrir expedientes de clientes."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 
@@ -490,22 +502,33 @@ export default function ClientDetail({ routeParams }) {
                 justifyContent="space-between"
                 alignItems={{ xs: 'flex-start', lg: 'center' }}
                 spacing={2}
+                className="crm-client-detail__hero-header"
               >
-                <Stack spacing={0.5}>
+                <Stack spacing={0.5} className="crm-client-detail__hero-copy">
                   <Typography variant="overline" className="crm-label">
                     Ficha del cliente
                   </Typography>
                   <Typography variant="h4" className="crm-client-detail__hero-title">
                     {clientFullName || client?.nombre || 'Cliente sin nombre'}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    className="crm-client-detail__hero-subtitle"
+                  >
                     {client?.numero_cliente
                       ? `No. cliente ${client.numero_cliente}`
                       : `ID cliente ${client?.id || clientId || '-'}`}
                   </Typography>
                 </Stack>
 
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  flexWrap="wrap"
+                  useFlexGap
+                  className="crm-client-detail__hero-chip-row"
+                >
                   {detailMetrics.map((metric) => (
                     <Chip key={metric.id} label={metric.label} variant="outlined" />
                   ))}

@@ -292,14 +292,24 @@ export default function Portfolios() {
 
   if (!canRead) {
     return (
-      <Paper variant="page">
-        <Stack spacing={1}>
-          <Typography variant="h6">Sin permisos</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No tienes acceso para ver portafolios.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Portafolios' }
+          ]}
+          title="Portafolios"
+          subtitle="Catálogo y estado operativo de portafolios."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Acceso"
+            title="Sin permisos para ver portafolios"
+            description="Tu perfil no tiene autorización para consultar o administrar portafolios."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 

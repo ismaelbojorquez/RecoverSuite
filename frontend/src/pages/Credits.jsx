@@ -240,27 +240,47 @@ export default function Credits() {
 
   if (!canRead) {
     return (
-      <Paper variant="page">
-        <Stack spacing={1}>
-          <Typography variant="h6">Sin permisos</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No tienes acceso para ver créditos.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Créditos' }
+          ]}
+          title="Créditos"
+          subtitle="Vista operativa de créditos y saldos asociados."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Acceso"
+            title="Sin permisos para ver créditos"
+            description="Tu perfil no tiene acceso a este módulo financiero."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 
   if (!portafolioId) {
     return (
-      <Paper variant="page">
-        <Stack spacing={2}>
-          <Typography variant="h6">Selecciona un portafolio</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Abre esta vista con ?portafolio_id=&lt;id&gt; para cargar sus créditos y campos de saldo.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Créditos' }
+          ]}
+          title="Créditos"
+          subtitle="Selecciona un portafolio para abrir el detalle financiero."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Contexto requerido"
+            title="Selecciona un portafolio"
+            description="Abre esta vista con ?portafolio_id=<id> para cargar créditos y campos de saldo del portafolio activo."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 

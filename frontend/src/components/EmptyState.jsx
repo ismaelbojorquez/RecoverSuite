@@ -7,10 +7,12 @@ export default function EmptyState({
   description = 'No hay informacion disponible.',
   icon: Icon = Inbox,
   action,
-  dense = false
+  dense = false,
+  eyebrow,
+  className = ''
 }) {
   return (
-    <Box className="crm-empty-state">
+    <Box className={['crm-empty-state', className].filter(Boolean).join(' ')}>
       <Paper variant="outlined" className="crm-empty-state__panel">
         <Stack spacing={dense ? 1.25 : 1.6} alignItems="center">
           {Icon ? (
@@ -23,6 +25,11 @@ export default function EmptyState({
             </Box>
           ) : null}
           <Stack alignItems="center" className="crm-empty-state__copy">
+            {eyebrow ? (
+              <Typography variant="overline" className="crm-empty-state__eyebrow">
+                {eyebrow}
+              </Typography>
+            ) : null}
             <Typography variant="h6" className="crm-empty-state__title">
               {title}
             </Typography>

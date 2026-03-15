@@ -1,5 +1,7 @@
-import { Button, Paper, Stack, Typography } from '@mui/material';
+import { Button, Stack } from '@mui/material';
+import { SearchX } from 'lucide-react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { buildRoutePath } from '../routes/paths.js';
 import useNavigation from '../hooks/useNavigation.js';
 
@@ -17,14 +19,13 @@ export default function NotFound() {
         ]}
       />
       <PageContent>
-        <Paper variant="page">
-          <Stack spacing={2}>
-            <Typography variant="h5">404 - Pagina no disponible</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Asegurate de que la direccion sea correcta o regresa al panel para continuar
-              navegando.
-            </Typography>
-            <Stack direction="row" spacing={1.5}>
+        <EmptyState
+          eyebrow="404"
+          title="Página no disponible"
+          description="La ruta no existe o fue movida. Puedes volver al dashboard o regresar a la vista anterior."
+          icon={SearchX}
+          action={
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <Button
                 variant="contained"
                 onClick={() => navigate(buildRoutePath('dashboard'), { replace: true })}
@@ -32,11 +33,11 @@ export default function NotFound() {
                 Ir al dashboard
               </Button>
               <Button variant="outlined" onClick={() => navigate(-1)}>
-                Volver atras
+                Volver atrás
               </Button>
             </Stack>
-          </Stack>
-        </Paper>
+          }
+        />
       </PageContent>
     </Page>
   );

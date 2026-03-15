@@ -370,14 +370,24 @@ export default function NegotiationSettings() {
 
   if (!canRead) {
     return (
-      <Paper variant="page">
-        <Stack spacing={1}>
-          <Typography variant="h6">Sin permisos</Typography>
-          <Typography variant="body2" color="text.secondary">
-            No tienes acceso a la configuracion de negociaciones.
-          </Typography>
-        </Stack>
-      </Paper>
+      <Page>
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Inicio', href: buildRoutePath('dashboard') },
+            { label: 'Configuracion de negociaciones' }
+          ]}
+          title="Configuración de Negociaciones"
+          subtitle="Parámetros de descuento, grupos y reglas operativas."
+        />
+        <PageContent>
+          <EmptyState
+            eyebrow="Acceso"
+            title="Sin permisos para configurar negociaciones"
+            description="Este módulo requiere permisos de lectura de configuración de negociaciones."
+            icon={null}
+          />
+        </PageContent>
+      </Page>
     );
   }
 

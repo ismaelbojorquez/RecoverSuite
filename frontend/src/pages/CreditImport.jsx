@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardContent,
@@ -38,6 +39,7 @@ import {
 } from '../services/imports.js';
 import BaseTable from '../components/BaseTable.jsx';
 import BaseDialog from '../components/BaseDialog.jsx';
+import TableToolbar from '../components/TableToolbar.jsx';
 
 const normalizeText = (value) =>
   String(value ?? '')
@@ -908,39 +910,70 @@ export default function CreditImport() {
   };
 
   const previewContent = (
-    <BaseTable
-      dense
-      columns={(preview.headers || []).map((h) => ({ id: h, label: h }))}
-      rows={(preview.rows || []).slice(0, 5).map((row, idx) => {
-        const data = {};
-        preview.headers?.forEach((header, hIdx) => {
-          data[header] = row[hIdx];
-        });
-        return { id: idx, ...data };
-      })}
-      emptyMessage="No hay datos para previsualizar"
-    />
+    <Paper variant="panel-sm" className="crm-credit-import__preview-shell">
+      <BaseTable
+        dense
+        toolbar={
+          <TableToolbar
+            eyebrow="Preview"
+            title="Muestra del archivo"
+            subtitle="Se muestran las primeras filas para validar estructura, encabezados y consistencia antes del mapeo."
+            filters={
+              <Chip variant="outlined" label={`${preview.rows?.length || 0} filas detectadas`} />
+            }
+          />
+        }
+        columns={(preview.headers || []).map((h) => ({ id: h, label: h }))}
+        rows={(preview.rows || []).slice(0, 5).map((row, idx) => {
+          const data = {};
+          preview.headers?.forEach((header, hIdx) => {
+            data[header] = row[hIdx];
+          });
+          return { id: idx, ...data };
+        })}
+        emptyMessage="No hay datos para previsualizar"
+      />
+    </Paper>
   );
 
   const mappingContent = (
-    <Stack spacing={2}>
-      <Stack direction="row" spacing={2} alignItems="center">
-        <FormControl size="small" className="crm-credit-import__strategy-control">
-          <InputLabel>Estrategia</InputLabel>
-          <Select
-            value={strategy}
-            label="Estrategia"
-            onChange={(e) => setStrategy(e.target.value)}
-          >
-            {STRATEGIES.map((opt) => (
-              <MenuItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Stack>
-      <Alert severity="info">
+    <Stack spacing={2.2} className="crm-credit-import__mapping-stack">
+      <Paper variant="outlined" className="crm-credit-import__strategy-row">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          justifyContent="space-between"
+        >
+          <Stack spacing={0.25}>
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Configuración de carga
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              Estrategia de escritura
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Define cómo se insertarán o actualizarán los registros durante la importación.
+            </Typography>
+          </Stack>
+          <FormControl size="small" className="crm-credit-import__strategy-control">
+            <InputLabel>Estrategia</InputLabel>
+            <Select
+              value={strategy}
+              label="Estrategia"
+              onChange={(e) => setStrategy(e.target.value)}
+            >
+              {STRATEGIES.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
+
+      <Alert severity="info" className="crm-credit-import__info-alert">
         <Stack spacing={0.5}>
           <Typography variant="body2">
             Campos mínimos obligatorios: <strong>{requiredFieldGuide.map((item) => item.label).join(', ')}</strong>.
@@ -956,82 +989,113 @@ export default function CreditImport() {
           )}
         </Stack>
       </Alert>
+
       {groupedOptions.map((group) => (
-        <Card key={group.label} variant="outlined">
+        <Card key={group.label} variant="outlined" className="crm-credit-import__mapping-group">
           <CardContent>
             <Stack spacing={2}>
-              <Typography variant="subtitle1">{group.label}</Typography>
-              {group.options.map((option) => {
-                const selectedHeaders = headersByTarget.get(option.value) || [];
-                const targetKey =
-                  option.targetType === 'core'
-                    ? option.targetField || option.key
-                    : `${option.targetType}:${option.saldoFieldId}`;
-                const isRepeatable =
-                  option.targetType === 'core' && REPEATABLE_CORE_TARGETS.has(targetKey);
-                const missingRequired = option.required && selectedHeaders.length === 0;
+              <Stack className="crm-surface-card__header">
+                <Stack className="crm-surface-card__header-main">
+                  <Typography variant="overline" className="crm-surface-card__eyebrow">
+                    Mapeo
+                  </Typography>
+                  <Typography variant="subtitle1" className="crm-surface-card__title">
+                    {group.label}
+                  </Typography>
+                  <Typography variant="body2" className="crm-surface-card__subtitle">
+                    Asigna columnas del archivo a los campos internos disponibles para este grupo.
+                  </Typography>
+                </Stack>
+              </Stack>
 
-                return (
-                  <Card key={option.value} variant="outlined">
-                    <CardContent>
-                      <Stack spacing={1}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="subtitle2">{option.label}</Typography>
-                          <Stack direction="row" spacing={1}>
-                            {option.required && <Chip size="small" color="primary" label="Obligatorio" />}
-                            {isRepeatable && <Chip size="small" label="Múltiple" />}
-                            {selectedHeaders.length > 0 && <Chip size="small" label="Asignado" />}
+              <Stack spacing={1.1} className="crm-credit-import__mapping-group-list">
+                {group.options.map((option) => {
+                  const selectedHeaders = headersByTarget.get(option.value) || [];
+                  const targetKey =
+                    option.targetType === 'core'
+                      ? option.targetField || option.key
+                      : `${option.targetType}:${option.saldoFieldId}`;
+                  const isRepeatable =
+                    option.targetType === 'core' && REPEATABLE_CORE_TARGETS.has(targetKey);
+                  const missingRequired = option.required && selectedHeaders.length === 0;
+
+                  return (
+                    <Card
+                      key={option.value}
+                      variant="outlined"
+                      className="crm-credit-import__mapping-option"
+                    >
+                      <CardContent>
+                        <Stack spacing={1.1}>
+                          <Stack
+                            direction={{ xs: 'column', sm: 'row' }}
+                            justifyContent="space-between"
+                            alignItems={{ xs: 'flex-start', sm: 'center' }}
+                            className="crm-credit-import__mapping-option-header"
+                          >
+                            <Stack spacing={0.2}>
+                              <Typography variant="subtitle2">{option.label}</Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                className="crm-credit-import__mapping-hint"
+                              >
+                                {option.destinationHint}
+                              </Typography>
+                            </Stack>
+                            <Stack direction="row" spacing={1} className="crm-credit-import__mapping-badges">
+                              {option.required && <Chip size="small" color="primary" label="Obligatorio" />}
+                              {isRepeatable && <Chip size="small" label="Múltiple" />}
+                              {selectedHeaders.length > 0 && <Chip size="small" label="Asignado" />}
+                            </Stack>
                           </Stack>
+                          <Autocomplete
+                            multiple={isRepeatable}
+                            options={mappedHeaders}
+                            value={isRepeatable ? selectedHeaders : selectedHeaders[0] || null}
+                            onChange={(_event, newValue) => {
+                              if (isRepeatable) {
+                                const values = Array.isArray(newValue)
+                                  ? Array.from(new Set(newValue.filter(Boolean)))
+                                  : [];
+                                setTargetHeaders(option.value, values);
+                                return;
+                              }
+                              setTargetHeaders(option.value, newValue ? [newValue] : []);
+                            }}
+                            getOptionLabel={(header) => String(header)}
+                            renderOption={(props, header) => (
+                              <li {...props} key={`${option.value}:${header}`}>
+                                <Stack spacing={0.25} sx={{ width: '100%' }}>
+                                  <Typography variant="body2">{header}</Typography>
+                                  {headerExamples[header] && (
+                                    <Typography variant="caption" color="text.secondary">
+                                      Ejemplo: {headerExamples[header]}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              </li>
+                            )}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label={isRepeatable ? 'Columnas del archivo' : 'Columna del archivo'}
+                                margin="none"
+                                fullWidth
+                                error={missingRequired}
+                                helperText={missingRequired ? 'Campo obligatorio sin asignar.' : ''}
+                              />
+                            )}
+                            clearOnBlur
+                            includeInputInList
+                            noOptionsText="Sin columnas disponibles"
+                          />
                         </Stack>
-                        <Autocomplete
-                          multiple={isRepeatable}
-                          options={mappedHeaders}
-                          value={isRepeatable ? selectedHeaders : selectedHeaders[0] || null}
-                          onChange={(_event, newValue) => {
-                            if (isRepeatable) {
-                              const values = Array.isArray(newValue)
-                                ? Array.from(new Set(newValue.filter(Boolean)))
-                                : [];
-                              setTargetHeaders(option.value, values);
-                              return;
-                            }
-                            setTargetHeaders(option.value, newValue ? [newValue] : []);
-                          }}
-                          getOptionLabel={(header) => String(header)}
-                          renderOption={(props, header) => (
-                            <li {...props} key={`${option.value}:${header}`}>
-                              <Stack spacing={0.25} sx={{ width: '100%' }}>
-                                <Typography variant="body2">{header}</Typography>
-                                {headerExamples[header] && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    Ejemplo: {headerExamples[header]}
-                                  </Typography>
-                                )}
-                              </Stack>
-                            </li>
-                          )}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label={isRepeatable ? 'Columnas del archivo' : 'Columna del archivo'}
-                              margin="normal"
-                              fullWidth
-                              error={missingRequired}
-                              helperText={missingRequired ? 'Campo obligatorio sin asignar.' : ''}
-                            />
-                          )}
-                          clearOnBlur
-                          includeInputInList
-                          noOptionsText="Sin columnas disponibles"
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {option.destinationHint}
-                        </Typography>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </Stack>
             </Stack>
           </CardContent>
         </Card>
@@ -1040,67 +1104,119 @@ export default function CreditImport() {
   );
 
   const validateContent = (
-    <Stack spacing={2}>
-      <Button variant="contained" onClick={handleValidate} disabled={!sessionId}>
-        Ejecutar validación
-      </Button>
-      {validated && (
-        <Alert severity="success">
-          Validación completada.
-        </Alert>
-      )}
-      {errors && <Alert severity="error">{errors}</Alert>}
-    </Stack>
+    <Paper variant="panel-sm" className="crm-credit-import__status-panel">
+      <Stack spacing={1.8}>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Validación
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              Revisión previa de consistencia
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Ejecuta la validación antes de lanzar la carga para detectar errores de formato y reglas.
+            </Typography>
+          </Stack>
+        </Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button variant="contained" onClick={handleValidate} disabled={!sessionId}>
+            Ejecutar validación
+          </Button>
+        </Stack>
+        {validated && (
+          <Alert severity="success">
+            Validación completada.
+          </Alert>
+        )}
+        {errors && <Alert severity="error">{errors}</Alert>}
+      </Stack>
+    </Paper>
   );
 
   const runContent = (
-    <Stack spacing={2}>
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Button
-          variant="contained"
-          startIcon={<PlayArrow />}
-          onClick={handleRun}
-          disabled={running}
+    <Paper variant="panel-sm" className="crm-credit-import__status-panel">
+      <Stack spacing={1.8}>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Ejecución
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              Lanzar importación
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Ejecuta la sesión validada y descarga archivos de error o rechazados si aplica.
+            </Typography>
+          </Stack>
+        </Stack>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
         >
-          Ejecutar importación
-        </Button>
-        {running && <LinearProgress className="crm-credit-import__run-progress" />}
+          <Button
+            variant="contained"
+            startIcon={<PlayArrow />}
+            onClick={handleRun}
+            disabled={running}
+          >
+            Ejecutar importación
+          </Button>
+          {running && <LinearProgress className="crm-credit-import__run-progress" />}
+        </Stack>
+        {(session?.status || running) && (
+          <Alert
+            severity={session?.status === 'COMPLETED' ? 'success' : 'info'}
+            icon={<CheckCircle fontSize="inherit" />}
+          >
+            {`Estado: ${session?.status || (running ? 'RUNNING' : 'PENDING')}`}
+          </Alert>
+        )}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          className="crm-credit-import__download-actions"
+        >
+          <Button
+            variant="outlined"
+            onClick={() => handleDownload('errors')}
+            disabled={!sessionId || downloadingErrors}
+          >
+            {downloadingErrors ? 'Descargando...' : 'Descargar errores'}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => handleDownload('rejected')}
+            disabled={!sessionId || downloadingRejected}
+          >
+            {downloadingRejected ? 'Descargando...' : 'Descargar filas rechazadas'}
+          </Button>
+        </Stack>
+        {errors && <Alert severity="error">{errors}</Alert>}
       </Stack>
-      {(session?.status || running) && (
-        <Alert
-          severity={session?.status === 'COMPLETED' ? 'success' : 'info'}
-          icon={<CheckCircle fontSize="inherit" />}
-        >
-          {`Estado: ${session?.status || (running ? 'RUNNING' : 'PENDING')}`}
-        </Alert>
-      )}
-      <Stack direction="row" spacing={2}>
-        <Button
-          variant="outlined"
-          onClick={() => handleDownload('errors')}
-          disabled={!sessionId || downloadingErrors}
-        >
-          {downloadingErrors ? 'Descargando...' : 'Descargar errores'}
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={() => handleDownload('rejected')}
-          disabled={!sessionId || downloadingRejected}
-        >
-          {downloadingRejected ? 'Descargando...' : 'Descargar filas rechazadas'}
-        </Button>
-      </Stack>
-      {errors && <Alert severity="error">{errors}</Alert>}
-    </Stack>
+    </Paper>
   );
 
   const uploadCard = (
     <Card variant="outlined" className="crm-credit-import__upload-card">
-      <Stack spacing={2} alignItems="center" justifyContent="center">
-        <CloudUpload fontSize="large" color="primary" />
-        <Typography variant="body2" color="text.secondary">
-          Arrastra y suelta el archivo CSV/XLSX o usa el botón
-        </Typography>
+      <Stack
+        spacing={2.1}
+        alignItems="center"
+        justifyContent="center"
+        className="crm-credit-import__upload-stack"
+      >
+        <Box className="crm-credit-import__upload-icon">
+          <CloudUpload fontSize="large" color="primary" />
+        </Box>
+        <Stack spacing={0.45} alignItems="center">
+          <Typography variant="subtitle1" className="crm-surface-card__title">
+            Carga el archivo fuente
+          </Typography>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Arrastra y suelta el archivo CSV/XLSX o usa el botón para abrir el selector.
+          </Typography>
+        </Stack>
         <Button variant="contained" onClick={() => fileInputRef.current?.click()}>
           Elegir archivo
         </Button>
@@ -1132,30 +1248,42 @@ export default function CreditImport() {
     </Card>
   );
 
-const stepContent = () => {
+  const stepContent = () => {
     switch (activeStep) {
       case 0:
         return (
-          <Stack spacing={2}>
-            <Typography variant="body2" color="text.secondary">
-              Selecciona el portafolio para acotar los saldos dinámicos y permisos de carga.
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Portafolio</InputLabel>
-              <Select
-                value={portfolioId}
-                label="Portafolio"
-                onChange={handlePortfolioChange}
-                disabled={loadingPortfolios}
-              >
-                {portfolios.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>
-                    {p.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
+          <Paper variant="panel-sm" className="crm-credit-import__selection-card">
+            <Stack spacing={2}>
+              <Stack className="crm-surface-card__header">
+                <Stack className="crm-surface-card__header-main">
+                  <Typography variant="overline" className="crm-surface-card__eyebrow">
+                    Inicio
+                  </Typography>
+                  <Typography variant="subtitle1" className="crm-surface-card__title">
+                    Selecciona el portafolio
+                  </Typography>
+                  <Typography variant="body2" className="crm-surface-card__subtitle">
+                    Acota saldos dinámicos, permisos y reglas de validación antes de iniciar la carga.
+                  </Typography>
+                </Stack>
+              </Stack>
+              <FormControl fullWidth>
+                <InputLabel>Portafolio</InputLabel>
+                <Select
+                  value={portfolioId}
+                  label="Portafolio"
+                  onChange={handlePortfolioChange}
+                  disabled={loadingPortfolios}
+                >
+                  {portfolios.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Paper>
         );
       case 1:
         return uploadCard;
@@ -1210,21 +1338,52 @@ const stepContent = () => {
         ]}
         title="Importación de información"
         subtitle="Asistente para cargar clientes, créditos, teléfonos, correos, direcciones y saldos con mapeo y validación previa."
+        actions={<Chip variant="outlined" label={`${activeStep + 1} de ${steps.length}`} />}
       />
       <PageContent>
-        <Card variant="outlined">
-          <CardContent>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+        <Paper variant="panel" className="crm-credit-import__shell">
+          <Stack spacing={2.35}>
+            <Stack
+              direction={{ xs: 'column', lg: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', lg: 'center' }}
+              className="crm-surface-card__header crm-surface-card__header--split"
+            >
+              <Stack className="crm-surface-card__header-main">
+                <Typography variant="overline" className="crm-surface-card__eyebrow">
+                  Wizard de importación
+                </Typography>
+                <Typography variant="subtitle1" className="crm-surface-card__title">
+                  Flujo guiado de carga y validación
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__subtitle">
+                  Avanza paso a paso para seleccionar portafolio, subir archivo, validar mapeo y ejecutar la sesión.
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} className="crm-surface-card__actions">
+                <Chip variant="outlined" label={`Paso ${activeStep + 1}`} />
+                <Chip variant="outlined" label={steps[activeStep]} />
+              </Stack>
+            </Stack>
+
+            <Box className="crm-credit-import__stepper-shell">
+              <Stepper activeStep={activeStep} alternativeLabel className="crm-credit-import__stepper">
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
             <Divider className="crm-credit-import__divider" />
-            {stepContent()}
+            <Box className="crm-credit-import__step-body">{stepContent()}</Box>
             <Divider className="crm-credit-import__divider" />
-            <Stack direction="row" spacing={2} justifyContent="space-between">
+            <Stack
+              direction={{ xs: 'column-reverse', sm: 'row' }}
+              spacing={1.5}
+              justifyContent="space-between"
+              className="crm-credit-import__navigation"
+            >
               <Button
                 startIcon={<ArrowBack />}
                 onClick={goBack}
@@ -1243,8 +1402,8 @@ const stepContent = () => {
                 </Button>
               )}
             </Stack>
-          </CardContent>
-        </Card>
+          </Stack>
+        </Paper>
 
         <BaseDialog
           open={Boolean(errors)}
