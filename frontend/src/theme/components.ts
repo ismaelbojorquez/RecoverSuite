@@ -2577,21 +2577,6 @@ export const getComponents = (mode = 'light') => {
               boxShadow: 'none'
             }
           },
-          '.MuiIconButton-root.crm-client-detail__floating-action-button--primary': {
-            width: 54,
-            height: 54,
-            color: theme.palette.primary.contrastText,
-            backgroundImage: gradients.buttonPrimary,
-            backgroundColor: theme.palette.primary.main,
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.46),
-            boxShadow: shadow.glow || `0 16px 28px ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.28)}`,
-            '&:hover': {
-              backgroundImage: gradients.buttonPrimary,
-              backgroundColor: theme.palette.primary.main,
-              borderColor: alpha(theme.palette.primary.main, isLight ? 0.42 : 0.54),
-              boxShadow: shadow.lg || `0 18px 34px ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.32)}`
-            }
-          },
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
             ...getCardSurface(theme, { soft: true })
           },
@@ -2997,6 +2982,56 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-gestiones__quick-actions': {
             gap: theme.spacing(0.65)
+          },
+          '.MuiStack-root.crm-credit-detail__stack': {
+            gap: theme.spacing(1.1),
+            minHeight: 0
+          },
+          '.MuiPaper-root.crm-credit-detail__item': {
+            minWidth: 0
+          },
+          '.MuiTypography-root.crm-credit-detail__section-label': {
+            fontWeight: 700,
+            fontSize: '0.68rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: alpha(theme.palette.text.secondary, 0.88)
+          },
+          '.MuiBox-root.crm-credit-detail__balances-grid': {
+            display: 'grid',
+            gap: theme.spacing(0.72),
+            gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-credit-detail__balance-item': {
+            ...getInsetSurface(theme, {
+              radius: 13,
+              backgroundAlpha: isLight ? 0.8 : 0.58,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.04 : 0.1
+            }),
+            minWidth: 0,
+            padding: theme.spacing(0.78, 0.9),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.14),
+            justifyContent: 'center'
+          },
+          '.MuiTypography-root.crm-credit-detail__balance-label': {
+            fontWeight: 650,
+            fontSize: '0.68rem',
+            letterSpacing: '0.04em',
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTypography-root.crm-credit-detail__balance-value': {
+            fontWeight: 650,
+            lineHeight: 1.24,
+            color: theme.palette.text.primary,
+            overflowWrap: 'anywhere'
+          },
+          '.MuiTypography-root.crm-credit-detail__balance-caption': {
+            color: alpha(theme.palette.primary.main, 0.9),
+            fontWeight: 620
           },
           '.MuiStack-root.crm-gestiones__quick-actions .MuiButton-root': {
             minHeight: 32,

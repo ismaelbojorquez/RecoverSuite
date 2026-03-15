@@ -1,7 +1,5 @@
 import {
-  Add,
   ArrowBack,
-  Close,
   EmailOutlined,
   PaymentsOutlined,
   PlaceOutlined,
@@ -31,7 +29,6 @@ import useNavigation from '../hooks/useNavigation.js';
 import { getClientDetail } from '../services/clients.js';
 import { createGestion, listHistorialGestiones, listResultadosGestion } from '../services/gestiones.js';
 import { buildRoutePath, getRouteParams } from '../routes/paths.js';
-import BalancesWidget from '../modules/clientDetail/widgets/BalancesWidget.jsx';
 import CreditsWidget from '../modules/clientDetail/widgets/CreditsWidget.jsx';
 import GestionesWidget from '../modules/clientDetail/widgets/GestionesWidget.jsx';
 import NegotiationsWidget from '../modules/clientDetail/widgets/NegotiationsWidget.jsx';
@@ -173,12 +170,14 @@ const resolveCreditBalance = (balancesByCredit, creditId, balanceColumn) => {
     return null;
   }
 
-  const creditBalances = balancesByCredit.get(creditId);
+  const creditBalances =
+    balancesByCredit.get(String(creditId)) ||
+    balancesByCredit.get(creditId);
   if (!(creditBalances instanceof Map)) {
     return null;
   }
 
-  return creditBalances.get(balanceColumn.id) || null;
+  return creditBalances.get(String(balanceColumn.id)) || creditBalances.get(balanceColumn.id) || null;
 };
 
 const sumCreditBalances = (credits, balanceColumns, balancesByCredit) =>
@@ -980,8 +979,6 @@ function ClientOperationsTabs({ activeTab, onTabChange, error, onErrorClear, tab
 }
 
 function ClientFloatingActions({
-  open = false,
-  onToggle,
   onCall,
   onWhatsapp,
   onNewGestion,
@@ -1021,31 +1018,21 @@ function ClientFloatingActions({
 
   return (
     <Box className="crm-client-detail__floating-actions">
-      {open ? (
-        <Stack className="crm-client-detail__floating-actions-menu">
-          {actions.map((action) => (
-            <Stack key={action.id} direction="row" className="crm-client-detail__floating-action-row">
-              <Box className="crm-client-detail__floating-action-label">{action.label}</Box>
-              <IconButton
-                onClick={action.onClick}
-                disabled={action.disabled}
-                className="crm-client-detail__floating-action-button"
-                aria-label={action.label}
-              >
-                {action.icon}
-              </IconButton>
-            </Stack>
-          ))}
-        </Stack>
-      ) : null}
-
-      <IconButton
-        onClick={onToggle}
-        className="crm-client-detail__floating-action-button crm-client-detail__floating-action-button--primary"
-        aria-label={open ? 'Cerrar acciones rápidas' : 'Abrir acciones rápidas'}
-      >
-        {open ? <Close fontSize="small" /> : <Add fontSize="small" />}
-      </IconButton>
+      <Stack className="crm-client-detail__floating-actions-menu">
+        {actions.map((action) => (
+          <Stack key={action.id} direction="row" className="crm-client-detail__floating-action-row">
+            <Box className="crm-client-detail__floating-action-label">{action.label}</Box>
+            <IconButton
+              onClick={action.onClick}
+              disabled={action.disabled}
+              className="crm-client-detail__floating-action-button"
+              aria-label={action.label}
+            >
+              {action.icon}
+            </IconButton>
+          </Stack>
+        ))}
+      </Stack>
     </Box>
   );
 }
@@ -1096,7 +1083,6 @@ export default function ClientDetail({ routeParams }) {
   const gestionesRowsPerPage = 20;
 
   const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.creditos);
-  const [floatingActionsOpen, setFloatingActionsOpen] = useState(false);
   const [gestionesQuickAction, setGestionesQuickAction] = useState(null);
   const [gestionesFocusReturnToken, setGestionesFocusReturnToken] = useState(null);
 
@@ -1239,9 +1225,11 @@ export default function ClientDetail({ routeParams }) {
           return;
         }
 
-        if (!columnMap.has(field.id)) {
-          columnMap.set(field.id, {
-            id: field.id,
+        const fieldId = String(field.id);
+
+        if (!columnMap.has(fieldId)) {
+          columnMap.set(fieldId, {
+            id: fieldId,
             label: field.etiqueta_visual || field.nombre_campo || `Saldo ${field.id}`,
             tipo_dato: field.tipo_dato,
             orden: field.orden,
@@ -1275,11 +1263,12 @@ export default function ClientDetail({ routeParams }) {
     credits.forEach((credit) => {
       const balanceMap = new Map();
       (credit.balances || []).forEach((balance) => {
-        if (balance.campo_saldo_id) {
-          balanceMap.set(balance.campo_saldo_id, balance);
+        const fieldId = balance.campo_saldo_id || balance?.campo_saldo?.id;
+        if (fieldId) {
+          balanceMap.set(String(fieldId), balance);
         }
       });
-      map.set(credit.id, balanceMap);
+      map.set(String(credit.id), balanceMap);
     });
 
     return map;
@@ -1382,10 +1371,6 @@ export default function ClientDetail({ routeParams }) {
     setActiveTab(nextTab);
   }, []);
 
-  const handleToggleFloatingActions = useCallback(() => {
-    setFloatingActionsOpen((prev) => !prev);
-  }, []);
-
   const handleQuickNewGestion = useCallback(() => {
     if (!canLog) {
       setActiveTab(DETAIL_TAB_VALUES.gestiones);
@@ -1396,7 +1381,6 @@ export default function ClientDetail({ routeParams }) {
     const token = Date.now();
     setActiveTab(DETAIL_TAB_VALUES.gestiones);
     setGestionesQuickAction({ mode: 'gestion', token });
-    setFloatingActionsOpen(false);
   }, [canLog]);
 
   const handleQuickRegisterPayment = useCallback(() => {
@@ -1409,7 +1393,6 @@ export default function ClientDetail({ routeParams }) {
     const token = Date.now();
     setActiveTab(DETAIL_TAB_VALUES.gestiones);
     setGestionesQuickAction({ mode: 'pago', token });
-    setFloatingActionsOpen(false);
   }, [canLog]);
 
   const handleQuickCall = useCallback(() => {
@@ -1422,7 +1405,6 @@ export default function ClientDetail({ routeParams }) {
 
     setActiveTab(DETAIL_TAB_VALUES.gestiones);
     setGestionesFocusReturnToken(Date.now());
-    setFloatingActionsOpen(false);
     window.open(`tel:${phone}`, '_self');
   }, [notify, primaryContactPhone]);
 
@@ -1472,7 +1454,6 @@ export default function ClientDetail({ routeParams }) {
 
     setActiveTab(DETAIL_TAB_VALUES.gestiones);
     setGestionesFocusReturnToken(Date.now());
-    setFloatingActionsOpen(false);
     window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
   }, [notify, primaryContactPhone]);
 
@@ -1581,28 +1562,14 @@ export default function ClientDetail({ routeParams }) {
                     label: 'Créditos',
                     content: (
                       <Box className="crm-client-detail__tab-panel">
-                        <Box className="crm-client-detail__financial-grid">
-                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
-                            <CreditsWidget
-                              title="Creditos y producto"
-                              credits={credits}
-                              balanceColumns={balanceColumns}
-                              balancesByCredit={balancesByCredit}
-                              loading={loading}
-                              isReady={isReady}
-                            />
-                          </Box>
-
-                          <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
-                            <BalancesWidget
-                              title="Detalle de saldos"
-                              credits={credits}
-                              balanceColumns={balanceColumns}
-                              balancesByCredit={balancesByCredit}
-                              loading={loading && !isReady}
-                            />
-                          </Box>
-                        </Box>
+                        <CreditsWidget
+                          title="Detalle de créditos"
+                          credits={credits}
+                          balanceColumns={balanceColumns}
+                          balancesByCredit={balancesByCredit}
+                          loading={loading}
+                          isReady={isReady}
+                        />
                       </Box>
                     )
                   },
@@ -1684,8 +1651,6 @@ export default function ClientDetail({ routeParams }) {
           </Box>
 
           <ClientFloatingActions
-            open={floatingActionsOpen}
-            onToggle={handleToggleFloatingActions}
             onCall={handleQuickCall}
             onWhatsapp={handleQuickWhatsapp}
             onNewGestion={handleQuickNewGestion}
