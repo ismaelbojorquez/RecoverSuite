@@ -574,38 +574,40 @@ function ClientHeader({
             </Button>
           </Stack>
 
-          <Box className="crm-client-detail__header-summary-grid">
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Client Number
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {client?.numero_cliente || client?.id || clientId || '-'}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Portfolio
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {portafolioId || '-'}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                RFC
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {client?.rfc || '-'}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Status
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {statusPresentation.label}
-              </Typography>
+          <Box className="crm-client-detail__header-card-body">
+            <Box className="crm-client-detail__header-summary-grid">
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Client Number
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {client?.numero_cliente || client?.id || clientId || '-'}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Portfolio
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {portafolioId || '-'}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  RFC
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {client?.rfc || '-'}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Status
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {statusPresentation.label}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Paper>
@@ -617,7 +619,8 @@ function ClientHeader({
             </Typography>
           </Stack>
 
-          <Stack className="crm-client-detail__contact-groups">
+          <Box className="crm-client-detail__header-card-body crm-client-detail__header-card-body--contacts">
+            <Stack className="crm-client-detail__contact-groups">
             <Stack className="crm-client-detail__contact-group">
               <Typography variant="caption" className="crm-client-detail__contact-group-title">
                 Phones
@@ -809,7 +812,8 @@ function ClientHeader({
                 )}
               </Stack>
             </Stack>
-          </Stack>
+            </Stack>
+          </Box>
         </Paper>
 
         <Paper variant="outlined" className="crm-client-detail__header-card">
@@ -822,88 +826,90 @@ function ClientHeader({
             </Typography>
           </Stack>
 
-          <Box className="crm-client-detail__header-summary-grid crm-client-detail__header-summary-grid--compact">
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Total Credits
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {totalCredits}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Total Debt
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {formatCurrency(totalDebt)}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Total Overdue
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {formatCurrency(totalOverdue)}
-              </Typography>
-            </Box>
-            <Box className="crm-client-detail__header-summary-item">
-              <Typography variant="caption" className="crm-surface-card__meta-label">
-                Last Payment
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__meta-value">
-                {formatDateShort(lastPaymentDate)}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box className="crm-client-detail__indicator-grid">
-            <Box
-              className={[
-                'crm-client-detail__indicator-card',
-                `crm-client-detail__indicator-card--${
-                  daysOverdue !== null && daysOverdue >= 90
-                    ? 'danger'
-                    : daysOverdue !== null && daysOverdue >= 30
-                      ? 'warning'
-                      : 'success'
-                }`
-              ].join(' ')}
-            >
-              <Typography variant="caption" className="crm-client-detail__indicator-label">
-                Days overdue
-              </Typography>
-              <Typography variant="body2" className="crm-client-detail__indicator-value">
-                {daysOverdueDisplay}
-              </Typography>
+          <Box className="crm-client-detail__header-card-body">
+            <Box className="crm-client-detail__header-summary-grid crm-client-detail__header-summary-grid--compact">
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Total Credits
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {totalCredits}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Total Debt
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {formatCurrency(totalDebt)}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Total Overdue
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {formatCurrency(totalOverdue)}
+                </Typography>
+              </Box>
+              <Box className="crm-client-detail__header-summary-item">
+                <Typography variant="caption" className="crm-surface-card__meta-label">
+                  Last Payment
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__meta-value">
+                  {formatDateShort(lastPaymentDate)}
+                </Typography>
+              </Box>
             </Box>
 
-            <Box
-              className={[
-                'crm-client-detail__indicator-card',
-                `crm-client-detail__indicator-card--${collectionScore.tone}`
-              ].join(' ')}
-            >
-              <Typography variant="caption" className="crm-client-detail__indicator-label">
-                Collection score
-              </Typography>
-              <Typography variant="body2" className="crm-client-detail__indicator-value">
-                {collectionScore.label}
-              </Typography>
-            </Box>
+            <Box className="crm-client-detail__indicator-grid">
+              <Box
+                className={[
+                  'crm-client-detail__indicator-card',
+                  `crm-client-detail__indicator-card--${
+                    daysOverdue !== null && daysOverdue >= 90
+                      ? 'danger'
+                      : daysOverdue !== null && daysOverdue >= 30
+                        ? 'warning'
+                        : 'success'
+                  }`
+                ].join(' ')}
+              >
+                <Typography variant="caption" className="crm-client-detail__indicator-label">
+                  Days overdue
+                </Typography>
+                <Typography variant="body2" className="crm-client-detail__indicator-value">
+                  {daysOverdueDisplay}
+                </Typography>
+              </Box>
 
-            <Box
-              className={[
-                'crm-client-detail__indicator-card',
-                `crm-client-detail__indicator-card--${contactability.tone}`
-              ].join(' ')}
-            >
-              <Typography variant="caption" className="crm-client-detail__indicator-label">
-                Contactability
-              </Typography>
-              <Typography variant="body2" className="crm-client-detail__indicator-value">
-                {contactability.label}
-              </Typography>
+              <Box
+                className={[
+                  'crm-client-detail__indicator-card',
+                  `crm-client-detail__indicator-card--${collectionScore.tone}`
+                ].join(' ')}
+              >
+                <Typography variant="caption" className="crm-client-detail__indicator-label">
+                  Collection score
+                </Typography>
+                <Typography variant="body2" className="crm-client-detail__indicator-value">
+                  {collectionScore.label}
+                </Typography>
+              </Box>
+
+              <Box
+                className={[
+                  'crm-client-detail__indicator-card',
+                  `crm-client-detail__indicator-card--${contactability.tone}`
+                ].join(' ')}
+              >
+                <Typography variant="caption" className="crm-client-detail__indicator-label">
+                  Contactability
+                </Typography>
+                <Typography variant="body2" className="crm-client-detail__indicator-value">
+                  {contactability.label}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Paper>

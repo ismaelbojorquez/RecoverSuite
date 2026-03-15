@@ -2628,7 +2628,31 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-client-detail__header-card-head': {
             gap: theme.spacing(0.55),
-            minWidth: 0
+            minWidth: 0,
+            flexShrink: 0
+          },
+          '.MuiBox-root.crm-client-detail__header-card-body': {
+            flex: '1 1 auto',
+            minHeight: 0,
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            paddingRight: theme.spacing(0.12),
+            scrollbarGutter: 'stable',
+            '&::-webkit-scrollbar': {
+              width: 6,
+              height: 6
+            },
+            '&::-webkit-scrollbar-thumb': {
+              borderRadius: 999,
+              backgroundColor: alpha(theme.palette.text.secondary, isLight ? 0.18 : 0.26)
+            },
+            '&::-webkit-scrollbar-track': {
+              borderRadius: 999,
+              backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.04 : 0.08)
+            }
+          },
+          '.MuiBox-root.crm-client-detail__header-card-body--contacts': {
+            paddingRight: theme.spacing(0.28)
           },
           '.MuiStack-root.crm-client-detail__header-card-copy': {
             gap: theme.spacing(0.22),
