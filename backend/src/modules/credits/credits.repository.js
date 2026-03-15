@@ -226,6 +226,7 @@ export const listCreditSaldosWithFieldsByClient = async ({ clienteId, portafolio
        sf.label AS etiqueta_visual,
        sf.field_type AS tipo_dato,
        sf.order_index AS orden,
+       sf.is_primary AS es_principal,
        sf.visible AS activo
      FROM credits c
      JOIN clients cl ON cl.id = c.cliente_id

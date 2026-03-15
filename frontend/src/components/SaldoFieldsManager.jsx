@@ -59,6 +59,7 @@ const defaultForm = {
   value_type: 'dynamic',
   required: false,
   visible: true,
+  is_primary: false,
   order_index: 0,
   calc_expression: ''
 };
@@ -88,6 +89,14 @@ const validateForm = (form, existingFields, editingId) => {
   }
   if (!valueTypeOptions.some((opt) => opt.value === form.value_type)) {
     errors.value_type = 'Origen inválido';
+  }
+  if (form.is_primary) {
+    if (!['number', 'currency'].includes(form.field_type)) {
+      errors.field_type = 'El campo principal debe ser número o moneda';
+    }
+    if (form.value_type !== 'dynamic') {
+      errors.value_type = 'El campo principal debe ser dinámico';
+    }
   }
   if (form.value_type === 'calculated' && !form.calc_expression.trim()) {
     errors.calc_expression = 'Expresión requerida para calculados';
@@ -212,6 +221,16 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
           )
       },
       {
+        id: 'is_primary',
+        label: 'Principal',
+        render: (row) =>
+          row.is_primary ? (
+            <Chip size="small" label="Sí" color="secondary" variant="outlined" />
+          ) : (
+            <Chip size="small" label="No" variant="outlined" />
+          )
+      },
+      {
         id: 'visible',
         label: 'Visible',
         render: (row) =>
@@ -260,6 +279,7 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
       value_type: row.value_type || 'dynamic',
       required: Boolean(row.required),
       visible: Boolean(row.visible),
+      is_primary: Boolean(row.is_primary),
       order_index: row.order_index ?? 0,
       calc_expression: row.calc_expression || ''
     });
@@ -297,6 +317,7 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
         value_type: form.value_type,
         required: Boolean(form.required),
         visible: Boolean(form.visible),
+        is_primary: Boolean(form.is_primary),
         order_index: Number(form.order_index) || 0,
         calc_expression: form.value_type === 'calculated' ? form.calc_expression.trim() : null
       };
@@ -427,7 +448,7 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
 
           <FormSection
             title="Comportamiento"
-            subtitle="Ajusta orden, visibilidad y obligatoriedad del campo."
+            subtitle="Ajusta orden, visibilidad, obligatoriedad y si el campo será la base principal."
           >
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -461,6 +482,22 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
                     }
                     label="Requerido"
                   />
+                  <FormControlLabel
+                    className="crm-form__toggle-row"
+                    control={
+                      <Switch
+                        checked={form.is_primary}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, is_primary: e.target.checked }))
+                        }
+                      />
+                    }
+                    label="Campo principal"
+                  />
+                  <Typography variant="caption" className="crm-form__hint">
+                    El campo principal debe ser dinámico y numérico/moneda. Se usará como base
+                    principal en el detalle del cliente y como adeudo total para negociaciones.
+                  </Typography>
                 </Stack>
               </Grid>
             </Grid>

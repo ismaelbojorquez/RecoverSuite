@@ -154,6 +154,14 @@ const inferDynamicPrimaryFlag = (row) => {
   );
 };
 
+const resolveDynamicPrimaryFlag = (row) => {
+  if (row?.es_principal !== undefined && row?.es_principal !== null) {
+    return Boolean(row.es_principal);
+  }
+
+  return inferDynamicPrimaryFlag(row);
+};
+
 const appendBalanceToCredit = (credit, row, source) => {
   if (!credit || !row?.saldo_id || !row?.campo_saldo_id) {
     return;
@@ -179,7 +187,7 @@ const appendBalanceToCredit = (credit, row, source) => {
       es_principal:
         source === 'legacy'
           ? Boolean(row.es_principal)
-          : inferDynamicPrimaryFlag(row),
+          : resolveDynamicPrimaryFlag(row),
       activo: row.activo ?? true
     }
   });

@@ -34,6 +34,8 @@ export const createSaldoFieldHandler = async (req, res, next) => {
       value_type: valueType,
       required,
       visible,
+      is_primary: isPrimaryRaw,
+      isPrimary: isPrimaryCamel,
       order_index: orderIndex,
       calc_expression: calcExpression
     } = req.body || {};
@@ -46,6 +48,7 @@ export const createSaldoFieldHandler = async (req, res, next) => {
       valueType,
       required,
       visible,
+      isPrimary: isPrimaryRaw ?? isPrimaryCamel,
       orderIndex,
       calcExpression
     });
@@ -66,6 +69,8 @@ export const updateSaldoFieldHandler = async (req, res, next) => {
       value_type: valueType,
       required,
       visible,
+      is_primary: isPrimaryRaw,
+      isPrimary: isPrimaryCamel,
       order_index: orderIndex,
       calc_expression: calcExpression
     } = req.body || {};
@@ -78,6 +83,7 @@ export const updateSaldoFieldHandler = async (req, res, next) => {
       valueType,
       required,
       visible,
+      isPrimary: isPrimaryRaw ?? isPrimaryCamel,
       orderIndex,
       calcExpression
     });

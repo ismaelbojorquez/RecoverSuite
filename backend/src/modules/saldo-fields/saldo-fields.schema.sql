@@ -18,9 +18,14 @@ CREATE TABLE IF NOT EXISTS saldo_fields (
 );
 
 ALTER TABLE saldo_fields DROP COLUMN IF EXISTS format_config;
+ALTER TABLE saldo_fields ADD COLUMN IF NOT EXISTS is_primary BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_saldo_fields_portfolio_id
   ON saldo_fields (portfolio_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_saldo_fields_primary_per_portfolio
+  ON saldo_fields (portfolio_id)
+  WHERE is_primary = TRUE;
 
 ALTER TABLE portfolios
   ADD COLUMN IF NOT EXISTS debt_total_saldo_field_id BIGINT;

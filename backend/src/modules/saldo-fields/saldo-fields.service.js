@@ -1,11 +1,14 @@
+import pool from '../../config/db.js';
 import { createHttpError } from '../../utils/http-error.js';
 import {
+  clearPrimarySaldoFieldsByPortfolio,
   createSaldoField,
   deleteSaldoField,
   getSaldoFieldById,
   getSaldoFieldByKey,
   isSaldoFieldInUse,
   listSaldoFieldsByPortfolio,
+  setPortfolioDebtTotalSaldoField,
   updateSaldoField
 } from './saldo-fields.repository.js';
 import { invalidateClientDetailCache } from '../../utils/cache.js';
@@ -96,6 +99,22 @@ const normalizeBoolean = (value, defaultValue) => {
     if (normalized === 'false' || normalized === '0') return false;
   }
   return Boolean(value);
+};
+
+const ensurePrimaryFieldCompatibility = ({ fieldType, valueType }) => {
+  if (!['number', 'currency'].includes(String(fieldType || '').toLowerCase())) {
+    throw createHttpError(
+      400,
+      'El campo principal debe ser numérico o monetario.'
+    );
+  }
+
+  if (String(valueType || '').toLowerCase() !== 'dynamic') {
+    throw createHttpError(
+      400,
+      'El campo principal debe ser dinámico.'
+    );
+  }
 };
 
 const normalizeOrderIndex = (value) => {
@@ -224,6 +243,7 @@ export const createSaldoFieldService = async ({
   valueType,
   required,
   visible,
+  isPrimary,
   orderIndex,
   calcExpression
 }) => {
@@ -235,6 +255,7 @@ export const createSaldoFieldService = async ({
   const normalizedValueType = normalizeValueType(valueType);
   const normalizedRequired = normalizeBoolean(required, false);
   const normalizedVisible = normalizeBoolean(visible, true);
+  const normalizedIsPrimary = normalizeBoolean(isPrimary, false);
   const normalizedOrderIndex = normalizeOrderIndex(orderIndex);
   const normalizedCalcExpression = normalizeCalcExpression(calcExpression);
 
@@ -266,17 +287,56 @@ export const createSaldoFieldService = async ({
     fields: [...allFields, futureField]
   });
 
-  const created = await createSaldoField({
-    portfolioId,
-    key: normalizedKey,
-    label: normalizedLabel,
-    fieldType: normalizedFieldType,
-    valueType: normalizedValueType,
-    required: normalizedRequired,
-    visible: normalizedVisible,
-    orderIndex: normalizedOrderIndex,
-    calcExpression: normalizedCalcExpression
-  });
+  if (normalizedIsPrimary) {
+    ensurePrimaryFieldCompatibility({
+      fieldType: normalizedFieldType,
+      valueType: normalizedValueType
+    });
+  }
+
+  const client = await pool.connect();
+  let created;
+
+  try {
+    await client.query('BEGIN');
+
+    if (normalizedIsPrimary) {
+      await clearPrimarySaldoFieldsByPortfolio(
+        { portfolioId, excludeFieldId: null },
+        client
+      );
+    }
+
+    created = await createSaldoField(
+      {
+        portfolioId,
+        key: normalizedKey,
+        label: normalizedLabel,
+        fieldType: normalizedFieldType,
+        valueType: normalizedValueType,
+        required: normalizedRequired,
+        visible: normalizedVisible,
+        isPrimary: normalizedIsPrimary,
+        orderIndex: normalizedOrderIndex,
+        calcExpression: normalizedCalcExpression
+      },
+      client
+    );
+
+    if (normalizedIsPrimary) {
+      await setPortfolioDebtTotalSaldoField(
+        { portfolioId, fieldId: created.id },
+        client
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 
   await invalidateCaches(portfolioId);
 
@@ -291,6 +351,7 @@ export const updateSaldoFieldService = async ({
   valueType,
   required,
   visible,
+  isPrimary,
   orderIndex,
   calcExpression
 }) => {
@@ -339,6 +400,10 @@ export const updateSaldoFieldService = async ({
     payload.visible = normalizeBoolean(visible, current.visible);
   }
 
+  if (isPrimary !== undefined) {
+    payload.isPrimary = normalizeBoolean(isPrimary, current.is_primary);
+  }
+
   if (orderIndex !== undefined) {
     payload.orderIndex = normalizeOrderIndex(orderIndex);
   }
@@ -374,9 +439,53 @@ export const updateSaldoFieldService = async ({
     fields: futureFields
   });
 
-  const updated = await updateSaldoField({ fieldId, ...payload });
-  if (!updated) {
-    throw createHttpError(404, 'Campo de saldo no encontrado');
+  const effectiveIsPrimary = payload.isPrimary ?? current.is_primary;
+  const effectiveFieldType = payload.fieldType ?? current.field_type;
+  const effectiveValueType = payload.valueType ?? current.value_type;
+
+  if (effectiveIsPrimary) {
+    ensurePrimaryFieldCompatibility({
+      fieldType: effectiveFieldType,
+      valueType: effectiveValueType
+    });
+  }
+
+  const client = await pool.connect();
+  let updated;
+
+  try {
+    await client.query('BEGIN');
+
+    if (effectiveIsPrimary) {
+      await clearPrimarySaldoFieldsByPortfolio(
+        { portfolioId: current.portfolio_id, excludeFieldId: fieldId },
+        client
+      );
+    }
+
+    updated = await updateSaldoField({ fieldId, ...payload }, client);
+    if (!updated) {
+      throw createHttpError(404, 'Campo de saldo no encontrado');
+    }
+
+    if (effectiveIsPrimary) {
+      await setPortfolioDebtTotalSaldoField(
+        { portfolioId: current.portfolio_id, fieldId },
+        client
+      );
+    } else if (current.is_primary) {
+      await setPortfolioDebtTotalSaldoField(
+        { portfolioId: current.portfolio_id, fieldId: null },
+        client
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 
   await invalidateCaches(current.portfolio_id);
@@ -397,9 +506,29 @@ export const deleteSaldoFieldService = async ({ fieldId }) => {
     throw createHttpError(409, 'No se puede eliminar: el campo ya tiene saldos asociados');
   }
 
-  const deleted = await deleteSaldoField({ fieldId });
-  if (!deleted) {
-    throw createHttpError(404, 'Campo de saldo no encontrado');
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const deleted = await deleteSaldoField({ fieldId }, client);
+    if (!deleted) {
+      throw createHttpError(404, 'Campo de saldo no encontrado');
+    }
+
+    if (current.is_primary) {
+      await setPortfolioDebtTotalSaldoField(
+        { portfolioId: current.portfolio_id, fieldId: null },
+        client
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 
   await invalidateCaches(current.portfolio_id);

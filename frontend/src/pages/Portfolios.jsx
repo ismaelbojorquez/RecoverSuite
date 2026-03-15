@@ -21,7 +21,6 @@ import {
   listPortfolios,
   updatePortfolio
 } from '../services/portfolios.js';
-import { listSaldoFields } from '../services/saldoFields.js';
 import { buildRoutePath } from '../routes/paths.js';
 import useNavigation from '../hooks/useNavigation.js';
 import BaseTable from '../components/BaseTable.jsx';
@@ -38,12 +37,7 @@ const dateFormatter = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' });
 const buildFormState = (portfolio = {}) => ({
   name: portfolio.name ?? '',
   description: portfolio.description ?? '',
-  is_active: portfolio.is_active ?? true,
-  debt_total_saldo_field_id:
-    portfolio.debt_total_saldo_field_id !== undefined &&
-    portfolio.debt_total_saldo_field_id !== null
-      ? String(portfolio.debt_total_saldo_field_id)
-      : ''
+  is_active: portfolio.is_active ?? true
 });
 
 const formatDate = (value) => {
@@ -79,8 +73,6 @@ export default function Portfolios() {
   const [dialogError, setDialogError] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [portfolioSaldoFields, setPortfolioSaldoFields] = useState([]);
-  const [portfolioSaldoFieldsLoading, setPortfolioSaldoFieldsLoading] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState('deactivate');
@@ -141,6 +133,11 @@ export default function Portfolios() {
     return page * rowsPerPage + rows.length;
   }, [hasNext, page, rows.length, rowsPerPage]);
 
+  const editingPortfolio = useMemo(
+    () => rows.find((row) => Number(row.id) === Number(editingId)) || null,
+    [editingId, rows]
+  );
+
   const handleRefresh = () => {
     loadPortfolios();
   };
@@ -157,8 +154,6 @@ export default function Portfolios() {
     setDialogForm(buildFormState());
     setDialogError('');
     setEditingId(null);
-    setPortfolioSaldoFields([]);
-    setPortfolioSaldoFieldsLoading(false);
     setDialogOpen(true);
   };
 
@@ -167,26 +162,7 @@ export default function Portfolios() {
     setDialogForm(buildFormState(portfolio));
     setDialogError('');
     setEditingId(portfolio.id);
-    setPortfolioSaldoFields([]);
-    setPortfolioSaldoFieldsLoading(true);
     setDialogOpen(true);
-
-    listSaldoFields({ portfolioId: portfolio.id })
-      .then((data) => {
-        setPortfolioSaldoFields(
-          (Array.isArray(data) ? data : []).filter((field) =>
-            ['number', 'currency'].includes(String(field.field_type || '').toLowerCase())
-          )
-        );
-      })
-      .catch((err) => {
-        const message = err.message || 'No fue posible cargar los campos de saldo del portafolio.';
-        setDialogError(message);
-        notify(message, { severity: 'error' });
-      })
-      .finally(() => {
-        setPortfolioSaldoFieldsLoading(false);
-      });
   };
 
   const handleOpenSaldoFields = (portfolio) => {
@@ -240,13 +216,7 @@ export default function Portfolios() {
       const payload = {
         name,
         description: description.length > 0 ? description : null,
-        is_active: Boolean(dialogForm.is_active),
-        debt_total_saldo_field_id:
-          dialogMode === 'edit'
-            ? dialogForm.debt_total_saldo_field_id
-              ? Number.parseInt(dialogForm.debt_total_saldo_field_id, 10)
-              : null
-            : undefined
+        is_active: Boolean(dialogForm.is_active)
       };
 
       if (dialogMode === 'create') {
@@ -598,35 +568,20 @@ export default function Portfolios() {
           </FormSection>
           <FormSection
             title="Base para negociaciones"
-            subtitle="Selecciona qué campo dinámico representa el adeudo total del portafolio."
+            subtitle="El adeudo total y la base principal se controlan desde Campos de saldo."
           >
             {dialogMode === 'create' ? (
               <Alert severity="info">
-                Primero crea el portafolio. Después podrás asignar el campo que se usará como
-                adeudo total para las reglas de negociación.
+                Primero crea el portafolio. Después podrás marcar un campo dinámico como
+                principal desde <strong>Campos de saldo</strong>.
               </Alert>
             ) : (
-              <FormField
-                select
-                label="Campo de adeudo total"
-                value={dialogForm.debt_total_saldo_field_id}
-                onChange={handleFormChange('debt_total_saldo_field_id')}
-                SelectProps={{ native: true }}
-                helperText={
-                  portfolioSaldoFieldsLoading
-                    ? 'Cargando campos disponibles...'
-                    : portfolioSaldoFields.length === 0
-                      ? 'No hay campos numéricos o monetarios configurados en este portafolio.'
-                      : 'Este campo será la base de adeudo_total en negociaciones.'
-                }
-              >
-                <option value="">Sin configurar</option>
-                {portfolioSaldoFields.map((field) => (
-                  <option key={`portfolio-saldo-field-${field.id}`} value={field.id}>
-                    {field.label} ({field.key})
-                  </option>
-                ))}
-              </FormField>
+              <Alert severity="info">
+                Campo principal actual:{' '}
+                <strong>{editingPortfolio?.debt_total_saldo_field_label || 'Sin configurar'}</strong>.
+                Modifícalo desde <strong>Campos de saldo</strong>; ese valor alimenta el
+                adeudo total, la deuda principal y las reglas de negociación.
+              </Alert>
             )}
           </FormSection>
         </Stack>
