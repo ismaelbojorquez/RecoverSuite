@@ -49,7 +49,21 @@ function PaymentsWidget({
   return (
     <Paper variant="panel-sm">
       <Stack spacing={2}>
-        <Typography variant="subtitle1">{title}</Typography>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Cobranza
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              {title}
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              {safePayments.length > 0
+                ? `${safePayments.length} pago${safePayments.length === 1 ? '' : 's'} registrado${safePayments.length === 1 ? '' : 's'} para este cliente.`
+                : 'No hay pagos aplicados para este cliente.'}
+            </Typography>
+          </Stack>
+        </Stack>
 
         {safePayments.length === 0 ? (
           <EmptyState title={emptyTitle} description={emptyDescription} icon={null} dense />

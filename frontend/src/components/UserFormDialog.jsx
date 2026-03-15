@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Box,
   Button,
-  Chip,
+  Box,
   FormControlLabel,
   MenuItem,
   Stack,
@@ -12,6 +11,9 @@ import {
   Typography
 } from '@mui/material';
 import BaseDialog from './BaseDialog.jsx';
+import FormActions from './form/FormActions.jsx';
+import FormField from './form/FormField.jsx';
+import FormSection from './form/FormSection.jsx';
 
 const emailRegex =
   /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
@@ -134,66 +136,89 @@ export default function UserFormDialog({
       title={mode === 'create' ? 'Nuevo usuario' : 'Editar usuario'}
       subtitle="Define credenciales, datos y grupos"
       actions={
-        <Stack direction="row" spacing={1}>
+        <FormActions spacing={1}>
           <Button onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
           <Button variant="contained" onClick={handleSubmit} disabled={loading}>
             Guardar
           </Button>
-        </Stack>
+        </FormActions>
       }
     >
-      <Stack spacing={2}>
+      <Stack className="crm-form">
         {submitError ? <Alert severity="error">{submitError}</Alert> : null}
-        <TextField
-          label="Email"
-          type="email"
-          value={form.email}
-          onChange={handleChange('email')}
-          fullWidth
-          error={Boolean(errors.email)}
-          helperText={errors.email}
-        />
-        <TextField
-          label="Nombre"
-          value={form.name}
-          onChange={handleChange('name')}
-          fullWidth
-        />
-        <TextField
-          select
-          SelectProps={{ multiple: true }}
-          label="Grupos asignados"
-          value={form.groupIds}
-          onChange={handleGroupsChange}
-          fullWidth
-          error={Boolean(errors.groupIds)}
-          helperText={errors.groupIds || 'Selecciona al menos un grupo'}
+        <FormSection
+          title="Identidad"
+          subtitle="Captura los datos base del usuario y su correo corporativo."
         >
-          {groups.map((group) => (
-            <MenuItem key={group.id} value={group.id}>
-              {group.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        {mode === 'edit' ? (
-          <FormControlLabel
-            control={
-              <Switch
-                checked={form.isActive}
-                onChange={handleChange('isActive')}
-              />
-            }
-            label="Usuario activo"
-          />
-        ) : (
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              El usuario se crea activo por defecto.
-            </Typography>
+          <Box className="crm-form__grid">
+            <FormField
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={handleChange('email')}
+              error={errors.email}
+              autoComplete="email"
+            />
+            <FormField
+              label="Nombre"
+              value={form.name}
+              onChange={handleChange('name')}
+              placeholder="Nombre visible dentro del sistema"
+            />
           </Box>
-        )}
+        </FormSection>
+
+        <FormSection
+          title="Acceso"
+          subtitle="Asigna grupos y define el estado operativo del usuario."
+        >
+          <Stack className="crm-form__stack">
+            <FormField
+              component={TextField}
+              select
+              SelectProps={{ multiple: true }}
+              label="Grupos asignados"
+              value={form.groupIds}
+              onChange={handleGroupsChange}
+              error={errors.groupIds}
+              helperText={errors.groupIds || 'Selecciona al menos un grupo.'}
+            >
+              {groups.map((group) => (
+                <MenuItem key={group.id} value={group.id}>
+                  {group.name}
+                </MenuItem>
+              ))}
+            </FormField>
+
+            {mode === 'edit' ? (
+              <FormControlLabel
+                className="crm-form__toggle-row"
+                control={
+                  <Switch
+                    checked={form.isActive}
+                    onChange={handleChange('isActive')}
+                  />
+                }
+                label={
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2" className="crm-text-strong">
+                      Usuario activo
+                    </Typography>
+                    <Typography variant="caption" className="crm-form__hint">
+                      Controla si el usuario puede seguir accediendo sin eliminar su historial.
+                    </Typography>
+                  </Stack>
+                }
+              />
+            ) : (
+              <Typography variant="caption" className="crm-form__note">
+                El usuario se crea activo por defecto y podra operar inmediatamente.
+              </Typography>
+            )}
+          </Stack>
+        </FormSection>
       </Stack>
     </BaseDialog>
   );

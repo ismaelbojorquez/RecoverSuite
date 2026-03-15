@@ -1,4 +1,5 @@
 import {
+  Box,
   Paper,
   Skeleton,
   Table,
@@ -80,7 +81,11 @@ const renderCellContent = (value, column) => {
 
   const tone = resolveIndicatorTone(value, column);
   if (!tone) {
-    return value;
+    return (
+      <Typography variant="body2" className="crm-table__cell-value">
+        {value ?? '-'}
+      </Typography>
+    );
   }
 
   return (
@@ -102,7 +107,8 @@ export default function BaseTable({
   onSort,
   size = 'medium',
   stickyHeader = false,
-  dense = false
+  dense = false,
+  toolbar = null
 }) {
   const colCount = columns.length || 1;
   const showEmpty = !loading && rows.length === 0;
@@ -150,9 +156,15 @@ export default function BaseTable({
 
   return (
     <Paper variant="table" className="crm-table-shell">
+      {toolbar ? <Box className="crm-table-shell__toolbar">{toolbar}</Box> : null}
       <TableContainer className="crm-table-container">
         <Table
-          className="crm-table"
+          className={[
+            'crm-table',
+            dense ? 'crm-table--dense' : ''
+          ]
+            .filter(Boolean)
+            .join(' ')}
           size={dense ? 'small' : size}
           stickyHeader={stickyHeader}
         >
@@ -165,14 +177,34 @@ export default function BaseTable({
             {loading
               ? Array.from({ length: skeletonRowCount }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`} className="crm-table__row crm-table__row--skeleton">
-                    {(columns.length ? columns : [{ id: 'placeholder' }]).map((column) => (
-                      <TableCell
-                        key={`${column.id}-sk-${index}`}
-                        className="crm-table__cell crm-table__cell--body crm-table__cell--skeleton"
-                      >
-                        <Skeleton variant="text" width="100%" />
-                      </TableCell>
-                    ))}
+                    {(columns.length ? columns : [{ id: 'placeholder' }]).map((column, columnIndex) => {
+                      const actionColumn = isActionColumn(column);
+
+                      return (
+                        <TableCell
+                          key={`${column.id}-sk-${index}`}
+                          className="crm-table__cell crm-table__cell--body crm-table__cell--skeleton"
+                        >
+                          {actionColumn ? (
+                            <Box className="crm-table__skeleton-actions">
+                              <Skeleton variant="rounded" width={30} height={30} />
+                              <Skeleton variant="rounded" width={30} height={30} />
+                            </Box>
+                          ) : (
+                            <Box className="crm-table__skeleton-stack">
+                              <Skeleton
+                                variant="text"
+                                width={`${78 - ((columnIndex + index) % 4) * 9}%`}
+                              />
+                              <Skeleton
+                                variant="text"
+                                width={`${42 + ((columnIndex + index) % 3) * 12}%`}
+                              />
+                            </Box>
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               : rows.map((row) => {
@@ -188,7 +220,9 @@ export default function BaseTable({
                             className={buildCellClassName(column)}
                             align={column.align || 'left'}
                           >
-                            {renderCellContent(cellValue, column)}
+                            <Box className="crm-table__cell-content">
+                              {renderCellContent(cellValue, column)}
+                            </Box>
                           </TableCell>
                         );
                       })}

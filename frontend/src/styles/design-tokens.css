@@ -2,64 +2,80 @@
 [data-theme-mode='dark'] {
   color-scheme: dark;
 
-  /* Color Tokens */
-  --color-bg: #111827;
-  --color-surface: #182235;
-  --color-card: #22314a;
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-text-primary: #e6edf7;
-  --color-text-secondary: #a6b4ca;
-  --color-border: rgba(226, 232, 240, 0.14);
+  --color-bg: #07101c;
+  --color-bg-raised: #0b1726;
+  --color-surface: rgba(15, 27, 45, 0.88);
+  --color-surface-soft: rgba(18, 31, 50, 0.84);
+  --color-surface-floating: rgba(18, 30, 48, 0.94);
+  --color-surface-input: rgba(12, 23, 39, 0.88);
+  --color-surface-sidebar: rgba(10, 20, 34, 0.88);
+  --color-surface-header: rgba(9, 18, 31, 0.82);
+  --color-primary: #5f92ff;
+  --color-primary-strong: #3a74f5;
+  --color-primary-hover: #7aa5ff;
+  --color-text-primary: #f5f8fe;
+  --color-text-secondary: #96a8bf;
+  --color-success: #35b26f;
+  --color-warning: #e7a646;
+  --color-error: #e46c63;
+  --color-border-subtle: rgba(195, 214, 241, 0.07);
+  --color-border-soft: rgba(195, 214, 241, 0.12);
+  --color-border-default: rgba(195, 214, 241, 0.16);
+  --color-border-strong: rgba(195, 214, 241, 0.24);
+  --color-border-accent: rgba(95, 146, 255, 0.3);
 
-  /* RGB Channels (for alpha compositions) */
-  --color-bg-rgb: 17 24 39;
-  --color-surface-rgb: 24 34 53;
-  --color-card-rgb: 34 49 74;
-  --color-primary-rgb: 99 102 241;
-  --color-primary-hover-rgb: 79 70 229;
-  --color-text-primary-rgb: 230 237 247;
-  --color-text-secondary-rgb: 166 180 202;
-
-  /* Gradients */
   --gradient-bg:
-    radial-gradient(circle at 12% 0%, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0) 44%),
-    linear-gradient(180deg, #111827 0%, #172238 100%);
+    radial-gradient(circle at 0% 0%, rgba(95, 146, 255, 0.12) 0%, rgba(95, 146, 255, 0) 34%),
+    radial-gradient(circle at 100% 8%, rgba(95, 146, 255, 0.08) 0%, rgba(95, 146, 255, 0) 28%),
+    linear-gradient(180deg, #07101c 0%, #0a1524 100%);
   --gradient-surface:
-    linear-gradient(160deg, rgba(24, 34, 53, 0.84) 0%, rgba(17, 24, 39, 0.72) 100%);
-  --gradient-card:
-    linear-gradient(160deg, rgba(34, 49, 74, 0.84) 0%, rgba(24, 34, 53, 0.76) 58%, rgba(17, 24, 39, 0.68) 100%);
+    linear-gradient(180deg, rgba(15, 27, 45, 0.9) 0%, rgba(10, 19, 34, 0.84) 100%);
+  --gradient-surface-soft:
+    linear-gradient(180deg, rgba(18, 31, 50, 0.88) 0%, rgba(12, 22, 38, 0.84) 100%);
+  --gradient-sidebar:
+    linear-gradient(180deg, rgba(12, 22, 37, 0.92) 0%, rgba(8, 16, 29, 0.9) 100%);
   --gradient-primary:
-    linear-gradient(135deg, #6366f1 0%, #4f46e5 54%, #4338ca 100%);
-  --gradient-glass:
-    linear-gradient(155deg, rgba(34, 49, 74, 0.8) 0%, rgba(24, 34, 53, 0.72) 52%, rgba(17, 24, 39, 0.66) 100%);
+    linear-gradient(135deg, #6a9bff 0%, #3a74f5 100%);
+  --gradient-support:
+    linear-gradient(135deg, rgba(95, 146, 255, 0.16) 0%, rgba(95, 146, 255, 0.08) 100%);
 
-  /* Radius Tokens */
   --radius-xs: 8px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
   --radius-xl: 28px;
   --radius-pill: 999px;
 
-  /* Border Tokens */
-  --border-subtle: 1px solid rgba(226, 232, 240, 0.08);
-  --border-default: 1px solid rgba(226, 232, 240, 0.12);
-  --border-strong: 1px solid rgba(226, 232, 240, 0.18);
+  --shadow-xs: 0 1px 2px rgba(2, 7, 16, 0.22), 0 8px 16px rgba(2, 7, 16, 0.18);
+  --shadow-sm: 0 2px 6px rgba(2, 7, 16, 0.24), 0 12px 22px rgba(2, 7, 16, 0.24);
+  --shadow-md: 0 4px 10px rgba(2, 7, 16, 0.3), 0 20px 34px rgba(2, 7, 16, 0.34);
+  --shadow-lg: 0 8px 18px rgba(2, 7, 16, 0.34), 0 28px 46px rgba(2, 7, 16, 0.4);
+  --shadow-xl: 0 16px 28px rgba(2, 7, 16, 0.38), 0 36px 62px rgba(2, 7, 16, 0.48);
+  --shadow-focus:
+    0 0 0 1px rgba(95, 146, 255, 0.38),
+    0 0 0 4px rgba(95, 146, 255, 0.16),
+    0 18px 34px rgba(2, 7, 16, 0.4);
 
-  /* Shadow Tokens (Apple-like soft depth) */
-  --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.26);
-  --shadow-md: 0 14px 34px rgba(15, 23, 42, 0.34);
-  --shadow-lg: 0 20px 48px rgba(15, 23, 42, 0.4);
-  --shadow-glow: 0 0 0 1px rgba(99, 102, 241, 0.28), 0 10px 28px rgba(99, 102, 241, 0.2);
+  --overlay-soft: rgba(5, 9, 18, 0.18);
+  --overlay-scrim: rgba(2, 7, 14, 0.5);
+  --overlay-modal: rgba(2, 7, 14, 0.62);
+  --overlay-drawer: rgba(2, 7, 14, 0.56);
 
-  /* Blur Tokens */
-  --blur-sm: 8px;
+  --blur-none: 0px;
+  --blur-xs: 6px;
+  --blur-sm: 10px;
   --blur-md: 14px;
-  --blur-lg: 20px;
-  --backdrop-saturate: 145%;
+  --blur-lg: 18px;
+  --backdrop-saturate: 140%;
 
-  /* Spacing Tokens */
+  --state-hover: rgba(95, 146, 255, 0.12);
+  --state-hover-strong: rgba(95, 146, 255, 0.18);
+  --state-active: rgba(95, 146, 255, 0.22);
+  --state-selected: rgba(95, 146, 255, 0.2);
+  --state-muted: rgba(195, 214, 241, 0.06);
+  --state-disabled-bg: rgba(195, 214, 241, 0.08);
+  --state-disabled-text: rgba(147, 165, 188, 0.48);
+
   --space-0: 0;
   --space-1: 4px;
   --space-2: 8px;
@@ -67,104 +83,107 @@
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-7: 28px;
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
 
-  /* Layout Tokens */
-  --layout-sidebar-width: 260px;
-  --layout-sidebar-collapsed-width: 92px;
-  --layout-header-height: 78px;
-  --layout-content-max-width: 1380px;
-  --layout-content-padding-x: clamp(16px, 2.4vw, 40px);
-  --layout-content-padding-y: clamp(20px, 3vw, 44px);
+  --layout-sidebar-width: 272px;
+  --layout-sidebar-collapsed-width: 96px;
+  --layout-header-height: 76px;
+  --layout-content-max-width: 1440px;
+  --layout-content-padding-x: clamp(16px, 2.4vw, 44px);
+  --layout-content-padding-y: clamp(20px, 3vw, 48px);
 
-  /* Typography Tokens */
   --font-family-base:
-    'Plus Jakarta Sans', 'Inter', 'SF Pro Text', 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
+    'Plus Jakarta Sans', 'IBM Plex Sans', 'SF Pro Text', 'SF Pro Display', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
   --font-family-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-
-  --font-size-h1: 2.65rem;
-  --font-size-h2: 2.15rem;
-  --font-size-h3: 1.75rem;
+  --font-size-h1: 2.72rem;
+  --font-size-h2: 2.18rem;
+  --font-size-h3: 1.78rem;
   --font-size-body: 1rem;
-  --font-size-caption: 0.8125rem;
-
-  --font-size-xs: 0.8125rem;
-  --font-size-sm: 0.9375rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
-
+  --font-size-caption: 0.79rem;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 600;
+  --font-weight-semibold: 620;
   --font-weight-bold: 700;
-
-  --line-height-tight: 1.1;
-  --line-height-normal: 1.65;
-  --line-height-relaxed: 1.72;
-
-  --tracking-tight: -0.02em;
+  --line-height-tight: 1.08;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.66;
+  --tracking-tight: -0.03em;
   --tracking-normal: 0.003em;
-  --tracking-wide: 0.014em;
+  --tracking-wide: 0.09em;
 
-  /* Icon Tokens */
-  --icon-size-xs: 14px;
-  --icon-size-sm: 16px;
-  --icon-size-md: 18px;
-  --icon-size-lg: 20px;
-  --icon-size-xl: 24px;
-  --icon-stroke-width: 1.9;
-
-  /* Motion Tokens */
-  --transition-fast: 150ms ease-out;
-  --transition-base: 200ms ease-out;
-  --transition-slow: 300ms ease-out;
+  --transition-fast: 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-base: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-slow: 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-theme-mode='light'] {
   color-scheme: light;
 
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-card: #f1f5f9;
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-border: rgba(15, 23, 42, 0.12);
-
-  --color-bg-rgb: 248 250 252;
-  --color-surface-rgb: 255 255 255;
-  --color-card-rgb: 241 245 249;
-  --color-primary-rgb: 99 102 241;
-  --color-primary-hover-rgb: 79 70 229;
-  --color-text-primary-rgb: 15 23 42;
-  --color-text-secondary-rgb: 71 85 105;
+  --color-bg: #f5f8fc;
+  --color-bg-raised: #eef4f9;
+  --color-surface: rgba(255, 255, 255, 0.9);
+  --color-surface-soft: rgba(249, 252, 255, 0.86);
+  --color-surface-floating: rgba(255, 255, 255, 0.94);
+  --color-surface-input: rgba(255, 255, 255, 0.92);
+  --color-surface-sidebar: rgba(251, 253, 255, 0.9);
+  --color-surface-header: rgba(248, 251, 255, 0.86);
+  --color-primary: #3a74f5;
+  --color-primary-strong: #255dd7;
+  --color-primary-hover: #5a8eff;
+  --color-text-primary: #0b2540;
+  --color-text-secondary: #53657b;
+  --color-success: #238e59;
+  --color-warning: #c98525;
+  --color-error: #c64f47;
+  --color-border-subtle: rgba(15, 36, 61, 0.06);
+  --color-border-soft: rgba(15, 36, 61, 0.09);
+  --color-border-default: rgba(15, 36, 61, 0.12);
+  --color-border-strong: rgba(15, 36, 61, 0.18);
+  --color-border-accent: rgba(58, 116, 245, 0.22);
 
   --gradient-bg:
-    radial-gradient(circle at 10% 0%, rgba(99, 102, 241, 0.14) 0%, rgba(99, 102, 241, 0) 38%),
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    radial-gradient(circle at 0% 0%, rgba(58, 116, 245, 0.08) 0%, rgba(58, 116, 245, 0) 34%),
+    radial-gradient(circle at 100% 8%, rgba(131, 168, 255, 0.08) 0%, rgba(131, 168, 255, 0) 30%),
+    linear-gradient(180deg, #f5f8fc 0%, #edf3f9 100%);
   --gradient-surface:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.78) 100%);
-  --gradient-card:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.82) 56%, rgba(241, 245, 249, 0.72) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(247, 251, 255, 0.84) 100%);
+  --gradient-surface-soft:
+    linear-gradient(180deg, rgba(252, 254, 255, 0.92) 0%, rgba(244, 249, 255, 0.86) 100%);
+  --gradient-sidebar:
+    linear-gradient(180deg, rgba(252, 254, 255, 0.92) 0%, rgba(245, 249, 255, 0.88) 100%);
   --gradient-primary:
-    linear-gradient(135deg, #6366f1 0%, #818cf8 54%, #a5b4fc 100%);
-  --gradient-glass:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 252, 0.74) 54%, rgba(241, 245, 249, 0.64) 100%);
+    linear-gradient(135deg, #5a8eff 0%, #255dd7 100%);
+  --gradient-support:
+    linear-gradient(135deg, rgba(58, 116, 245, 0.1) 0%, rgba(58, 116, 245, 0.04) 100%);
 
-  --border-subtle: 1px solid rgba(15, 23, 42, 0.08);
-  --border-default: 1px solid rgba(15, 23, 42, 0.12);
-  --border-strong: 1px solid rgba(15, 23, 42, 0.2);
+  --shadow-xs: 0 1px 2px rgba(11, 23, 43, 0.06), 0 6px 14px rgba(11, 23, 43, 0.04);
+  --shadow-sm: 0 2px 6px rgba(11, 23, 43, 0.06), 0 10px 22px rgba(11, 23, 43, 0.05);
+  --shadow-md: 0 4px 10px rgba(11, 23, 43, 0.07), 0 18px 32px rgba(11, 23, 43, 0.08);
+  --shadow-lg: 0 8px 18px rgba(11, 23, 43, 0.08), 0 24px 44px rgba(11, 23, 43, 0.1);
+  --shadow-xl: 0 14px 28px rgba(11, 23, 43, 0.1), 0 34px 60px rgba(11, 23, 43, 0.12);
+  --shadow-focus:
+    0 0 0 1px rgba(58, 116, 245, 0.28),
+    0 0 0 4px rgba(58, 116, 245, 0.12),
+    0 14px 28px rgba(11, 23, 43, 0.1);
 
-  --shadow-soft: 0 8px 24px rgba(2, 6, 23, 0.08);
-  --shadow-md: 0 14px 34px rgba(2, 6, 23, 0.12);
-  --shadow-lg: 0 20px 48px rgba(2, 6, 23, 0.16);
-  --shadow-glow: 0 0 0 1px rgba(99, 102, 241, 0.22), 0 10px 28px rgba(99, 102, 241, 0.14);
+  --overlay-soft: rgba(15, 36, 61, 0.08);
+  --overlay-scrim: rgba(8, 20, 38, 0.18);
+  --overlay-modal: rgba(8, 20, 38, 0.26);
+  --overlay-drawer: rgba(8, 20, 38, 0.22);
+
+  --backdrop-saturate: 136%;
+
+  --state-hover: rgba(58, 116, 245, 0.06);
+  --state-hover-strong: rgba(58, 116, 245, 0.1);
+  --state-active: rgba(58, 116, 245, 0.12);
+  --state-selected: rgba(58, 116, 245, 0.14);
+  --state-muted: rgba(15, 36, 61, 0.04);
+  --state-disabled-bg: rgba(15, 36, 61, 0.05);
+  --state-disabled-text: rgba(66, 84, 102, 0.48);
 }
 
 html,
@@ -182,5 +201,8 @@ body {
 .crm-icon {
   flex-shrink: 0;
   vertical-align: middle;
-  transition: transform var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    transform var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
 }

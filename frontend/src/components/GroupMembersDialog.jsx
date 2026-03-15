@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import BaseDialog from './BaseDialog.jsx';
+import FormActions from './form/FormActions.jsx';
+import FormSection from './form/FormSection.jsx';
 import {
   addGroupMember,
   listGroupMembers,
@@ -135,79 +137,100 @@ export default function GroupMembersDialog({ open, groupId, onClose }) {
       subtitle="Agrega o remueve usuarios"
       maxWidth="sm"
       actions={
-        <Stack direction="row" spacing={1} justifyContent="flex-end" width="100%">
+        <FormActions spacing={1}>
           <Button onClick={onClose} disabled={saving}>
             Cerrar
           </Button>
-        </Stack>
+        </FormActions>
       }
     >
-      <Stack spacing={2}>
+      <Stack className="crm-form">
         {error ? <Alert severity="error">{error}</Alert> : null}
         {successMsg ? <Alert severity="success">{successMsg}</Alert> : null}
 
-        <Autocomplete
-          options={filteredOptions}
-          getOptionLabel={(option) =>
-            option.email || option.username || option.name || option.nombre || ''
-          }
-          value={selectedUser}
-          onChange={(_, value) => setSelectedUser(value)}
-          inputValue={search}
-          onInputChange={(_, value) => setSearch(value)}
-          loading={loading}
-          renderInput={(params) => (
-            <TextField {...params} label="Buscar usuario" size="small" />
-          )}
-        />
-        <Stack direction="row" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleAdd}
-            disabled={!selectedUser || saving}
-          >
-            Agregar
-          </Button>
-        </Stack>
-
-        <Box className="crm-group-members__scroll">
-          {members.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {loading ? 'Cargando miembros...' : 'Sin miembros.'}
-            </Typography>
-          ) : (
-            members.map((member) => (
-              <Stack
-                key={member.id}
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                spacing={1}
-                className="crm-group-members__item"
+        <FormSection
+          title="Agregar miembro"
+          subtitle="Busca usuarios disponibles y asignalos al grupo sin salir del flujo."
+        >
+          <Stack className="crm-form__stack">
+            <Autocomplete
+              options={filteredOptions}
+              getOptionLabel={(option) =>
+                option.email || option.username || option.name || option.nombre || ''
+              }
+              value={selectedUser}
+              onChange={(_, value) => setSelectedUser(value)}
+              inputValue={search}
+              onInputChange={(_, value) => setSearch(value)}
+              loading={loading}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Buscar usuario"
+                  placeholder="Correo, username o nombre"
+                />
+              )}
+            />
+            <Stack className="crm-form__compact-actions">
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleAdd}
+                disabled={!selectedUser || saving}
               >
-                <Box>
-                  <Typography variant="body2">
-                    {member.email || member.username || `Usuario ${member.id}`}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {member.name || member.nombre || ''}
-                  </Typography>
-                </Box>
-                <Tooltip title="Remover">
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleRemove(member.id)}
-                    disabled={saving}
+                Agregar
+              </Button>
+            </Stack>
+          </Stack>
+        </FormSection>
+
+        <FormSection
+          title="Miembros actuales"
+          subtitle="Consulta el roster actual y remueve usuarios cuando sea necesario."
+        >
+          <Box className="crm-form__scroll crm-group-members__scroll">
+            {members.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {loading ? 'Cargando miembros...' : 'Sin miembros.'}
+              </Typography>
+            ) : (
+              <Stack className="crm-form__selection-list">
+                {members.map((member) => (
+                  <Box
+                    key={member.id}
+                    className="crm-form__selection-item crm-group-members__item"
                   >
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
+                      <Box>
+                        <Typography variant="body2" className="crm-text-strong">
+                          {member.email || member.username || `Usuario ${member.id}`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {member.name || member.nombre || 'Sin nombre asignado'}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Remover">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleRemove(member.id)}
+                          disabled={saving}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Box>
+                ))}
               </Stack>
-            ))
-          )}
-        </Box>
+            )}
+          </Box>
+        </FormSection>
       </Stack>
     </BaseDialog>
   );

@@ -8,7 +8,6 @@ import {
   Paper,
   Stack,
   Switch,
-  TextField,
   Tooltip,
   Typography
 } from '@mui/material';
@@ -26,6 +25,9 @@ import { buildRoutePath } from '../routes/paths.js';
 import useNavigation from '../hooks/useNavigation.js';
 import BaseTable from '../components/BaseTable.jsx';
 import BaseDialog from '../components/BaseDialog.jsx';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import useNotify from '../hooks/useNotify.jsx';
 import SaldoFieldsManager from '../components/SaldoFieldsManager.jsx';
@@ -479,7 +481,7 @@ export default function Portfolios() {
         size="sm"
         title={dialogMode === 'create' ? 'Nuevo portafolio' : 'Editar portafolio'}
         actions={
-          <>
+          <FormActions spacing={1}>
             <Button onClick={handleDialogClose} disabled={saving}>
               Cancelar
             </Button>
@@ -490,35 +492,56 @@ export default function Portfolios() {
             >
               {dialogMode === 'create' ? 'Crear' : 'Guardar'}
             </Button>
-          </>
+          </FormActions>
         }
       >
-        <Stack spacing={2.5} className="crm-dialog-stack">
+        <Stack className="crm-form">
           {dialogError && <Alert severity="error">{dialogError}</Alert>}
-          <TextField
-            label="Nombre"
-            value={dialogForm.name}
-            onChange={handleFormChange('name')}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Descripcion"
-            value={dialogForm.description}
-            onChange={handleFormChange('description')}
-            fullWidth
-            multiline
-            minRows={3}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={Boolean(dialogForm.is_active)}
-                onChange={handleFormChange('is_active')}
+          <FormSection
+            title="Datos del portafolio"
+            subtitle="Define el nombre operativo y una descripcion breve del conjunto."
+          >
+            <Stack className="crm-form__stack">
+              <FormField
+                label="Nombre"
+                value={dialogForm.name}
+                onChange={handleFormChange('name')}
+                required
               />
-            }
-            label="Activo"
-          />
+              <FormField
+                label="Descripcion"
+                value={dialogForm.description}
+                onChange={handleFormChange('description')}
+                multiline
+                minRows={3}
+                placeholder="Ejemplo: cartera temprana, castigo, cobranza judicial."
+              />
+            </Stack>
+          </FormSection>
+          <FormSection
+            title="Estado"
+            subtitle="Controla si el portafolio se encuentra disponible para operaciones."
+          >
+            <FormControlLabel
+              className="crm-form__toggle-row"
+              control={
+                <Switch
+                  checked={Boolean(dialogForm.is_active)}
+                  onChange={handleFormChange('is_active')}
+                />
+              }
+              label={
+                <Stack spacing={0.25}>
+                  <Typography variant="body2" className="crm-text-strong">
+                    Activo
+                  </Typography>
+                  <Typography variant="caption" className="crm-form__hint">
+                    Cuando esta activo puede recibir clientes, creditos y configuracion asociada.
+                  </Typography>
+                </Stack>
+              }
+            />
+          </FormSection>
         </Stack>
       </BaseDialog>
 
@@ -540,7 +563,7 @@ export default function Portfolios() {
               : 'Desactivar portafolio'
         }
         actions={
-          <>
+          <FormActions spacing={1}>
             <Button onClick={handleConfirmClose} disabled={processingAction}>
               Cancelar
             </Button>
@@ -556,7 +579,7 @@ export default function Portfolios() {
                   ? 'Eliminar'
                   : 'Desactivar'}
             </Button>
-          </>
+          </FormActions>
         }
       >
         <Typography variant="body2" color="text.secondary">

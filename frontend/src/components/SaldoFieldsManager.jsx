@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   Chip,
+  FormControlLabel,
   Grid,
   IconButton,
   Paper,
@@ -23,6 +24,9 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import BaseDialog from './BaseDialog.jsx';
 import BaseTable from './BaseTable.jsx';
 import EmptyState from './EmptyState.jsx';
+import FormActions from './form/FormActions.jsx';
+import FormField from './form/FormField.jsx';
+import FormSection from './form/FormSection.jsx';
 import useNotify from '../hooks/useNotify.jsx';
 import {
   createSaldoField,
@@ -353,131 +357,150 @@ export default function SaldoFieldsManager({ open, onClose, portfolio }) {
         subtitle="Configura la metadata del campo de saldo"
         maxWidth="md"
         actions={
-          <Stack direction="row" spacing={1}>
+          <FormActions spacing={1}>
             <Button onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button variant="contained" onClick={handleSave} disabled={saving}>
               Guardar
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Label"
-              fullWidth
-              value={form.label}
-              onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))}
-              error={Boolean(formErrors.label)}
-              helperText={formErrors.label}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Key"
-              fullWidth
-              value={form.key}
-              onChange={(e) => setForm((prev) => ({ ...prev, key: e.target.value }))}
-              error={Boolean(formErrors.key)}
-              helperText={formErrors.key || 'Sin espacios; único por portafolio.'}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              select
-              label="Tipo de campo"
-              fullWidth
-              value={form.field_type}
-              onChange={(e) => setForm((prev) => ({ ...prev, field_type: e.target.value }))}
-              SelectProps={{ native: true }}
-              error={Boolean(formErrors.field_type)}
-              helperText={formErrors.field_type}
-            >
-              {fieldTypeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              select
-              label="Origen"
-              fullWidth
-              value={form.value_type}
-              onChange={(e) => setForm((prev) => ({ ...prev, value_type: e.target.value }))}
-              SelectProps={{ native: true }}
-              error={Boolean(formErrors.value_type)}
-              helperText={formErrors.value_type}
-            >
-              {valueTypeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              label="Orden"
-              type="number"
-              fullWidth
-              value={form.order_index}
-              onChange={(e) => setForm((prev) => ({ ...prev, order_index: e.target.value }))}
-              error={Boolean(formErrors.order_index)}
-              helperText={formErrors.order_index}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Stack direction="row" spacing={3}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Switch
-                  checked={form.visible}
-                  onChange={(e) => setForm((prev) => ({ ...prev, visible: e.target.checked }))}
+        <Stack className="crm-form">
+          <FormSection
+            title="Definicion del campo"
+            subtitle="Configura la identidad tecnica y el tipo de dato del saldo."
+          >
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  label="Label"
+                  value={form.label}
+                  onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))}
+                  error={formErrors.label}
                 />
-                <Typography variant="body2">Visible</Typography>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Switch
-                  checked={form.required}
-                  onChange={(e) => setForm((prev) => ({ ...prev, required: e.target.checked }))}
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  label="Key"
+                  value={form.key}
+                  onChange={(e) => setForm((prev) => ({ ...prev, key: e.target.value }))}
+                  error={formErrors.key}
+                  helperText={formErrors.key || 'Sin espacios; unico por portafolio.'}
                 />
-                <Typography variant="body2">Requerido</Typography>
-              </Stack>
-            </Stack>
-          </Grid>
-          {form.value_type === 'calculated' ? (
-            <Grid item xs={12}>
-              <TextField
-                label="Expresión"
-                value={form.calc_expression}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, calc_expression: e.target.value }))
-                }
-                fullWidth
-                multiline
-                minRows={2}
-                error={Boolean(formErrors.calc_expression)}
-                helperText={
-                  formErrors.calc_expression ||
-                  'Sintaxis: usa nombres de otros campos como variables; no se evalúa en el frontend.'
-                }
-              />
-              <Paper variant="outlined" className="crm-saldo-fields__syntax-help">
-                <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                  <Info fontSize="small" />
-                  <Typography variant="subtitle2">Ayuda de sintaxis</Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  - Usa operadores aritméticos (+ - * /) y nombres de campos como variables.
-                  {'\n'}- Las expresiones se validan en backend; aquí solo se captura texto.
-                  {'\n'}- No se ejecutan cálculos en frontend.
-                </Typography>
-              </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  component={TextField}
+                  select
+                  label="Tipo de campo"
+                  value={form.field_type}
+                  onChange={(e) => setForm((prev) => ({ ...prev, field_type: e.target.value }))}
+                  SelectProps={{ native: true }}
+                  error={formErrors.field_type}
+                >
+                  {fieldTypeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </FormField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  component={TextField}
+                  select
+                  label="Origen"
+                  value={form.value_type}
+                  onChange={(e) => setForm((prev) => ({ ...prev, value_type: e.target.value }))}
+                  SelectProps={{ native: true }}
+                  error={formErrors.value_type}
+                >
+                  {valueTypeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </FormField>
+              </Grid>
             </Grid>
+          </FormSection>
+
+          <FormSection
+            title="Comportamiento"
+            subtitle="Ajusta orden, visibilidad y obligatoriedad del campo."
+          >
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <FormField
+                  label="Orden"
+                  type="number"
+                  value={form.order_index}
+                  onChange={(e) => setForm((prev) => ({ ...prev, order_index: e.target.value }))}
+                  error={formErrors.order_index}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Stack className="crm-form__stack">
+                  <FormControlLabel
+                    className="crm-form__toggle-row"
+                    control={
+                      <Switch
+                        checked={form.visible}
+                        onChange={(e) => setForm((prev) => ({ ...prev, visible: e.target.checked }))}
+                      />
+                    }
+                    label="Visible"
+                  />
+                  <FormControlLabel
+                    className="crm-form__toggle-row"
+                    control={
+                      <Switch
+                        checked={form.required}
+                        onChange={(e) => setForm((prev) => ({ ...prev, required: e.target.checked }))}
+                      />
+                    }
+                    label="Requerido"
+                  />
+                </Stack>
+              </Grid>
+            </Grid>
+          </FormSection>
+
+          {form.value_type === 'calculated' ? (
+            <FormSection
+              title="Expresion calculada"
+              subtitle="Usa referencias a otros campos; la validacion final ocurre en backend."
+            >
+              <Stack className="crm-form__stack">
+                <FormField
+                  label="Expresion"
+                  value={form.calc_expression}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, calc_expression: e.target.value }))
+                  }
+                  multiline
+                  minRows={3}
+                  error={formErrors.calc_expression}
+                  helperText={
+                    formErrors.calc_expression ||
+                    'Sintaxis: usa nombres de otros campos como variables; no se evalua en el frontend.'
+                  }
+                />
+                <Paper variant="outlined" className="crm-saldo-fields__syntax-help">
+                  <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+                    <Info fontSize="small" />
+                    <Typography variant="subtitle2">Ayuda de sintaxis</Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    - Usa operadores aritmeticos (+ - * /) y nombres de campos como variables.
+                    {'\n'}- Las expresiones se validan en backend; aqui solo se captura texto.
+                    {'\n'}- No se ejecutan calculos en frontend.
+                  </Typography>
+                </Paper>
+              </Stack>
+            </FormSection>
           ) : null}
-        </Grid>
+        </Stack>
       </BaseDialog>
     </BaseDialog>
   );

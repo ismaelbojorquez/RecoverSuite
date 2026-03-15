@@ -1,19 +1,17 @@
-import { RefreshCcw, Search } from 'lucide-react';
+import { RefreshCcw } from 'lucide-react';
 import {
   Alert,
-  Box,
   Button,
-  IconButton,
-  InputAdornment,
+  Chip,
   Paper,
   Stack,
-  TextField,
   Typography
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import BaseTable from '../components/BaseTable.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import TableToolbar from '../components/TableToolbar.jsx';
 import IconRenderer from '../components/ui/IconRenderer.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import useNotify from '../hooks/useNotify.jsx';
@@ -288,27 +286,6 @@ export default function Credits() {
       />
 
       <PageContent>
-        <Paper variant="panel-sm">
-          <TextField
-            placeholder="Buscar por número o cliente"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconRenderer icon={Search} size="sm" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <IconButton size="small" onClick={() => setFilter('')} aria-label="Limpiar">
-                  <IconRenderer icon={RefreshCcw} size="sm" />
-                </IconButton>
-              )
-            }}
-          />
-        </Paper>
-
         {error && (
           <Alert severity="error" onClose={() => setError('')}>
             {error}
@@ -316,6 +293,27 @@ export default function Credits() {
         )}
 
         <BaseTable
+          toolbar={
+            <TableToolbar
+              eyebrow="Consulta"
+              title="Listado de créditos"
+              subtitle="Escanea rápidamente créditos y campos de saldo del portafolio activo."
+              searchValue={filter}
+              onSearchChange={setFilter}
+              onSearchClear={() => setFilter('')}
+              searchPlaceholder="Buscar por numero de credito o cliente"
+              searchHelperText="La búsqueda respeta la consulta actual y no altera el fetching."
+              filters={
+                <>
+                  <Chip variant="outlined" label={`Portafolio #${portafolioId}`} />
+                  <Chip
+                    variant="outlined"
+                    label={`${fields.length} campo${fields.length === 1 ? '' : 's'} de saldo`}
+                  />
+                </>
+              }
+            />
+          }
           columns={columns}
           rows={derivedRows}
           loading={loading || fieldsLoading}

@@ -58,7 +58,19 @@ function ContactsWidget({
   return (
     <Paper variant="panel-sm">
       <Stack spacing={2}>
-        <Typography variant="subtitle1">{title}</Typography>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Contactabilidad
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              {title}
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Telefonos, correos y direcciones agrupados para lectura rápida.
+            </Typography>
+          </Stack>
+        </Stack>
 
         {!isReady && loading ? (
           <Stack spacing={1.5}>
@@ -82,22 +94,43 @@ function ContactsWidget({
         ) : (
           <PageGrid>
             <Paper variant="outlined" className="crm-card-outline">
-              <Stack spacing={1}>
-                <Typography variant="subtitle1">Telefonos</Typography>
+              <Stack spacing={1.1}>
+                <Stack spacing={0.25}>
+                  <Typography variant="subtitle2" className="crm-text-strong">
+                    Telefonos
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Numeros disponibles para contacto directo.
+                  </Typography>
+                </Stack>
                 {renderContactList(safeContacts.phones, 'Sin telefonos.', (item) => item.telefono)}
               </Stack>
             </Paper>
 
             <Paper variant="outlined" className="crm-card-outline">
-              <Stack spacing={1}>
-                <Typography variant="subtitle1">Emails</Typography>
+              <Stack spacing={1.1}>
+                <Stack spacing={0.25}>
+                  <Typography variant="subtitle2" className="crm-text-strong">
+                    Emails
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Correos registrados para notificación o seguimiento.
+                  </Typography>
+                </Stack>
                 {renderContactList(safeContacts.emails, 'Sin emails.', (item) => item.email)}
               </Stack>
             </Paper>
 
             <Paper variant="outlined" className="crm-card-outline">
-              <Stack spacing={1}>
-                <Typography variant="subtitle1">Direcciones</Typography>
+              <Stack spacing={1.1}>
+                <Stack spacing={0.25}>
+                  <Typography variant="subtitle2" className="crm-text-strong">
+                    Direcciones
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Ubicaciones consolidadas del cliente.
+                  </Typography>
+                </Stack>
                 {renderContactList(
                   safeContacts.addresses,
                   'Sin direcciones.',

@@ -29,6 +29,7 @@ import {
   ChevronRight,
   LogOut,
   MoonStar,
+  PanelLeft,
   Sun,
   UserRound
 } from 'lucide-react';
@@ -38,7 +39,7 @@ import Can from '../components/Can.jsx';
 import GlobalSearch from '../components/GlobalSearch.jsx';
 import IconRenderer from '../components/ui/IconRenderer.jsx';
 import usePermissions from '../hooks/usePermissions.js';
-import { LAYOUTS, navSections, routes } from '../routes/router.js';
+import { LAYOUTS, matchRoute, navSections, routes } from '../routes/router.js';
 import { buildRoutePath } from '../routes/paths.js';
 import useAuth from '../hooks/useAuth.js';
 import useNavigation from '../hooks/useNavigation.js';
@@ -107,6 +108,59 @@ const buildNavSections = (routeList) => {
 
 const NAV_COLLAPSE_KEY = 'crm-nav-collapsed';
 
+const routeContextById = Object.freeze({
+  clients: {
+    section: 'Operacion',
+    title: 'Clientes',
+    subtitle: 'Seguimiento comercial y operativo.'
+  },
+  clientDetail: {
+    section: 'Operacion',
+    title: 'Detalle del cliente',
+    subtitle: 'Vista ejecutiva y trazabilidad del expediente.'
+  },
+  credits: {
+    section: 'Operacion',
+    title: 'Creditos',
+    subtitle: 'Consulta y control de financiamiento.'
+  },
+  balances: {
+    section: 'Operacion',
+    title: 'Saldos',
+    subtitle: 'Monitoreo y conciliacion de valores.'
+  },
+  profile: {
+    section: 'Cuenta',
+    title: 'Mi perfil',
+    subtitle: 'Preferencias personales y seguridad.'
+  },
+  audit: {
+    section: 'Administracion',
+    title: 'Auditoria',
+    subtitle: 'Registro y control de actividad.'
+  },
+  permissions: {
+    section: 'Configuracion',
+    title: 'Permisos',
+    subtitle: 'Politicas y control de acceso.'
+  },
+  balanceFields: {
+    section: 'Configuracion',
+    title: 'Campos de saldo',
+    subtitle: 'Estructura operativa y mapeo.'
+  },
+  forbidden: {
+    section: 'Sistema',
+    title: 'Acceso restringido',
+    subtitle: 'Permisos insuficientes.'
+  },
+  notFound: {
+    section: 'Sistema',
+    title: 'Ruta no encontrada',
+    subtitle: 'El recurso solicitado no esta disponible.'
+  }
+});
+
 const readCollapsePref = () => {
   if (typeof window === 'undefined') {
     return false;
@@ -164,6 +218,40 @@ export default function AppLayout({ children }) {
     []
   );
 
+  const activeNavEntry = useMemo(() => {
+    for (const section of visibleSections) {
+      const item = section.items.find(
+        (candidate) =>
+          candidate.path &&
+          (currentPath === candidate.path || currentPath.startsWith(`${candidate.path}/`))
+      );
+
+      if (item) {
+        return { section, item };
+      }
+    }
+
+    return null;
+  }, [currentPath, visibleSections]);
+
+  const matchedRoute = useMemo(() => matchRoute(currentPath)?.route || null, [currentPath]);
+
+  const activeShellContext = useMemo(() => {
+    if (activeNavEntry) {
+      return {
+        section: activeNavEntry.section.label,
+        title: activeNavEntry.item.label,
+        subtitle: activeNavEntry.item.secondary || 'Espacio operativo principal'
+      };
+    }
+
+    if (!matchedRoute) {
+      return null;
+    }
+
+    return routeContextById[matchedRoute.id] || null;
+  }, [activeNavEntry, matchedRoute]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(NAV_COLLAPSE_KEY, String(isCollapsed));
@@ -201,7 +289,14 @@ export default function AppLayout({ children }) {
           .filter(Boolean)
           .join(' ')}
       >
-        <BrandMark collapsed={isCollapsed} />
+        <Stack className="crm-app-shell__drawer-header-copy">
+          <BrandMark collapsed={isCollapsed} />
+          {!isCollapsed && activeShellContext?.section ? (
+            <Typography variant="caption" className="crm-app-shell__drawer-kicker">
+              {activeShellContext.section}
+            </Typography>
+          ) : null}
+        </Stack>
         {isDesktop && (
           <IconButton
             onClick={toggleCollapse}
@@ -317,6 +412,34 @@ export default function AppLayout({ children }) {
         <Toolbar className="crm-app-bar__toolbar" disableGutters>
           <Container maxWidth="lg" className="crm-app-bar__inner">
             <Stack direction="row" spacing={1.5} alignItems="center" className="crm-app-bar__left">
+              {!isDesktop && (
+                <IconButton
+                  color="inherit"
+                  onClick={() => setMobileOpen(true)}
+                  className="crm-app-bar__menu-trigger"
+                  aria-label="Abrir navegación"
+                >
+                  <IconRenderer icon={PanelLeft} size="sm" />
+                </IconButton>
+              )}
+              {!isDesktop && (
+                <Box className="crm-app-bar__brand">
+                  <BrandMark />
+                </Box>
+              )}
+              {isDesktop && activeShellContext ? (
+                <Stack className="crm-app-bar__context" spacing={0.3}>
+                  <Typography variant="caption" className="crm-app-bar__context-eyebrow">
+                    {activeShellContext.section}
+                  </Typography>
+                  <Typography variant="body2" className="crm-app-bar__context-title">
+                    {activeShellContext.title}
+                  </Typography>
+                  <Typography variant="caption" className="crm-app-bar__context-subtitle">
+                    {activeShellContext.subtitle}
+                  </Typography>
+                </Stack>
+              ) : null}
               <Box className="crm-app-bar__search">
                 <Can permission="search.read">
                   <GlobalSearch />
@@ -476,9 +599,11 @@ export default function AppLayout({ children }) {
 
       <Box component="main" className="crm-app-shell__main">
         <Toolbar className="crm-app-shell__offset" />
-        <Container maxWidth="lg" className="crm-page-container">
-          <Box className="crm-app-shell__content">{children}</Box>
-        </Container>
+        <Box className="crm-app-shell__canvas">
+          <Container maxWidth="lg" className="crm-page-container">
+            <Box className="crm-app-shell__content">{children}</Box>
+          </Container>
+        </Box>
       </Box>
     </Box>
   );

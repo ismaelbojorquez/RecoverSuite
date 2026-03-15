@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
-  Box,
   Button,
+  FormControlLabel,
   Stack,
   Switch,
-  TextField,
   Typography
 } from '@mui/material';
 import BaseDialog from './BaseDialog.jsx';
+import FormActions from './form/FormActions.jsx';
+import FormField from './form/FormField.jsx';
+import FormSection from './form/FormSection.jsx';
 
 /**
  * Modal para crear/editar grupos.
@@ -98,49 +100,68 @@ export default function GroupFormDialog({
       title={mode === 'create' ? 'Nuevo grupo' : 'Editar grupo'}
       subtitle="Define nombre, descripción y privilegios"
       actions={
-        <Stack direction="row" spacing={1} justifyContent="flex-end" width="100%">
+        <FormActions spacing={1}>
           <Button onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={loading}>
             Guardar
           </Button>
-        </Stack>
+        </FormActions>
       }
     >
-      <Stack spacing={2}>
+      <Stack className="crm-form">
         {submitError ? <Alert severity="error">{submitError}</Alert> : null}
-        <TextField
-          label="Nombre"
-          value={form.name}
-          onChange={handleChange('name')}
-          fullWidth
-          error={Boolean(errors.name)}
-          helperText={errors.name}
-          disabled={loading}
-        />
-        <TextField
-          label="Descripción"
-          value={form.description}
-          onChange={handleChange('description')}
-          fullWidth
-          multiline
-          minRows={2}
-          disabled={loading}
-        />
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography variant="body2" className="crm-switch-label">
-            Grupo administrador
-          </Typography>
-          <Switch
-            checked={form.isAdminGroup}
-            onChange={handleChange('isAdminGroup')}
-            disabled={loading}
+        <FormSection
+          title="Datos del grupo"
+          subtitle="Configura la identidad visible y el contexto del grupo."
+        >
+          <Stack className="crm-form__stack">
+            <FormField
+              label="Nombre"
+              value={form.name}
+              onChange={handleChange('name')}
+              error={errors.name}
+              disabled={loading}
+              required
+            />
+            <FormField
+              label="Descripcion"
+              value={form.description}
+              onChange={handleChange('description')}
+              multiline
+              minRows={3}
+              disabled={loading}
+              placeholder="Describe el alcance operativo o el tipo de equipo."
+            />
+          </Stack>
+        </FormSection>
+
+        <FormSection
+          title="Privilegios"
+          subtitle="Define si este grupo opera con privilegios administrativos."
+        >
+          <FormControlLabel
+            className="crm-form__toggle-row"
+            control={
+              <Switch
+                checked={form.isAdminGroup}
+                onChange={handleChange('isAdminGroup')}
+                disabled={loading}
+              />
+            }
+            label={
+              <Stack spacing={0.25}>
+                <Typography variant="body2" className="crm-text-strong">
+                  Grupo administrador
+                </Typography>
+                <Typography variant="caption" className="crm-form__hint">
+                  Si el backend bloquea desactivar el ultimo grupo admin, veras el mensaje aqui.
+                </Typography>
+              </Stack>
+            }
           />
-        </Box>
-        <Typography variant="caption" color="text.secondary">
-          Si el backend bloquea desactivar el último grupo admin, verás el mensaje de error aquí.
-        </Typography>
+        </FormSection>
       </Stack>
     </BaseDialog>
   );

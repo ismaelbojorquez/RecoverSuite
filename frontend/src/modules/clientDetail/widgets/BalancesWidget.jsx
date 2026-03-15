@@ -56,7 +56,21 @@ function BalancesWidget({
   return (
     <Paper variant="panel-sm">
       <Stack spacing={2}>
-        <Typography variant="subtitle1">{title}</Typography>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Saldos
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              {title}
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              {hasBalanceData
+                ? `${safeBalanceColumns.length} columna${safeBalanceColumns.length === 1 ? '' : 's'} de saldo sobre ${safeCredits.length} credito${safeCredits.length === 1 ? '' : 's'}.`
+                : 'No hay columnas de saldo configuradas para esta cartera.'}
+            </Typography>
+          </Stack>
+        </Stack>
 
         {!hasBalanceData ? (
           <EmptyState

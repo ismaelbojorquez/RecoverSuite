@@ -26,6 +26,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import BaseTable from '../components/BaseTable.jsx';
 import BaseDialog from '../components/BaseDialog.jsx';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import useNotify from '../hooks/useNotify.jsx';
 import {
@@ -425,7 +428,7 @@ export default function Users() {
   };
 
   const dialogActions = (
-    <Stack direction="row" spacing={1} justifyContent="flex-end" width="100%">
+    <FormActions spacing={1}>
       <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
       <Button
         variant="contained"
@@ -434,7 +437,7 @@ export default function Users() {
       >
         {dialogMode === 'create' ? 'Crear' : 'Guardar'}
       </Button>
-    </Stack>
+    </FormActions>
   );
 
   return (
@@ -501,67 +504,97 @@ export default function Users() {
         subtitle="Completa los campos para guardar"
         actions={dialogActions}
       >
-        <Stack spacing={2}>
+        <Stack className="crm-form">
           {dialogError ? <Alert severity="error">{dialogError}</Alert> : null}
-          <TextField
-            label="Correo"
-            type="email"
-            fullWidth
-            value={form.email}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                email: e.target.value
-              }))
-            }
-            error={Boolean(formErrors.email)}
-            helperText={formErrors.email}
-          />
-          <TextField
-            label="Nombre"
-            fullWidth
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-          />
-          <TextField
-            label="Contraseña"
-            type="password"
-            fullWidth
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            helperText={dialogMode === 'edit' ? 'Deja en blanco para mantener la actual' : ''}
-            error={Boolean(formErrors.password)}
-          />
-          <TextField
-            select
-            label="Grupo"
-            fullWidth
-            value={form.groupIds[0] || ''}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, groupIds: e.target.value ? [e.target.value] : [] }))
-            }
-            SelectProps={{ native: true }}
-            error={Boolean(formErrors.group)}
-            helperText={formErrors.group}
+          <FormSection
+            title="Identidad"
+            subtitle="Datos principales para identificar al usuario dentro del sistema."
           >
-            <option value="">(Sin grupo)</option>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </TextField>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={form.isActive}
+            <Box className="crm-form__grid">
+              <FormField
+                label="Correo"
+                type="email"
+                value={form.email}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+                  setForm((prev) => ({
+                    ...prev,
+                    email: e.target.value
+                  }))
+                }
+                error={formErrors.email}
+                required
+              />
+              <FormField
+                label="Nombre"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Nombre visible en la plataforma"
+              />
+            </Box>
+          </FormSection>
+
+          <FormSection
+            title="Acceso"
+            subtitle="Controla la contraseña inicial, el grupo principal y el estado operativo."
+          >
+            <Stack className="crm-form__stack">
+              <Box className="crm-form__grid">
+                <FormField
+                  label="Contraseña"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                  helperText={
+                    dialogMode === 'edit' ? 'Deja en blanco para mantener la actual.' : ''
+                  }
+                  error={formErrors.password}
+                />
+                <FormField
+                  component={TextField}
+                  select
+                  label="Grupo"
+                  value={form.groupIds[0] || ''}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      groupIds: e.target.value ? [e.target.value] : []
+                    }))
+                  }
+                  SelectProps={{ native: true }}
+                  error={formErrors.group}
+                  helperText={formErrors.group || 'Asigna un grupo principal para el acceso.'}
+                >
+                  <option value="">(Sin grupo)</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </FormField>
+              </Box>
+              <FormControlLabel
+                className="crm-form__toggle-row"
+                control={
+                  <Switch
+                    checked={form.isActive}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, isActive: e.target.checked }))
+                    }
+                  />
+                }
+                label={
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2" className="crm-text-strong">
+                      Usuario activo
+                    </Typography>
+                    <Typography variant="caption" className="crm-form__hint">
+                      Cuando esta activo puede autenticarse y operar normalmente.
+                    </Typography>
+                  </Stack>
                 }
               />
-            }
-            label="Usuario activo"
-          />
+            </Stack>
+          </FormSection>
         </Stack>
       </BaseDialog>
 
@@ -575,7 +608,7 @@ export default function Users() {
         subtitle="Confirma el cambio de estado"
         dividers={false}
         actions={
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <FormActions spacing={1}>
             <Button onClick={() => setToggleTarget(null)} disabled={toggleLoading}>
               Cancelar
             </Button>
@@ -588,7 +621,7 @@ export default function Users() {
             >
               {toggleTarget?.is_active ? 'Desactivar' : 'Activar'}
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
         <Stack spacing={2} alignItems="center" className="crm-users__dialog-stack">
@@ -632,7 +665,7 @@ export default function Users() {
         subtitle="Genera una contraseña temporal y obliga cambio al siguiente acceso"
         dividers={false}
         actions={
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <FormActions spacing={1}>
             <Button onClick={() => setResetTarget(null)} disabled={resetLoading}>
               Cancelar
             </Button>
@@ -645,7 +678,7 @@ export default function Users() {
             >
               Generar temporal
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
         <Stack spacing={2} alignItems="center" className="crm-users__dialog-stack">
@@ -672,7 +705,7 @@ export default function Users() {
         title="Eliminar usuario"
         subtitle="Confirma escribiendo el username exacto"
         actions={
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <FormActions spacing={1}>
             <Button onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>
               Cancelar
             </Button>
@@ -688,7 +721,7 @@ export default function Users() {
             >
               Eliminar
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
         <Stack spacing={2}>
@@ -720,7 +753,7 @@ export default function Users() {
         subtitle="Muéstrala solo por un canal seguro. Visible una sola vez."
         dividers={false}
         actions={
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <FormActions spacing={1}>
             <Button
               startIcon={<ContentCopy />}
               onClick={handleCopyTempPassword}
@@ -731,7 +764,7 @@ export default function Users() {
             <Button variant="contained" onClick={() => setResetInfo(null)}>
               Cerrar
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
         <Stack spacing={2}>

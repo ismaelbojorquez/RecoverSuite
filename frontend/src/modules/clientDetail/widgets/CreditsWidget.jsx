@@ -72,7 +72,21 @@ function CreditsWidget({
   return (
     <Paper variant="panel-sm">
       <Stack spacing={2}>
-        <Typography variant="subtitle1">{title}</Typography>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Cartera
+            </Typography>
+            <Typography variant="subtitle1" className="crm-surface-card__title">
+              {title}
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              {creditsEmpty
+                ? 'No hay créditos vinculados para mostrar en esta vista.'
+                : `${safeCredits.length} credito${safeCredits.length === 1 ? '' : 's'} con saldos y producto.`}
+            </Typography>
+          </Stack>
+        </Stack>
 
         {!isReady && loading ? (
           <Typography variant="body2" color="text.secondary">

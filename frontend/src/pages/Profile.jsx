@@ -18,6 +18,9 @@ import {
   Typography
 } from '@mui/material';
 import { useMemo, useState } from 'react';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import useAuth from '../hooks/useAuth.js';
 import useMe from '../hooks/useMe.js';
@@ -159,11 +162,18 @@ export default function Profile() {
           <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--wide">
             <Paper variant="panel">
               <Stack spacing={2}>
-                <Stack spacing={0.5}>
-                  <Typography variant="overline" className="crm-label">
-                    Información general
-                  </Typography>
-                  <Typography variant="h5">{displayName}</Typography>
+                <Stack className="crm-surface-card__header">
+                  <Stack className="crm-surface-card__header-main">
+                    <Typography variant="overline" className="crm-surface-card__eyebrow">
+                      Cuenta
+                    </Typography>
+                    <Typography variant="h5" className="crm-surface-card__title">
+                      {displayName}
+                    </Typography>
+                    <Typography variant="body2" className="crm-surface-card__subtitle">
+                      Perfil operativo, grupos asignados y permisos efectivos del usuario autenticado.
+                    </Typography>
+                  </Stack>
                 </Stack>
 
                 {loading && !profileUser ? (
@@ -174,25 +184,29 @@ export default function Profile() {
                     <Skeleton variant="text" width="62%" />
                   </Stack>
                 ) : (
-                  <Stack spacing={1.2}>
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                  <Stack spacing={1.4}>
+                    <Box className="crm-surface-card__meta-grid">
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
                           Usuario
                         </Typography>
-                        <Typography variant="body2">{profileUser?.username || '-'}</Typography>
+                        <Typography variant="body2" className="crm-surface-card__meta-value">
+                          {profileUser?.username || '-'}
+                        </Typography>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
                           Correo
                         </Typography>
-                        <Typography variant="body2">{profileUser?.email || '-'}</Typography>
+                        <Typography variant="body2" className="crm-surface-card__meta-value">
+                          {profileUser?.email || '-'}
+                        </Typography>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
                           Estado
                         </Typography>
-                        <Box sx={{ mt: 0.3 }}>
+                        <Box>
                           <Chip
                             size="small"
                             color={profileUser?.estado === 'activo' ? 'success' : 'default'}
@@ -200,28 +214,44 @@ export default function Profile() {
                           />
                         </Box>
                       </Box>
-                    </Stack>
-
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
                           Alta
                         </Typography>
-                        <Typography variant="body2">{formatDate(profileUser?.created_at)}</Typography>
+                        <Typography variant="body2" className="crm-surface-card__meta-value">
+                          {formatDate(profileUser?.created_at)}
+                        </Typography>
                       </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
                           Última actualización
                         </Typography>
-                        <Typography variant="body2">{formatDate(profileUser?.updated_at)}</Typography>
+                        <Typography variant="body2" className="crm-surface-card__meta-value">
+                          {formatDate(profileUser?.updated_at)}
+                        </Typography>
                       </Box>
-                    </Stack>
+                      <Box className="crm-surface-card__meta-item">
+                        <Typography variant="caption" className="crm-surface-card__meta-label">
+                          Permisos efectivos
+                        </Typography>
+                        <Typography variant="body2" className="crm-surface-card__meta-value">
+                          {permissions.length}
+                        </Typography>
+                      </Box>
+                    </Box>
 
                     <Box>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" className="crm-surface-card__meta-label">
                         Grupos
                       </Typography>
-                      <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap sx={{ mt: 0.7 }}>
+                      <Stack
+                        direction="row"
+                        spacing={0.8}
+                        flexWrap="wrap"
+                        useFlexGap
+                        className="crm-surface-card__badge-row"
+                        sx={{ mt: 0.7 }}
+                      >
                         {groups.length > 0 ? (
                           groups.map((group) => (
                             <Chip
@@ -236,13 +266,6 @@ export default function Profile() {
                         )}
                       </Stack>
                     </Box>
-
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Permisos efectivos
-                      </Typography>
-                      <Typography variant="body2">{permissions.length}</Typography>
-                    </Box>
                   </Stack>
                 )}
               </Stack>
@@ -252,9 +275,18 @@ export default function Profile() {
           <Box className="crm-client-detail__financial-col crm-client-detail__financial-col--narrow">
             <Paper variant="panel-sm">
               <Stack spacing={2}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <VpnKeyOutlined color="primary" fontSize="small" />
-                  <Typography variant="subtitle1">Cambiar contraseña</Typography>
+                <Stack className="crm-surface-card__header">
+                  <Stack className="crm-surface-card__header-main">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <VpnKeyOutlined color="primary" fontSize="small" />
+                      <Typography variant="subtitle1" className="crm-surface-card__title">
+                        Cambiar contraseña
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" className="crm-surface-card__subtitle">
+                      Actualiza tus credenciales con un flujo claro y más legible.
+                    </Typography>
+                  </Stack>
                 </Stack>
 
                 {profileUser?.requiere_cambio_password && (
@@ -269,86 +301,93 @@ export default function Profile() {
                   </Alert>
                 )}
 
-                <TextField
-                  label="Contraseña actual"
-                  type={showPassword.currentPassword ? 'text' : 'password'}
-                  value={passwordForm.currentPassword}
-                  onChange={handlePasswordInput('currentPassword')}
-                  autoComplete="current-password"
-                  fullWidth
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          edge="end"
-                          onClick={() => togglePasswordVisibility('currentPassword')}
-                          aria-label="Mostrar contraseña actual"
-                        >
-                          {showPassword.currentPassword ? (
-                            <VisibilityOff fontSize="small" />
-                          ) : (
-                            <Visibility fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
+                <FormSection
+                  title="Actualizacion de credenciales"
+                  subtitle="Mantiene un foco claro, mejor legibilidad y confirmacion visual durante el cambio."
+                >
+                  <Stack className="crm-form__stack">
+                    <FormField
+                      component={TextField}
+                      label="Contraseña actual"
+                      type={showPassword.currentPassword ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordInput('currentPassword')}
+                      autoComplete="current-password"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              edge="end"
+                              onClick={() => togglePasswordVisibility('currentPassword')}
+                              aria-label="Mostrar contraseña actual"
+                            >
+                              {showPassword.currentPassword ? (
+                                <VisibilityOff fontSize="small" />
+                              ) : (
+                                <Visibility fontSize="small" />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
+                    />
 
-                <TextField
-                  label="Nueva contraseña"
-                  type={showPassword.newPassword ? 'text' : 'password'}
-                  value={passwordForm.newPassword}
-                  onChange={handlePasswordInput('newPassword')}
-                  autoComplete="new-password"
-                  fullWidth
-                  helperText="Mínimo 8 caracteres."
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          edge="end"
-                          onClick={() => togglePasswordVisibility('newPassword')}
-                          aria-label="Mostrar nueva contraseña"
-                        >
-                          {showPassword.newPassword ? (
-                            <VisibilityOff fontSize="small" />
-                          ) : (
-                            <Visibility fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
+                    <FormField
+                      component={TextField}
+                      label="Nueva contraseña"
+                      type={showPassword.newPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordInput('newPassword')}
+                      autoComplete="new-password"
+                      helperText="Minimo 8 caracteres."
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              edge="end"
+                              onClick={() => togglePasswordVisibility('newPassword')}
+                              aria-label="Mostrar nueva contraseña"
+                            >
+                              {showPassword.newPassword ? (
+                                <VisibilityOff fontSize="small" />
+                              ) : (
+                                <Visibility fontSize="small" />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
+                    />
 
-                <TextField
-                  label="Confirmar nueva contraseña"
-                  type={showPassword.confirmPassword ? 'text' : 'password'}
-                  value={passwordForm.confirmPassword}
-                  onChange={handlePasswordInput('confirmPassword')}
-                  autoComplete="new-password"
-                  fullWidth
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          edge="end"
-                          onClick={() => togglePasswordVisibility('confirmPassword')}
-                          aria-label="Mostrar confirmación de contraseña"
-                        >
-                          {showPassword.confirmPassword ? (
-                            <VisibilityOff fontSize="small" />
-                          ) : (
-                            <Visibility fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
+                    <FormField
+                      component={TextField}
+                      label="Confirmar nueva contraseña"
+                      type={showPassword.confirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={handlePasswordInput('confirmPassword')}
+                      autoComplete="new-password"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              edge="end"
+                              onClick={() => togglePasswordVisibility('confirmPassword')}
+                              aria-label="Mostrar confirmación de contraseña"
+                            >
+                              {showPassword.confirmPassword ? (
+                                <VisibilityOff fontSize="small" />
+                              ) : (
+                                <Visibility fontSize="small" />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
+                    />
+                  </Stack>
+                </FormSection>
 
-                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <FormActions spacing={1} className="crm-surface-card__action-row">
                   <Button
                     variant="outlined"
                     onClick={() => {
@@ -366,7 +405,7 @@ export default function Profile() {
                   >
                     Guardar contraseña
                   </Button>
-                </Stack>
+                </FormActions>
               </Stack>
             </Paper>
           </Box>
@@ -375,4 +414,3 @@ export default function Profile() {
     </Page>
   );
 }
-

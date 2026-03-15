@@ -1,15 +1,11 @@
-import { ArrowRight, Pencil, RefreshCcw, Search } from 'lucide-react';
+import { ArrowRight, Pencil, RefreshCcw } from 'lucide-react';
 import {
   Alert,
-  Box,
   Button,
   Chip,
-  DialogContent,
   IconButton,
-  InputAdornment,
   Paper,
   Stack,
-  TextField,
   Tooltip,
   Typography
 } from '@mui/material';
@@ -23,9 +19,13 @@ import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import BaseTable from '../components/BaseTable.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import BaseDialog from '../components/BaseDialog.jsx';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import IconRenderer from '../components/ui/IconRenderer.jsx';
 import useNotify from '../hooks/useNotify.jsx';
 import { getPortfolioById } from '../services/portfolios.js';
+import TableToolbar from '../components/TableToolbar.jsx';
 
 const DEBOUNCE_MS = 350;
 const MIN_QUERY_LENGTH = 2;
@@ -308,51 +308,59 @@ export default function Clients() {
       title={dialogMode === 'edit' ? 'Editar cliente' : 'Nuevo cliente'}
       size="sm"
       actions={
-        <>
+        <FormActions spacing={1}>
           <Button onClick={() => setDialogOpen(false)} disabled={saving}>
             Cancelar
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}>
             {dialogMode === 'edit' ? 'Guardar' : 'Crear'}
           </Button>
-        </>
+        </FormActions>
       }
     >
-      <DialogContent>
-        <Stack spacing={1.5}>
-          {dialogError && (
-            <Alert severity="error" onClose={() => setDialogError('')}>
-              {dialogError}
-            </Alert>
-          )}
-          <TextField
-            label="Numero de cliente"
-            value={form.numero_cliente}
-            onChange={(e) => setForm((prev) => ({ ...prev, numero_cliente: e.target.value }))}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Nombre del cliente"
-            value={form.nombre_completo}
-            onChange={(e) => setForm((prev) => ({ ...prev, nombre_completo: e.target.value }))}
-            required
-            fullWidth
-          />
-          <TextField
-            label="RFC (opcional)"
-            value={form.rfc}
-            onChange={(e) => setForm((prev) => ({ ...prev, rfc: e.target.value }))}
-            fullWidth
-          />
-          <TextField
-            label="CURP (opcional)"
-            value={form.curp}
-            onChange={(e) => setForm((prev) => ({ ...prev, curp: e.target.value }))}
-            fullWidth
-          />
-        </Stack>
-      </DialogContent>
+      <Stack className="crm-form">
+        {dialogError && (
+          <Alert severity="error" onClose={() => setDialogError('')}>
+            {dialogError}
+          </Alert>
+        )}
+        <FormSection
+          title="Identidad del cliente"
+          subtitle="Captura los datos base para crear o actualizar el registro."
+        >
+          <Stack className="crm-form__stack">
+            <FormField
+              label="Numero de cliente"
+              value={form.numero_cliente}
+              onChange={(e) => setForm((prev) => ({ ...prev, numero_cliente: e.target.value }))}
+              required
+            />
+            <FormField
+              label="Nombre del cliente"
+              value={form.nombre_completo}
+              onChange={(e) => setForm((prev) => ({ ...prev, nombre_completo: e.target.value }))}
+              required
+            />
+          </Stack>
+        </FormSection>
+        <FormSection
+          title="Identificadores"
+          subtitle="Completa solo los campos que apliquen para conciliacion y trazabilidad."
+        >
+          <Stack className="crm-form__stack">
+            <FormField
+              label="RFC (opcional)"
+              value={form.rfc}
+              onChange={(e) => setForm((prev) => ({ ...prev, rfc: e.target.value }))}
+            />
+            <FormField
+              label="CURP (opcional)"
+              value={form.curp}
+              onChange={(e) => setForm((prev) => ({ ...prev, curp: e.target.value }))}
+            />
+          </Stack>
+        </FormSection>
+      </Stack>
     </BaseDialog>
   );
 
@@ -415,23 +423,6 @@ export default function Clients() {
             Selecciona un portafolio desde la lista para ver sus clientes.
           </Alert>
         )}
-        <Paper variant="filter">
-          <TextField
-            fullWidth
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder="Buscar por nombre o numero de cliente"
-            helperText={helperText}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconRenderer icon={Search} size="sm" />
-                </InputAdornment>
-              )
-            }}
-          />
-        </Paper>
-
         {error && (
           <Alert severity="error" onClose={() => setError('')}>
             {error}
@@ -439,6 +430,34 @@ export default function Clients() {
         )}
 
         <BaseTable
+          toolbar={
+            <TableToolbar
+              eyebrow="Exploración"
+              title="Listado de clientes"
+              subtitle="Busca rápidamente por nombre o número de cliente y mantén el contexto del portafolio activo."
+              searchValue={filter}
+              onSearchChange={setFilter}
+              onSearchClear={() => setFilter('')}
+              searchPlaceholder="Buscar por nombre o numero de cliente"
+              searchHelperText={helperText}
+              filters={
+                <>
+                  <Chip
+                    variant="outlined"
+                    label={
+                      portafolioId
+                        ? portfolioName || `Portafolio #${portafolioId}`
+                        : 'Portafolio no seleccionado'
+                    }
+                  />
+                  <Chip
+                    variant="outlined"
+                    label={`${rows.length} registro${rows.length === 1 ? '' : 's'} visibles`}
+                  />
+                </>
+              }
+            />
+          }
           columns={[
             {
               id: 'numero_cliente',

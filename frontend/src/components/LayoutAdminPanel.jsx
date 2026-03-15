@@ -1,5 +1,5 @@
 import { AddOutlined, RefreshOutlined, ViewModuleOutlined } from '@mui/icons-material';
-import { Button, Divider, FormControlLabel, Paper, Stack, Switch, Typography } from '@mui/material';
+import { Button, Chip, Divider, FormControlLabel, Paper, Stack, Switch, Typography } from '@mui/material';
 import { memo, useCallback, useMemo } from 'react';
 
 const normalizeWidgets = (widgets) =>
@@ -30,14 +30,33 @@ function LayoutAdminPanelComponent({
   return (
     <Paper variant="panel-sm" className="crm-layout-admin-panel">
       <Stack spacing={2} className="crm-layout-admin-panel__content">
-        <Stack spacing={0.75}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <ViewModuleOutlined fontSize="small" color="primary" />
-            <Typography variant="subtitle1">Panel de layout</Typography>
+        <Stack className="crm-surface-card__header crm-surface-card__header--split">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Configuración
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ViewModuleOutlined fontSize="small" color="primary" />
+              <Typography variant="subtitle1" className="crm-surface-card__title">
+                Panel de layout
+              </Typography>
+            </Stack>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Activa u oculta widgets y ajusta el tablero antes de guardar.
+            </Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Activa u oculta widgets y ajusta el tablero antes de guardar.
-          </Typography>
+          <Stack direction="row" className="crm-surface-card__actions">
+            <Chip
+              size="small"
+              variant="outlined"
+              color={inactiveCount > 0 ? 'warning' : 'success'}
+              label={
+                inactiveCount > 0
+                  ? `${inactiveCount} oculto${inactiveCount === 1 ? '' : 's'}`
+                  : 'Todos visibles'
+              }
+            />
+          </Stack>
         </Stack>
 
         <Divider />
@@ -52,31 +71,40 @@ function LayoutAdminPanelComponent({
                   alignItems="center"
                   justifyContent="space-between"
                 >
-                  <Stack spacing={0.25}>
-                    <Typography variant="subtitle2">{widget.title}</Typography>
+                  <Stack spacing={0.35}>
+                    <Typography variant="subtitle2" className="crm-text-strong">
+                      {widget.title}
+                    </Typography>
                     {widget.description ? (
                       <Typography variant="caption" color="text.secondary">
                         {widget.description}
                       </Typography>
                     ) : null}
                   </Stack>
-                  <FormControlLabel
-                    className="crm-layout-admin-panel__switch"
-                    label={widget.active ? 'Activo' : 'Inactivo'}
-                    labelPlacement="start"
-                    control={
-                      <Switch
-                        size="small"
-                        checked={widget.active}
-                        disabled={disabled}
-                        onChange={(event) => {
-                          if (typeof onToggleWidget === 'function') {
-                            onToggleWidget(widget.id, event.target.checked);
-                          }
-                        }}
-                      />
-                    }
-                  />
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={widget.active ? 'success' : 'default'}
+                      label={widget.active ? 'Activo' : 'Inactivo'}
+                    />
+                    <FormControlLabel
+                      className="crm-layout-admin-panel__switch"
+                      label={null}
+                      control={
+                        <Switch
+                          size="small"
+                          checked={widget.active}
+                          disabled={disabled}
+                          onChange={(event) => {
+                            if (typeof onToggleWidget === 'function') {
+                              onToggleWidget(widget.id, event.target.checked);
+                            }
+                          }}
+                        />
+                      }
+                    />
+                  </Stack>
                 </Stack>
 
                 {!widget.active && (
@@ -101,7 +129,12 @@ function LayoutAdminPanelComponent({
 
         <Divider />
 
-        <Stack spacing={1} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between">
+        <Stack
+          spacing={1}
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+        >
           <Typography variant="caption" color="text.secondary">
             {inactiveCount > 0
               ? `${inactiveCount} widget${inactiveCount === 1 ? '' : 's'} oculto${inactiveCount === 1 ? '' : 's'}.`

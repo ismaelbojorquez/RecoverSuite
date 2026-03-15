@@ -17,7 +17,6 @@ import {
   Paper,
   Stack,
   Switch,
-  TextField,
   Tooltip,
   Typography
 } from '@mui/material';
@@ -25,7 +24,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import BaseDialog from '../components/BaseDialog.jsx';
 import BaseTable from '../components/BaseTable.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
+import TableToolbar from '../components/TableToolbar.jsx';
 import useNotify from '../hooks/useNotify.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import {
@@ -413,22 +416,30 @@ export default function NegotiationSettings() {
           </Alert>
         )}
 
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={includeInactive}
-                onChange={(event) => setIncludeInactive(event.target.checked)}
-              />
-            }
-            label="Mostrar niveles inactivos"
-          />
-          <Typography variant="caption" color="text.secondary">
-            Los niveles sin grupos asignados no serán visibles para gestores no administradores.
-          </Typography>
-        </Stack>
-
         <BaseTable
+          toolbar={
+            <TableToolbar
+              eyebrow="Filtros"
+              title="Niveles configurados"
+              subtitle="Organiza la vista y controla si los niveles inactivos deben formar parte del análisis."
+              filters={
+                <>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={includeInactive}
+                        onChange={(event) => setIncludeInactive(event.target.checked)}
+                      />
+                    }
+                    label="Mostrar niveles inactivos"
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Los niveles sin grupos asignados no serán visibles para gestores no administradores.
+                  </Typography>
+                </>
+              }
+            />
+          }
           columns={columns}
           rows={rows}
           loading={loading}
@@ -447,61 +458,83 @@ export default function NegotiationSettings() {
           title={dialogMode === 'create' ? 'Nuevo nivel de descuento' : 'Editar nivel de descuento'}
           subtitle="Estos niveles se usan al crear una negociación en el detalle del cliente."
           actions={
-            <>
+            <FormActions spacing={1}>
               <Button onClick={closeDialog} disabled={saving}>
                 Cancelar
               </Button>
               <Button variant="contained" onClick={handleSaveLevel} disabled={saving}>
                 {dialogMode === 'create' ? 'Crear nivel' : 'Guardar cambios'}
               </Button>
-            </>
+            </FormActions>
           }
         >
-          {dialogError && <Alert severity="error">{dialogError}</Alert>}
-          <TextField
-            label="Nombre"
-            value={dialogForm.nombre}
-            onChange={(event) =>
-              setDialogForm((prev) => ({ ...prev, nombre: event.target.value }))
-            }
-            required
-            fullWidth
-          />
-          <TextField
-            label="Porcentaje de descuento"
-            type="number"
-            value={dialogForm.porcentaje_descuento}
-            onChange={(event) =>
-              setDialogForm((prev) => ({
-                ...prev,
-                porcentaje_descuento: event.target.value
-              }))
-            }
-            required
-            fullWidth
-            inputProps={{ min: 0, max: 100, step: '0.01' }}
-          />
-          <TextField
-            label="Descripcion"
-            value={dialogForm.descripcion}
-            onChange={(event) =>
-              setDialogForm((prev) => ({ ...prev, descripcion: event.target.value }))
-            }
-            multiline
-            minRows={3}
-            fullWidth
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={dialogForm.activo}
-                onChange={(event) =>
-                  setDialogForm((prev) => ({ ...prev, activo: event.target.checked }))
+          <Stack className="crm-form">
+            {dialogError && <Alert severity="error">{dialogError}</Alert>}
+            <FormSection
+              title="Nivel de descuento"
+              subtitle="Configura el nombre, porcentaje y descripcion visible para negociaciones."
+            >
+              <Stack className="crm-form__stack">
+                <FormField
+                  label="Nombre"
+                  value={dialogForm.nombre}
+                  onChange={(event) =>
+                    setDialogForm((prev) => ({ ...prev, nombre: event.target.value }))
+                  }
+                  required
+                />
+                <FormField
+                  label="Porcentaje de descuento"
+                  type="number"
+                  value={dialogForm.porcentaje_descuento}
+                  onChange={(event) =>
+                    setDialogForm((prev) => ({
+                      ...prev,
+                      porcentaje_descuento: event.target.value
+                    }))
+                  }
+                  required
+                  inputProps={{ min: 0, max: 100, step: '0.01' }}
+                />
+                <FormField
+                  label="Descripcion"
+                  value={dialogForm.descripcion}
+                  onChange={(event) =>
+                    setDialogForm((prev) => ({ ...prev, descripcion: event.target.value }))
+                  }
+                  multiline
+                  minRows={3}
+                />
+              </Stack>
+            </FormSection>
+
+            <FormSection
+              title="Estado"
+              subtitle="Activa o desactiva el nivel sin perder su configuracion."
+            >
+              <FormControlLabel
+                className="crm-form__toggle-row"
+                control={
+                  <Switch
+                    checked={dialogForm.activo}
+                    onChange={(event) =>
+                      setDialogForm((prev) => ({ ...prev, activo: event.target.checked }))
+                    }
+                  />
+                }
+                label={
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2" className="crm-text-strong">
+                      Nivel activo
+                    </Typography>
+                    <Typography variant="caption" className="crm-form__hint">
+                      Los niveles inactivos no apareceran para gestores no administradores.
+                    </Typography>
+                  </Stack>
                 }
               />
-            }
-            label="Nivel activo"
-          />
+            </FormSection>
+          </Stack>
         </BaseDialog>
 
         <BaseDialog
@@ -514,62 +547,69 @@ export default function NegotiationSettings() {
               : undefined
           }
           actions={
-            <>
+            <FormActions spacing={1}>
               <Button onClick={closeGroupDialog} disabled={savingGroups}>
                 Cancelar
               </Button>
               <Button variant="contained" onClick={handleSaveGroups} disabled={savingGroups}>
                 Guardar grupos
               </Button>
-            </>
+            </FormActions>
           }
         >
-          {groupDialogError && <Alert severity="error">{groupDialogError}</Alert>}
-          {groups.length === 0 ? (
-            <Alert severity="warning">
-              No se pudieron cargar grupos. Verifica permisos de lectura de grupos.
-            </Alert>
-          ) : (
-            <Stack spacing={1.25}>
-              {groups.map((group) => {
-                const groupId = Number.parseInt(group.id, 10);
-                if (!Number.isInteger(groupId) || groupId <= 0) {
-                  return null;
-                }
-                const checked = selectedGroupIds.includes(groupId);
-                return (
-                  <Box
-                    key={`discount-group-${group.id}`}
-                    sx={{
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      borderRadius: 1.5,
-                      px: 1.5,
-                      py: 0.75
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={checked}
-                          onChange={(event) => handleToggleGroup(groupId, event.target.checked)}
+          <Stack className="crm-form">
+            {groupDialogError && <Alert severity="error">{groupDialogError}</Alert>}
+            {groups.length === 0 ? (
+              <Alert severity="warning">
+                No se pudieron cargar grupos. Verifica permisos de lectura de grupos.
+              </Alert>
+            ) : (
+              <FormSection
+                title="Acceso por grupos"
+                subtitle="Marca los grupos que podran visualizar este nivel de descuento."
+              >
+                <Stack className="crm-form__selection-list">
+                  {groups.map((group) => {
+                    const groupId = Number.parseInt(group.id, 10);
+                    if (!Number.isInteger(groupId) || groupId <= 0) {
+                      return null;
+                    }
+                    const checked = selectedGroupIds.includes(groupId);
+                    return (
+                      <Box
+                        key={`discount-group-${group.id}`}
+                        className={[
+                          'crm-form__selection-item',
+                          checked ? 'crm-form__selection-item--selected' : ''
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={checked}
+                              onChange={(event) => handleToggleGroup(groupId, event.target.checked)}
+                            />
+                          }
+                          label={
+                            <Stack spacing={0.15}>
+                              <Typography variant="body2" className="crm-text-strong">
+                                {group.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {group.description || 'Sin descripcion'}
+                              </Typography>
+                            </Stack>
+                          }
                         />
-                      }
-                      label={
-                        <Stack spacing={0.15}>
-                          <Typography variant="body2" className="crm-text-strong">
-                            {group.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {group.description || 'Sin descripcion'}
-                          </Typography>
-                        </Stack>
-                      }
-                    />
-                  </Box>
-                );
-              })}
-            </Stack>
-          )}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </FormSection>
+            )}
+          </Stack>
         </BaseDialog>
       </PageContent>
     </Page>

@@ -4,13 +4,14 @@ import {
   Box,
   Button,
   Checkbox,
-  Divider,
   FormControlLabel,
   Stack,
   TextField,
   Typography
 } from '@mui/material';
 import BaseDialog from './BaseDialog.jsx';
+import FormActions from './form/FormActions.jsx';
+import FormSection from './form/FormSection.jsx';
 import { listPermissions } from '../services/permissions.js';
 import { listGroupPermissions, replaceGroupPermissions } from '../services/groups.js';
 import useNotify from '../hooks/useNotify.jsx';
@@ -109,59 +110,83 @@ export default function GroupPermissionsDialog({ open, groupId, onClose }) {
       subtitle="Selecciona los permisos que tendrá el grupo"
       maxWidth="sm"
       actions={
-        <Stack direction="row" spacing={1} justifyContent="flex-end" width="100%">
+        <FormActions spacing={1}>
           <Button onClick={onClose} disabled={saving}>
             Cerrar
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={saving || loading}>
             Guardar
           </Button>
-        </Stack>
+        </FormActions>
       }
     >
-      <Stack spacing={2}>
+      <Stack className="crm-form">
         {error ? <Alert severity="error">{error}</Alert> : null}
         {successMsg ? <Alert severity="success">{successMsg}</Alert> : null}
-        <TextField
-          label="Buscar permiso"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth
-          size="small"
-          disabled={loading}
-        />
-        <Divider />
-        <Box className="crm-group-permissions__scroll">
-          {filteredCatalog.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {loading ? 'Cargando permisos...' : 'Sin resultados.'}
-            </Typography>
-          ) : (
-            <Stack spacing={0.5}>
-              {filteredCatalog.map((perm) => (
-                <FormControlLabel
-                  key={perm.id}
-                  control={
-                    <Checkbox
-                      checked={selectedIds.includes(String(perm.id))}
-                      onChange={() => togglePermission(perm.id)}
-                    />
-                  }
-                  label={
-                    <Stack spacing={0.2}>
-                      <Typography variant="body2" className="crm-text-strong">
-                        {perm.key}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {perm.label || perm.description || 'Sin descripción'}
-                      </Typography>
-                    </Stack>
-                  }
-                />
-              ))}
-            </Stack>
-          )}
-        </Box>
+        <FormSection
+          title="Buscar permisos"
+          subtitle="Filtra rapidamente por clave, etiqueta o descripcion."
+        >
+          <TextField
+            label="Buscar permiso"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth
+            disabled={loading}
+            placeholder="permissions.read, grupos, reportes..."
+            helperText={`${selectedIds.length} permiso${selectedIds.length === 1 ? '' : 's'} seleccionado${selectedIds.length === 1 ? '' : 's'}.`}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Catalogo"
+          subtitle="Activa o desactiva permisos individuales sin perder contexto."
+        >
+          <Box className="crm-form__scroll crm-group-permissions__scroll">
+            {filteredCatalog.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {loading ? 'Cargando permisos...' : 'Sin resultados.'}
+              </Typography>
+            ) : (
+              <Stack className="crm-form__selection-list">
+                {filteredCatalog.map((perm) => {
+                  const isSelected = selectedIds.includes(String(perm.id));
+
+                  return (
+                    <Box
+                      key={perm.id}
+                      className={[
+                        'crm-form__selection-item',
+                        isSelected ? 'crm-form__selection-item--selected' : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => togglePermission(perm.id)}
+                          />
+                        }
+                        label={
+                          <Stack spacing={0.2}>
+                            <Typography variant="body2" className="crm-text-strong">
+                              {perm.key}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {perm.label || perm.description || 'Sin descripcion'}
+                            </Typography>
+                          </Stack>
+                        }
+                      />
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+        </FormSection>
       </Stack>
     </BaseDialog>
   );

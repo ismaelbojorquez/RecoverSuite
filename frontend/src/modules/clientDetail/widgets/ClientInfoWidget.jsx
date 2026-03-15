@@ -59,53 +59,70 @@ function ClientInfoWidget({
         </Stack>
       ) : client ? (
         <Stack spacing={2}>
-          <Stack spacing={0.5}>
-            <Typography variant="overline" color="text.secondary">
-              {title}
-            </Typography>
-            <Typography variant="h5">{buildFullName(client)}</Typography>
+          <Stack className="crm-surface-card__header">
+            <Stack className="crm-surface-card__header-main">
+              <Typography variant="overline" className="crm-surface-card__eyebrow">
+                {title}
+              </Typography>
+              <Typography variant="h5" className="crm-surface-card__title">
+                {buildFullName(client)}
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__subtitle">
+                Datos base de identificación y contexto de contactabilidad del cliente.
+              </Typography>
+            </Stack>
           </Stack>
 
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
+          <Box className="crm-surface-card__meta-grid crm-surface-card__meta-grid--wide">
+            <Box className="crm-surface-card__meta-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
                 No. cliente
               </Typography>
-              <Typography variant="body1">{client.numero_cliente || client.id}</Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client.numero_cliente || client.id}
+              </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary">
+            <Box className="crm-surface-card__meta-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
                 ID publico
               </Typography>
-              <Typography variant="body1">{client.id}</Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client.id}
+              </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary">
+            <Box className="crm-surface-card__meta-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
                 RFC
               </Typography>
-              <Typography variant="body1">{client.rfc || '-'}</Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client.rfc || '-'}
+              </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary">
+            <Box className="crm-surface-card__meta-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
                 CURP
               </Typography>
-              <Typography variant="body1">{client.curp || '-'}</Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {client.curp || '-'}
+              </Typography>
             </Box>
 
-            <Box>
-              <Typography variant="caption" color="text.secondary">
+            <Box className="crm-surface-card__meta-item">
+              <Typography variant="caption" className="crm-surface-card__meta-label">
                 Creado
               </Typography>
-              <Typography variant="body1">{formatDate(client.created_at)}</Typography>
+              <Typography variant="body2" className="crm-surface-card__meta-value">
+                {formatDate(client.created_at)}
+              </Typography>
             </Box>
-          </Stack>
+          </Box>
 
           <Divider />
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" className="crm-surface-card__badge-row">
             <Chip label={`Creditos: ${creditCount}`} variant="outlined" />
             <Chip label={`Telefonos: ${safeContacts.phones.length}`} variant="outlined" />
             <Chip label={`Emails: ${safeContacts.emails.length}`} variant="outlined" />

@@ -330,27 +330,29 @@ function NegotiationsWidget({
 
       <Paper variant="panel-sm">
         <Stack spacing={2}>
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            spacing={1}
-          >
-            <Stack spacing={0.3}>
-              <Typography variant="subtitle1">Negociación activa</Typography>
-              <Typography variant="caption" color="text.secondary">
+          <Stack className="crm-surface-card__header crm-surface-card__header--split">
+            <Stack className="crm-surface-card__header-main">
+              <Typography variant="overline" className="crm-surface-card__eyebrow">
+                Negociación
+              </Typography>
+              <Typography variant="subtitle1" className="crm-surface-card__title">
+                Negociación activa
+              </Typography>
+              <Typography variant="caption" className="crm-surface-card__subtitle">
                 Solo puede existir una negociación activa por cliente, incluso si tiene múltiples créditos.
               </Typography>
             </Stack>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Refresh />}
-              onClick={() => loadData()}
-              disabled={loading}
-            >
-              Actualizar
-            </Button>
+            <Stack direction="row" className="crm-surface-card__actions">
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Refresh />}
+                onClick={() => loadData()}
+                disabled={loading}
+              >
+                Actualizar
+              </Button>
+            </Stack>
           </Stack>
 
           {loading ? (
@@ -368,7 +370,7 @@ function NegotiationsWidget({
             />
           ) : (
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
                 <Chip color="primary" label={`Nivel: ${activeNegotiation.nivel_descuento_nombre}`} />
                 <Chip
                   variant="outlined"
@@ -401,7 +403,7 @@ function NegotiationsWidget({
                 <Typography variant="body2">{activeNegotiation.observaciones}</Typography>
               ) : null}
 
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
                 {(activeNegotiation.creditos || []).map((credit) => (
                   <Chip
                     key={`active-credit-${activeNegotiation.id}-${credit.credito_id}`}
@@ -413,7 +415,7 @@ function NegotiationsWidget({
               </Stack>
 
               {canWrite && (
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} className="crm-surface-card__action-row">
                   <Button
                     variant="contained"
                     color="success"
@@ -440,7 +442,19 @@ function NegotiationsWidget({
       {canWrite && (
         <Paper variant="panel-sm">
           <Stack spacing={2}>
-            <Typography variant="subtitle1">Iniciar nueva negociación</Typography>
+            <Stack className="crm-surface-card__header">
+              <Stack className="crm-surface-card__header-main">
+                <Typography variant="overline" className="crm-surface-card__eyebrow">
+                  Configuración
+                </Typography>
+                <Typography variant="subtitle1" className="crm-surface-card__title">
+                  Iniciar nueva negociación
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__subtitle">
+                  Define el nivel de descuento, los créditos incluidos y el marco base del acuerdo.
+                </Typography>
+              </Stack>
+            </Stack>
 
             {activeNegotiation ? (
               <Alert severity="info">
@@ -487,12 +501,14 @@ function NegotiationsWidget({
                   {safeCredits.map((credit) => (
                     <Box
                       key={`credit-selector-${credit.id}`}
-                      sx={{
-                        border: (theme) => `1px solid ${theme.palette.divider}`,
-                        borderRadius: 1.5,
-                        px: 1.25,
-                        py: 0.6
-                      }}
+                      className={[
+                        'crm-surface-card__selection-item',
+                        selectedCreditIds.includes(Number(credit.id))
+                          ? 'crm-surface-card__selection-item--checked'
+                          : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                     >
                       <FormControlLabel
                         control={
@@ -565,7 +581,7 @@ function NegotiationsWidget({
               disabled={Boolean(activeNegotiation)}
             />
 
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
               <Chip
                 variant="outlined"
                 label={`Base estimada por saldos: ${formatCurrency(baseEstimate)}`}
@@ -576,7 +592,7 @@ function NegotiationsWidget({
               />
             </Stack>
 
-            <Stack direction="row" justifyContent="flex-end">
+            <Stack direction="row" className="crm-surface-card__action-row">
               <Button
                 variant="contained"
                 startIcon={<AddTask />}
@@ -597,7 +613,19 @@ function NegotiationsWidget({
 
       <Paper variant="panel-sm">
         <Stack spacing={2}>
-          <Typography variant="subtitle1">Historial de negociaciones</Typography>
+          <Stack className="crm-surface-card__header">
+            <Stack className="crm-surface-card__header-main">
+              <Typography variant="overline" className="crm-surface-card__eyebrow">
+                Histórico
+              </Typography>
+              <Typography variant="subtitle1" className="crm-surface-card__title">
+                Historial de negociaciones
+              </Typography>
+              <Typography variant="body2" className="crm-surface-card__subtitle">
+                Acuerdos anteriores cerrados o cancelados con su contexto financiero.
+              </Typography>
+            </Stack>
+          </Stack>
           <BaseTable
             dense
             loading={loading}
@@ -731,4 +759,3 @@ const MemoizedNegotiationsWidget = memo(NegotiationsWidget);
 MemoizedNegotiationsWidget.displayName = 'NegotiationsWidget';
 
 export default MemoizedNegotiationsWidget;
-

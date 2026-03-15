@@ -14,6 +14,7 @@ import {
   Button,
   Chip,
   Divider,
+  FormControlLabel,
   IconButton,
   List,
   ListItem,
@@ -30,6 +31,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
 import BaseTable from '../components/BaseTable.jsx';
 import BaseDialog from '../components/BaseDialog.jsx';
+import FormActions from '../components/form/FormActions.jsx';
+import FormField from '../components/form/FormField.jsx';
+import FormSection from '../components/form/FormSection.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import useNotify from '../hooks/useNotify.jsx';
@@ -382,12 +386,12 @@ export default function Groups() {
   };
 
   const dialogActions = (
-    <Stack direction="row" spacing={1} justifyContent="flex-end" width="100%">
+    <FormActions spacing={1}>
       <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
       <Button variant="contained" onClick={handleSave} disabled={saving}>
         {dialogMode === 'create' ? 'Crear' : 'Guardar'}
       </Button>
-    </Stack>
+    </FormActions>
   );
 
   return (
@@ -445,33 +449,57 @@ export default function Groups() {
         subtitle="Define el nombre y descripción"
         actions={dialogActions}
       >
-        <Stack spacing={2}>
+        <Stack className="crm-form">
           {dialogError ? <Alert severity="error">{dialogError}</Alert> : null}
-          <TextField
-            label="Nombre"
-            fullWidth
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            error={Boolean(formErrors.name)}
-            helperText={formErrors.name}
-          />
-          <TextField
-            label="Descripción"
-            fullWidth
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-          />
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2" className="crm-switch-label">
-              Grupo administrador
-            </Typography>
-            <Switch
-              checked={form.isAdminGroup}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, isAdminGroup: e.target.checked }))
+          <FormSection
+            title="Identidad del grupo"
+            subtitle="Define el nombre visible y una descripcion corta para el equipo o rol."
+          >
+            <Stack className="crm-form__stack">
+              <FormField
+                label="Nombre"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                error={formErrors.name}
+                required
+              />
+              <FormField
+                label="Descripcion"
+                value={form.description}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                multiline
+                minRows={3}
+                placeholder="Resume el alcance o tipo de miembros que tendra este grupo."
+              />
+            </Stack>
+          </FormSection>
+
+          <FormSection
+            title="Privilegios"
+            subtitle="Controla si este grupo tiene permisos administrativos elevados."
+          >
+            <FormControlLabel
+              className="crm-form__toggle-row"
+              control={
+                <Switch
+                  checked={form.isAdminGroup}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, isAdminGroup: e.target.checked }))
+                  }
+                />
+              }
+              label={
+                <Stack spacing={0.25}>
+                  <Typography variant="body2" className="crm-text-strong">
+                    Grupo administrador
+                  </Typography>
+                  <Typography variant="caption" className="crm-form__hint">
+                    Usalo solo en roles con alcance global o control de permisos.
+                  </Typography>
+                </Stack>
               }
             />
-          </Stack>
+          </FormSection>
         </Stack>
       </BaseDialog>
 
@@ -482,21 +510,23 @@ export default function Groups() {
         subtitle="Permisos y miembros"
         maxWidth="md"
         actions={
-          <Button onClick={() => setManageOpen(false)} startIcon={<Close />}>
-            Cerrar
-          </Button>
+          <FormActions spacing={1}>
+            <Button onClick={() => setManageOpen(false)} startIcon={<Close />}>
+              Cerrar
+            </Button>
+          </FormActions>
         }
       >
         {manageError ? <Alert severity="error" className="crm-alert--spaced">{manageError}</Alert> : null}
         <Stack spacing={3}>
-          <Box>
-            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-              <Security fontSize="small" />
-              <Typography variant="subtitle2">Permisos</Typography>
-            </Stack>
+          <FormSection
+            title="Permisos"
+            subtitle="Selecciona uno o varios permisos para el grupo actual."
+          >
             <Paper variant="outlined" className="crm-groups__permissions-panel">
-              <Stack spacing={1}>
-                <TextField
+              <Stack className="crm-form__stack">
+                <FormField
+                  component={TextField}
                   select
                   SelectProps={{ multiple: true, native: true }}
                   label="Permisos asignados"
@@ -505,8 +535,7 @@ export default function Groups() {
                     const value = Array.from(e.target.selectedOptions).map((o) => o.value);
                     setAssignPermissionIds(value);
                   }}
-                  helperText="Selecciona uno o varios permisos para el grupo"
-                  size="small"
+                  helperText="Selecciona uno o varios permisos para el grupo."
                   disabled={!canAssignPermissions}
                 >
                   {availablePermissions.map((perm) => (
@@ -514,85 +543,90 @@ export default function Groups() {
                       {perm.key} - {perm.label || perm.description || ''}
                     </option>
                   ))}
-                </TextField>
-                <Stack direction="row" justifyContent="flex-end">
+                </FormField>
+                <Stack className="crm-form__compact-actions">
                   <Button
                     variant="contained"
                     size="small"
                     onClick={handleSavePermissions}
                     disabled={manageLoading || !canAssignPermissions}
+                    startIcon={<Security fontSize="small" />}
                   >
                     Guardar permisos
                   </Button>
                 </Stack>
               </Stack>
             </Paper>
-          </Box>
+          </FormSection>
 
           <Divider />
 
-          <Box>
-            <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-              <PersonAdd fontSize="small" />
-              <Typography variant="subtitle2">Miembros</Typography>
-            </Stack>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch" mb={1.5}>
-              <TextField
-                select
-                label="Agregar usuario"
-                value={assignUserId}
-                onChange={(e) => setAssignUserId(e.target.value)}
-                SelectProps={{ native: true }}
-                size="small"
-                className="crm-groups__member-select"
-              >
-                <option value="">Selecciona un usuario</option>
-                {availableUsers.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.email || user.username || `Usuario ${user.id}`}
-                  </option>
-                ))}
-              </TextField>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleAddMember}
-                disabled={!assignUserId || manageLoading || !canUpdate}
-                className="crm-groups__member-add"
-              >
-                Agregar
-              </Button>
-            </Stack>
-            <Paper variant="outlined">
-              <List dense>
-                {groupMembers.length === 0 ? (
-                  <ListItem>
-                    <ListItemText primary="Sin usuarios asignados." />
-                  </ListItem>
-                ) : (
-                  groupMembers.map((user) => (
-                    <ListItem key={user.id} divider>
-                      <ListItemText
-                        primary={user.email || user.username || `Usuario ${user.id}`}
-                        secondary={user.name || user.nombre || ''}
-                      />
-                      {canUpdate && (
-                        <ListItemSecondaryAction>
-                          <IconButton
-                            edge="end"
-                            size="small"
-                            onClick={() => handleRemoveMember(user.id)}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      )}
+          <FormSection
+            title="Miembros"
+            subtitle="Asigna usuarios y administra la membresia del grupo."
+          >
+            <Stack className="crm-form__stack">
+              <Box className="crm-form__grid">
+                <FormField
+                  component={TextField}
+                  select
+                  label="Agregar usuario"
+                  value={assignUserId}
+                  onChange={(e) => setAssignUserId(e.target.value)}
+                  SelectProps={{ native: true }}
+                  className="crm-groups__member-select"
+                >
+                  <option value="">Selecciona un usuario</option>
+                  {availableUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.email || user.username || `Usuario ${user.id}`}
+                    </option>
+                  ))}
+                </FormField>
+                <Stack className="crm-form__compact-actions">
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleAddMember}
+                    disabled={!assignUserId || manageLoading || !canUpdate}
+                    className="crm-groups__member-add"
+                    startIcon={<PersonAdd fontSize="small" />}
+                  >
+                    Agregar
+                  </Button>
+                </Stack>
+              </Box>
+              <Paper variant="outlined">
+                <List dense>
+                  {groupMembers.length === 0 ? (
+                    <ListItem>
+                      <ListItemText primary="Sin usuarios asignados." />
                     </ListItem>
-                  ))
-                )}
-              </List>
-            </Paper>
-          </Box>
+                  ) : (
+                    groupMembers.map((user) => (
+                      <ListItem key={user.id} divider>
+                        <ListItemText
+                          primary={user.email || user.username || `Usuario ${user.id}`}
+                          secondary={user.name || user.nombre || ''}
+                        />
+                        {canUpdate && (
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={() => handleRemoveMember(user.id)}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        )}
+                      </ListItem>
+                    ))
+                  )}
+                </List>
+              </Paper>
+            </Stack>
+          </FormSection>
         </Stack>
       </BaseDialog>
 
@@ -602,7 +636,7 @@ export default function Groups() {
         title="Eliminar grupo"
         subtitle="Escribe el nombre del grupo para confirmar"
         actions={
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <FormActions spacing={1}>
             <Button onClick={() => setConfirmDeleteGroup(null)}>Cancelar</Button>
             <Button
               variant="contained"
@@ -629,7 +663,7 @@ export default function Groups() {
             >
               Eliminar
             </Button>
-          </Stack>
+          </FormActions>
         }
       >
         <Stack spacing={2}>

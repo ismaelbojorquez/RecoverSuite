@@ -5,6 +5,7 @@ export default function BaseForm({
   onSubmit,
   spacing = 2,
   autoComplete = 'off',
+  className = '',
   ...props
 }) {
   const handleSubmit = (event) => {
@@ -18,7 +19,7 @@ export default function BaseForm({
       onSubmit={handleSubmit}
       spacing={spacing}
       autoComplete={autoComplete}
-      className="crm-form"
+      className={['crm-form', className].filter(Boolean).join(' ')}
       {...props}
     >
       {children}

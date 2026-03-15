@@ -1,6 +1,7 @@
 import { Send } from '@mui/icons-material';
 import {
   Alert,
+  Box,
   Button,
   Chip,
   Paper,
@@ -11,6 +12,9 @@ import {
 } from '@mui/material';
 import { memo } from 'react';
 import EmptyState from '../../../components/EmptyState.jsx';
+import FormActions from '../../../components/form/FormActions.jsx';
+import FormField from '../../../components/form/FormField.jsx';
+import FormSection from '../../../components/form/FormSection.jsx';
 
 const dateFormatter = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' });
 
@@ -92,7 +96,9 @@ function GestionesWidget({
     return (
       <Paper variant="panel-sm">
         <Stack spacing={1}>
-          <Typography variant="subtitle1">{title}</Typography>
+          <Typography variant="subtitle1" className="crm-surface-card__title">
+            {title}
+          </Typography>
           <Typography variant="body2" color="text.secondary">
             No tienes permisos para ver o registrar gestiones.
           </Typography>
@@ -106,7 +112,19 @@ function GestionesWidget({
       {showForm && canLog && (
         <Paper variant="panel-sm">
           <Stack spacing={2}>
-            <Typography variant="subtitle1">Registrar gestion</Typography>
+            <Stack className="crm-surface-card__header">
+              <Stack className="crm-surface-card__header-main">
+                <Typography variant="overline" className="crm-surface-card__eyebrow">
+                  Operación
+                </Typography>
+                <Typography variant="subtitle1" className="crm-surface-card__title">
+                  Registrar gestion
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__subtitle">
+                  Documenta el resultado del contacto y, cuando aplique, registra la promesa de pago.
+                </Typography>
+              </Stack>
+            </Stack>
 
             {formError && (
               <Alert severity="error" onClose={() => onFormErrorClear && onFormErrorClear()}>
@@ -114,62 +132,70 @@ function GestionesWidget({
               </Alert>
             )}
 
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <TextField
-                select
-                label="Resultado"
-                value={safeForm.resultado_id}
-                onChange={(event) => updateField('resultado_id', event.target.value)}
-                required
-                fullWidth
-                SelectProps={{ native: true }}
-                disabled={resultadosLoading}
-              >
-                <option value="">Selecciona un resultado</option>
-                {safeResultados.map((resultado) => (
-                  <option key={resultado.id} value={resultado.id}>
-                    {resultado.nombre} ({resultado.tipo})
-                  </option>
-                ))}
-              </TextField>
+            <FormSection
+              title="Detalle de la gestion"
+              subtitle="Selecciona el resultado y documenta el contexto del contacto."
+            >
+              <Box className="crm-form__grid">
+                <FormField
+                  component={TextField}
+                  select
+                  label="Resultado"
+                  value={safeForm.resultado_id}
+                  onChange={(event) => updateField('resultado_id', event.target.value)}
+                  required
+                  SelectProps={{ native: true }}
+                  disabled={resultadosLoading}
+                >
+                  <option value="">Selecciona un resultado</option>
+                  {safeResultados.map((resultado) => (
+                    <option key={resultado.id} value={resultado.id}>
+                      {resultado.nombre} ({resultado.tipo})
+                    </option>
+                  ))}
+                </FormField>
 
-              <TextField
-                label="Comentario"
-                value={safeForm.comentario}
-                onChange={(event) => updateField('comentario', event.target.value)}
-                required
-                fullWidth
-                multiline
-                minRows={2}
-                placeholder="Detalle breve de la gestion"
-              />
-            </Stack>
+                <FormField
+                  label="Comentario"
+                  value={safeForm.comentario}
+                  onChange={(event) => updateField('comentario', event.target.value)}
+                  required
+                  multiline
+                  minRows={3}
+                  placeholder="Detalle breve de la gestion"
+                />
+              </Box>
+            </FormSection>
 
             {requierePromesa && (
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <TextField
-                  label="Monto de promesa"
-                  type="number"
-                  value={safeForm.promesa_monto}
-                  onChange={(event) => updateField('promesa_monto', event.target.value)}
-                  required
-                  fullWidth
-                  inputProps={{ min: 0, step: '0.01' }}
-                />
+              <FormSection
+                title="Promesa de pago"
+                subtitle="Captura monto y fecha compromiso cuando el resultado lo requiera."
+              >
+                <Box className="crm-form__grid">
+                  <FormField
+                    label="Monto de promesa"
+                    type="number"
+                    value={safeForm.promesa_monto}
+                    onChange={(event) => updateField('promesa_monto', event.target.value)}
+                    required
+                    inputProps={{ min: 0, step: '0.01' }}
+                  />
 
-                <TextField
-                  label="Fecha promesa"
-                  type="datetime-local"
-                  value={safeForm.promesa_fecha}
-                  onChange={(event) => updateField('promesa_fecha', event.target.value)}
-                  required
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Stack>
+                  <FormField
+                    component={TextField}
+                    label="Fecha promesa"
+                    type="datetime-local"
+                    value={safeForm.promesa_fecha}
+                    onChange={(event) => updateField('promesa_fecha', event.target.value)}
+                    required
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+              </FormSection>
             )}
 
-            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+            <FormActions spacing={1.5} className="crm-surface-card__action-row">
               <Button
                 variant="contained"
                 startIcon={<Send />}
@@ -178,7 +204,7 @@ function GestionesWidget({
               >
                 Registrar
               </Button>
-            </Stack>
+            </FormActions>
           </Stack>
         </Paper>
       )}
@@ -186,7 +212,19 @@ function GestionesWidget({
       {showHistory && (
         <Paper variant="panel-sm">
           <Stack spacing={2}>
-            <Typography variant="subtitle1">Historial</Typography>
+            <Stack className="crm-surface-card__header">
+              <Stack className="crm-surface-card__header-main">
+                <Typography variant="overline" className="crm-surface-card__eyebrow">
+                  Seguimiento
+                </Typography>
+                <Typography variant="subtitle1" className="crm-surface-card__title">
+                  Historial
+                </Typography>
+                <Typography variant="body2" className="crm-surface-card__subtitle">
+                  Secuencia cronológica de gestiones y resultado de cada interacción.
+                </Typography>
+              </Stack>
+            </Stack>
 
             {!canViewGestiones ? (
               <Typography variant="body2" color="text.secondary">
@@ -213,9 +251,9 @@ function GestionesWidget({
                 dense
               />
             ) : (
-              <Stack spacing={2}>
+              <Stack spacing={2} className="crm-surface-card__list">
                 {safeGestiones.map((gestion) => (
-                  <Paper key={gestion.id} variant="panel-sm">
+                  <Paper key={gestion.id} variant="outlined" className="crm-surface-card__list-item">
                     <Stack spacing={1}>
                       <Stack direction="row" justifyContent="space-between">
                         <Typography variant="subtitle2" className="crm-text-strong">
@@ -228,7 +266,7 @@ function GestionesWidget({
 
                       <Typography variant="body2">{gestion.comentario}</Typography>
 
-                      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                      <Stack direction="row" spacing={2} className="crm-surface-card__badge-row">
                         <Chip
                           label={gestion.resultado_tipo || 'resultado'}
                           size="small"

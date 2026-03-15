@@ -28,52 +28,55 @@ const renderBreadcrumbs = (items, onNavigate) => {
   }
 
   return (
-    <Breadcrumbs
-      separator="/"
-      className="crm-page__breadcrumbs"
-      aria-label="breadcrumb"
-    >
-      {items.map((item, index) => {
-        const isLast = index === items.length - 1;
-        if (isLast || !item.href) {
+    <Box className="crm-page__breadcrumbs-shell">
+      <Breadcrumbs
+        separator="›"
+        className="crm-page__breadcrumbs"
+        aria-label="breadcrumb"
+      >
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          if (isLast || !item.href) {
+            return (
+              <Typography
+                key={`${item.label}-${index}`}
+                variant="caption"
+                color="text.secondary"
+                className="crm-page__breadcrumb-current"
+              >
+                {item.label}
+              </Typography>
+            );
+          }
+
           return (
-            <Typography
+            <Link
               key={`${item.label}-${index}`}
+              href={item.href}
+              underline="hover"
+              className="crm-page__breadcrumb-link"
               variant="caption"
-              color="text.secondary"
+              onClick={(event) => {
+                if (!onNavigate) return;
+                const isModified =
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey ||
+                  (typeof event.button === 'number' && event.button !== 0);
+                if (isModified) {
+                  return;
+                }
+                event.preventDefault();
+                onNavigate(item.href);
+              }}
             >
               {item.label}
-            </Typography>
+            </Link>
           );
-        }
-
-        return (
-          <Link
-            key={`${item.label}-${index}`}
-            href={item.href}
-            underline="hover"
-            className="crm-page__breadcrumb-link"
-            variant="caption"
-            onClick={(event) => {
-              if (!onNavigate) return;
-              const isModified =
-                event.metaKey ||
-                event.ctrlKey ||
-                event.shiftKey ||
-                event.altKey ||
-                (typeof event.button === 'number' && event.button !== 0);
-              if (isModified) {
-                return;
-              }
-              event.preventDefault();
-              onNavigate(item.href);
-            }}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </Breadcrumbs>
+        })}
+      </Breadcrumbs>
+    </Box>
   );
 };
 
@@ -89,9 +92,9 @@ export const PageHeader = ({
 
   return (
     <Stack
-      direction={{ xs: 'column', md: 'row' }}
+      direction={{ xs: 'column', lg: 'row' }}
       justifyContent="space-between"
-      alignItems={{ xs: 'flex-start', md: 'center' }}
+      alignItems={{ xs: 'flex-start', lg: 'flex-start' }}
       className={[
         'crm-page__header',
         align === 'center' ? 'crm-page__header--center' : ''

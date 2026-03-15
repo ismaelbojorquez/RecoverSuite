@@ -8,25 +8,42 @@ import {
   typographyRoleTokens
 } from './tokens';
 
+const getVisualTokens = (theme) => theme.palette.custom || {};
+
 const buildGlassSurface = (
   theme,
   {
     radius,
-    borderAlpha = 0.18,
-    backgroundAlpha = 0.74,
-    blur = 16,
-    shadowAlpha = 0.16
+    borderAlpha = 0.1,
+    backgroundAlpha = 0.92,
+    blur,
+    shadowAlpha = 0.1,
+    backgroundColor,
+    borderColor,
+    shadow
   } = {}
 ) => {
   const resolvedRadius = radius ?? shapeTokens.cardRadius;
+  const visual = getVisualTokens(theme);
+  const surface = visual.surface || {};
+  const border = visual.border || {};
+  const shadowTokens = visual.shadow || {};
+  const blurTokens = visual.blur || {};
+  const resolvedBlur = blur ?? blurTokens.md ?? 14;
+  const resolvedSaturate = surface.saturate ?? 140;
 
   return {
     borderRadius: resolvedRadius,
-    border: `1px solid ${alpha(theme.palette.primary.main, borderAlpha)}`,
-    backgroundColor: alpha(theme.palette.background.paper, backgroundAlpha),
-    backdropFilter: `blur(${blur}px) saturate(145%)`,
-    WebkitBackdropFilter: `blur(${blur}px) saturate(145%)`,
-    boxShadow: `0 14px 36px ${alpha(theme.palette.text.primary, shadowAlpha)}`
+    border: `1px solid ${borderColor || border.soft || alpha(theme.palette.text.primary, borderAlpha)}`,
+    backgroundColor:
+      backgroundColor ||
+      alpha(theme.palette.background.paper, backgroundAlpha),
+    backdropFilter: `blur(${resolvedBlur}px) saturate(${resolvedSaturate}%)`,
+    WebkitBackdropFilter: `blur(${resolvedBlur}px) saturate(${resolvedSaturate}%)`,
+    boxShadow:
+      shadow ||
+      shadowTokens.md ||
+      `0 12px 28px ${alpha(theme.palette.text.primary, shadowAlpha)}`
   };
 };
 
@@ -61,68 +78,147 @@ export const getComponents = (mode = 'light') => {
   const labelTypography = typographyRoleTokens.label;
   const metricTypography = typographyRoleTokens.metric;
 
-  const getCardBorder = (theme) =>
-    `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.22)}`;
+  const getCardBorder = (theme) => {
+    const border = getVisualTokens(theme).border || {};
+    return `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`;
+  };
 
-  const getCardShadow = (theme) =>
-    `0 16px 38px ${alpha(theme.palette.text.primary, isLight ? 0.14 : 0.26)}`;
+  const getCardShadow = (theme) => {
+    const shadow = getVisualTokens(theme).shadow || {};
+    return shadow.md || `0 12px 28px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.2)}`;
+  };
 
-  const getHoverLiftShadow = (theme) =>
-    `0 20px 48px ${alpha(theme.palette.text.primary, isLight ? 0.18 : 0.3)}`;
+  const getHoverLiftShadow = (theme) => {
+    const shadow = getVisualTokens(theme).shadow || {};
+    return shadow.lg || `0 16px 34px ${alpha(theme.palette.text.primary, isLight ? 0.1 : 0.24)}`;
+  };
 
   const getHoverLift = (theme) => ({
     transition: `transform ${microMotion}, box-shadow ${microMotion}, border-color ${microMotion}`,
     '&:hover': {
-      transform: 'translateY(-2px)',
+      transform: 'translateY(-1px)',
       boxShadow: getHoverLiftShadow(theme)
     }
   });
 
+  const getPanelChrome = (theme, { accent = true } = {}) => ({
+    position: 'relative',
+    overflow: 'hidden',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      pointerEvents: 'none',
+      background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.18 : 0.04)} 0%, transparent 30%)`
+    },
+    '&::after':
+      accent
+        ? {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: `radial-gradient(circle at 100% 0%, ${alpha(theme.palette.primary.main, isLight ? 0.06 : 0.1)} 0%, transparent 34%)`
+          }
+        : undefined
+  });
+
   const getCardSurface = (theme, { soft = false } = {}) => ({
     ...buildGlassSurface(theme, {
-      borderAlpha: soft ? (isLight ? 0.12 : 0.2) : isLight ? 0.16 : 0.24,
-      backgroundAlpha: soft ? (isLight ? 0.72 : 0.66) : isLight ? 0.8 : 0.72,
-      blur: soft ? 20 : 16,
-      shadowAlpha: soft ? (isLight ? 0.12 : 0.24) : isLight ? 0.16 : 0.28
+      borderAlpha: soft ? (isLight ? 0.08 : 0.14) : isLight ? 0.1 : 0.16,
+      backgroundAlpha: soft ? (isLight ? 0.95 : 0.92) : isLight ? 0.97 : 0.94,
+      blur: soft ? 14 : 10,
+      shadowAlpha: soft ? (isLight ? 0.08 : 0.18) : isLight ? 0.1 : 0.2,
+      backgroundColor: (getVisualTokens(theme).surface || {})[soft ? 'cardSoft' : 'card']
     }),
-    backgroundImage: soft ? gradients.cardSurfaceSoft : gradients.cardSurface
+    ...getPanelChrome(theme),
+    backgroundImage: soft ? gradients.cardSurfaceSoft : gradients.cardSurface,
+    boxShadow: getCardShadow(theme),
+    border: getCardBorder(theme)
   });
 
   const getDashboardGlass = (theme) => ({
     ...buildGlassSurface(theme, {
-      borderAlpha: isLight ? 0.2 : 0.24,
-      backgroundAlpha: isLight ? 0.68 : 0.66,
-      blur: 22,
-      shadowAlpha: isLight ? 0.17 : 0.3
+      borderAlpha: isLight ? 0.09 : 0.16,
+      backgroundAlpha: isLight ? 0.96 : 0.94,
+      blur: 14,
+      shadowAlpha: isLight ? 0.09 : 0.2,
+      backgroundColor: (getVisualTokens(theme).surface || {}).cardSoft
     }),
-    backgroundImage: gradients.dashboardGlass
+    backgroundImage: gradients.dashboardGlass,
+    border: getCardBorder(theme),
+    boxShadow: getCardShadow(theme)
   });
 
   const getTableSurface = (theme) => ({
     ...buildGlassSurface(theme, {
       radius: 18,
-      borderAlpha: isLight ? 0.12 : 0.16,
-      backgroundAlpha: isLight ? 0.88 : 0.74,
+      borderAlpha: isLight ? 0.08 : 0.14,
+      backgroundAlpha: isLight ? 0.97 : 0.93,
       blur: 10,
-      shadowAlpha: isLight ? 0.1 : 0.22
+      shadowAlpha: isLight ? 0.08 : 0.18,
+      backgroundColor: (getVisualTokens(theme).surface || {}).table
     }),
-    backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.92 : 0.72)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.7 : 0.56)} 100%)`,
+    backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.98 : 0.96)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.94 : 0.9)} 100%)`,
+    border: getCardBorder(theme),
+    boxShadow: getCardShadow(theme),
     overflow: 'hidden'
+  });
+
+  const getInsetSurface = (
+    theme,
+    {
+      radius = 16,
+      backgroundAlpha = isLight ? 0.76 : 0.58,
+      borderAlpha = isLight ? 0.08 : 0.14,
+      shadowAlpha = isLight ? 0.05 : 0.12
+    } = {}
+  ) => ({
+    ...buildGlassSurface(theme, {
+      radius,
+      borderAlpha,
+      backgroundAlpha,
+      blur: 8,
+      shadowAlpha,
+      backgroundColor: alpha(theme.palette.background.paper, backgroundAlpha)
+    }),
+    backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.84 : 0.72)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.72 : 0.52)} 100%)`,
+    boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.12)}`,
+    border: `1px solid ${alpha(theme.palette.text.primary, borderAlpha)}`
+  });
+
+  const getCompactMetricSurface = (theme) => ({
+    ...getInsetSurface(theme, {
+      radius: 16,
+      backgroundAlpha: isLight ? 0.82 : 0.64,
+      borderAlpha: isLight ? 0.08 : 0.14,
+      shadowAlpha: isLight ? 0.05 : 0.12
+    }),
+    minHeight: 112,
+    padding: theme.spacing(1.45, 1.6)
   });
 
   return {
     MuiCssBaseline: {
       styleOverrides: (theme) => {
+        const visual = getVisualTokens(theme);
+        const surface = visual.surface || {};
+        const border = visual.border || {};
+        const state = visual.state || {};
+        const overlay = visual.overlay || {};
+        const shadow = visual.shadow || {};
+        const component = visual.component || {};
+        const blur = visual.blur || {};
         const sidebarTextPrimary = theme.palette.text.primary;
         const sidebarTextSecondary = alpha(theme.palette.text.secondary, 0.88);
         const sidebarIconColor = alpha(theme.palette.text.secondary, 0.9);
         const sidebarActiveIndicator = theme.palette.primary.main;
-        const sidebarHoverBackground = alpha(theme.palette.primary.main, isLight ? 0.1 : 0.12);
-        const sidebarActiveBackground = alpha(theme.palette.primary.main, isLight ? 0.18 : 0.2);
-        const sidebarDivider = alpha(theme.palette.divider, isLight ? 0.8 : 0.78);
-        const sidebarSurfaceBorder = alpha(theme.palette.primary.main, isLight ? 0.14 : 0.2);
-        const headerSurface = alpha(theme.palette.background.paper, isLight ? 0.72 : 0.66);
-        const headerBorder = alpha(theme.palette.primary.main, isLight ? 0.16 : 0.22);
+        const sidebarHoverBackground = state.hover || alpha(theme.palette.primary.main, isLight ? 0.06 : 0.12);
+        const sidebarActiveBackground = state.selected || alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2);
+        const sidebarDivider = border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14);
+        const sidebarSurfaceBorder = border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14);
+        const headerSurface = surface.header || alpha(theme.palette.background.paper, isLight ? 0.88 : 0.82);
+        const headerBorder = border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14);
 
         return {
           '@keyframes crm-fade-in': {
@@ -186,24 +282,61 @@ export const getComponents = (mode = 'light') => {
             backgroundImage: gradients.appLoader,
             animation: `crm-fade-in ${microMotion}`
           },
+          '.MuiStack-root.crm-app-loader__panel': {
+            ...getCardSurface(theme, { soft: true }),
+            width: '100%',
+            maxWidth: 420,
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: theme.spacing(1.5),
+            padding: theme.spacing(3.2, 3),
+            boxShadow: shadow.lg || getCardShadow(theme)
+          },
+          '.MuiBox-root.crm-app-loader__spinner-shell': {
+            ...getInsetSurface(theme, {
+              radius: 18,
+              backgroundAlpha: isLight ? 0.82 : 0.62,
+              borderAlpha: isLight ? 0.08 : 0.14
+            }),
+            width: 58,
+            height: 58,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0
+          },
+          '.MuiTypography-root.crm-app-loader__eyebrow': {
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            color: alpha(theme.palette.primary.main, 0.86)
+          },
+          '.MuiTypography-root.crm-app-loader__message': {
+            maxWidth: 320,
+            color: alpha(theme.palette.text.secondary, 0.94)
+          },
 
           '.MuiContainer-root.crm-page-container': {
             width: '100%',
             maxWidth: `${contentMaxWidth}px !important`,
             marginLeft: 'auto',
             marginRight: 'auto',
+            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(pageGap),
             paddingTop: theme.spacing(containerPaddingY.xs),
-            paddingBottom: theme.spacing(containerPaddingY.xs),
+            paddingBottom: theme.spacing(containerPaddingY.xs + 0.5),
             paddingLeft: theme.spacing(containerPaddingX.xs),
             paddingRight: theme.spacing(containerPaddingX.xs),
             [theme.breakpoints.up('md')]: {
               paddingTop: theme.spacing(containerPaddingY.md),
-              paddingBottom: theme.spacing(containerPaddingY.md),
+              paddingBottom: theme.spacing(containerPaddingY.md + 0.5),
               paddingLeft: theme.spacing(containerPaddingX.md),
               paddingRight: theme.spacing(containerPaddingX.md)
+            },
+            [theme.breakpoints.up('sm')]: {
+              paddingLeft: theme.spacing(containerPaddingX.sm || containerPaddingX.xs),
+              paddingRight: theme.spacing(containerPaddingX.sm || containerPaddingX.xs)
             }
           },
 
@@ -284,14 +417,69 @@ export const getComponents = (mode = 'light') => {
           },
 
           '.MuiBox-root.crm-empty-state': {
-            padding: theme.spacing(4, 3),
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: theme.spacing(1)
+          },
+          '.MuiPaper-root.crm-empty-state__panel': {
+            ...getInsetSurface(theme, {
+              radius: 22,
+              backgroundAlpha: isLight ? 0.8 : 0.62,
+              borderAlpha: isLight ? 0.08 : 0.14
+            }),
+            width: '100%',
+            maxWidth: 440,
+            padding: theme.spacing(3.1, 2.4),
             textAlign: 'center'
+          },
+          '.MuiBox-root.crm-empty-state__icon-shell': {
+            width: 52,
+            height: 52,
+            margin: '0 auto',
+            borderRadius: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: gradients.buttonSubtle,
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)}`,
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)}`
+          },
+          '.MuiBox-root.crm-empty-state__icon-shell .crm-empty-state__icon': {
+            color: theme.palette.primary.main
+          },
+          '.MuiStack-root.crm-empty-state__copy': {
+            maxWidth: 320,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            gap: theme.spacing(0.55)
+          },
+          '.MuiTypography-root.crm-empty-state__title': {
+            fontWeight: 650,
+            letterSpacing: '-0.016em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-empty-state__description': {
+            color: alpha(theme.palette.text.secondary, 0.94)
+          },
+          '.MuiBox-root.crm-empty-state__action': {
+            marginTop: theme.spacing(0.35)
           },
           '.MuiStack-root.crm-table-loading': {
             padding: theme.spacing(2)
           },
           '.MuiLinearProgress-root.crm-progress-compact': {
             width: 120
+          },
+          '.MuiTableRow-root.crm-table__row--skeleton .MuiBox-root.crm-table__skeleton-stack': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.45)
+          },
+          '.MuiTableRow-root.crm-table__row--skeleton .MuiBox-root.crm-table__skeleton-actions': {
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: theme.spacing(0.45)
           },
 
           '.MuiTypography-root.crm-table-indicator': {
@@ -327,8 +515,8 @@ export const getComponents = (mode = 'light') => {
             background: gradients.brandMark,
             display: 'grid',
             placeItems: 'center',
-            boxShadow: `0 10px 22px ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.46)}`,
-            animation: 'crm-soft-float 5.8s ease-in-out infinite'
+            boxShadow: `0 8px 18px ${alpha(theme.palette.primary.main, isLight ? 0.18 : 0.28)}`,
+            animation: 'crm-soft-float 7s ease-in-out infinite'
           },
           '.MuiBox-root.crm-brand__mark-core': {
             width: 6,
@@ -349,14 +537,120 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiStack-root.crm-form': {
             width: '100%',
-            gap: theme.spacing(2)
+            gap: theme.spacing(2.2)
           },
           '.MuiFormControl-root.crm-form__field': {
-            margin: 0
+            margin: 0,
+            width: '100%'
+          },
+          '.MuiStack-root.crm-form__section': {
+            position: 'relative',
+            gap: theme.spacing(1.35),
+            padding: theme.spacing(1.4, 1.45, 1.5),
+            borderRadius: 18,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)}`,
+            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.72 : 0.5)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.34 : 0.18)} 100%)`,
+            boxShadow: `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.12)}`
+          },
+          '.MuiStack-root.crm-form__section-header': {
+            gap: theme.spacing(0.3)
+          },
+          '.MuiTypography-root.crm-form__section-title': {
+            fontWeight: 640,
+            fontSize: theme.typography.subtitle1.fontSize,
+            letterSpacing: '-0.01em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-form__section-subtitle': {
+            color: theme.palette.text.secondary,
+            fontSize: theme.typography.body2.fontSize,
+            lineHeight: 1.56
+          },
+          '.MuiBox-root.crm-form__grid': {
+            display: 'grid',
+            gap: theme.spacing(1.35),
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiStack-root.crm-form__stack': {
+            gap: theme.spacing(1.35)
+          },
+          '.MuiStack-root.crm-form__toggle-row': {
+            gap: theme.spacing(1.1),
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          },
+          '.MuiStack-root.crm-form__compact-actions': {
+            gap: theme.spacing(1),
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          },
+          '.MuiStack-root.crm-form__selection-list': {
+            gap: theme.spacing(1)
+          },
+          '.MuiBox-root.crm-form__selection-item': {
+            borderRadius: 16,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)}`,
+            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.76 : 0.54)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.4 : 0.24)} 100%)`,
+            boxShadow: `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.12)}`,
+            padding: theme.spacing(1.1, 1.2),
+            transition: theme.transitions.create(
+              ['border-color', 'box-shadow', 'background-color', 'transform'],
+              { duration: microMotionMs }
+            )
+          },
+          '.MuiBox-root.crm-form__selection-item--selected': {
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.22 : 0.34),
+            boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2)}, 0 12px 22px ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.12)}`
+          },
+          '.MuiBox-root.crm-form__selection-item:hover': {
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.18 : 0.28),
+            transform: 'translateY(-1px)'
+          },
+          '.MuiBox-root.crm-form__selection-item .MuiFormControlLabel-root': {
+            width: '100%',
+            alignItems: 'flex-start'
+          },
+          '.MuiBox-root.crm-form__scroll': {
+            maxHeight: 320,
+            overflowY: 'auto',
+            paddingRight: theme.spacing(0.25)
+          },
+          '.MuiTypography-root.crm-form__note, .MuiTypography-root.crm-form__hint': {
+            color: theme.palette.text.secondary,
+            fontSize: theme.typography.caption.fontSize,
+            lineHeight: 1.54
           },
           '.MuiStack-root.crm-form__actions': {
-            marginTop: theme.spacing(1),
-            justifyContent: 'flex-end'
+            marginTop: theme.spacing(1.2),
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            '& > *': {
+              width: '100%'
+            },
+            [theme.breakpoints.up('sm')]: {
+              '& > *': {
+                width: 'auto'
+              }
+            }
+          },
+          '.MuiPaper-root.crm-auth-card .MuiStack-root.crm-form__actions, .MuiStack-root.crm-auth-form__actions': {
+            marginTop: theme.spacing(0.5),
+            justifyContent: 'stretch'
+          },
+          '.MuiStack-root.crm-auth-form': {
+            width: '100%',
+            gap: theme.spacing(1.7)
+          },
+          '.MuiTypography-root.crm-auth-form__section-title': {
+            fontWeight: 620,
+            fontSize: theme.typography.subtitle2.fontSize,
+            letterSpacing: '0.01em',
+            color: theme.palette.text.secondary
           },
 
           '.MuiBox-root.crm-global-search': {
@@ -366,26 +660,29 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-global-search__input-shell': {
             display: 'flex',
             alignItems: 'center',
-            gap: theme.spacing(1.25),
-            padding: theme.spacing(0.65, 1.6),
-            borderRadius: 15,
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.34)}`,
-            backgroundColor: theme.palette.background.paper,
-            backdropFilter: 'none',
-            WebkitBackdropFilter: 'none',
-            boxShadow: `0 8px 22px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.34)}`,
+            gap: theme.spacing(1.1),
+            padding: theme.spacing(0.5, 1.25),
+            borderRadius: 16,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: surface.floating || alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
+            backdropFilter: `blur(${blur.xs || 6}px) saturate(${surface.saturate || 140}%)`,
+            WebkitBackdropFilter: `blur(${blur.xs || 6}px) saturate(${surface.saturate || 140}%)`,
+            boxShadow: shadow.xs || `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.18)}`,
             transition: theme.transitions.create(['border-color', 'box-shadow', 'transform'], {
               duration: microMotionMs
             })
           },
           '.MuiPaper-root.crm-global-search__input-shell--active': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.4 : 0.56),
-            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.3)}, 0 10px 24px ${alpha(theme.palette.text.primary, isLight ? 0.14 : 0.38)}`,
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.36 : 0.48),
+            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.22)}, 0 10px 24px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.2)}`,
             transform: 'translateY(-1px)'
           },
           '.MuiInputBase-root.crm-global-search__input': {
             flex: 1,
-            fontSize: '0.875rem'
+            fontSize: '0.875rem',
+            '& .MuiInputBase-input': {
+              padding: theme.spacing(0.9, 0)
+            }
           },
           '.MuiPaper-root.crm-global-search__input-shell .crm-global-search__input-icon': {
             color: alpha(theme.palette.text.secondary, isLight ? 0.88 : 0.96)
@@ -401,19 +698,20 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-global-search__panel': {
             marginTop: theme.spacing(1),
             ...buildGlassSurface(theme, {
-              borderAlpha: isLight ? 0.14 : 0.24,
-              backgroundAlpha: isLight ? 0.78 : 0.62,
-              blur: 16,
-              shadowAlpha: isLight ? 0.14 : 0.34
+              borderAlpha: isLight ? 0.08 : 0.14,
+              backgroundAlpha: isLight ? 0.96 : 0.92,
+              blur: 10,
+              shadowAlpha: isLight ? 0.08 : 0.18
             }),
+            backgroundImage: gradients.cardSurfaceSoft,
             overflow: 'hidden'
           },
           '.MuiList-root.crm-global-search__list': {
             padding: 0
           },
           '.MuiListItemButton-root.crm-global-search__item': {
-            padding: theme.spacing(1.2, 2),
-            gap: theme.spacing(1.5),
+            padding: theme.spacing(1.1, 1.4),
+            gap: theme.spacing(1.2),
             transition: theme.transitions.create(['background-color', 'transform'], {
               duration: microMotionMs
             }),
@@ -441,10 +739,117 @@ export const getComponents = (mode = 'light') => {
             letterSpacing: '0.08em',
             padding: theme.spacing(0.28, 0.9),
             borderRadius: 999,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.24)
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
           },
           '.MuiStack-root.crm-global-search__state': {
             padding: theme.spacing(2)
+          },
+
+          '.MuiBox-root.crm-table-shell__toolbar': {
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(1.2),
+            padding: theme.spacing(2.05, 2.2, 1.7),
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.36 : 0.26)} 100%)`
+          },
+          '.MuiBox-root.crm-table-shell__toolbar::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.22 : 0.04)} 0%, transparent 42%)`
+          },
+          '.MuiBox-root.crm-table-toolbar': {
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(1.1)
+          },
+          '.MuiStack-root.crm-table-toolbar__top': {
+            gap: theme.spacing(1.1),
+            [theme.breakpoints.up('md')]: {
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between'
+            }
+          },
+          '.MuiStack-root.crm-table-toolbar__main': {
+            minWidth: 0,
+            flex: '1 1 auto',
+            gap: theme.spacing(0.35)
+          },
+          '.MuiTypography-root.crm-table-toolbar__eyebrow': {
+            fontWeight: labelTypography.default.fontWeight,
+            fontSize: labelTypography.default.fontSize,
+            lineHeight: labelTypography.default.lineHeight,
+            letterSpacing: labelTypography.default.letterSpacing,
+            textTransform: labelTypography.default.textTransform,
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTypography-root.crm-table-toolbar__title': {
+            fontWeight: 650,
+            fontSize: theme.typography.h6.fontSize,
+            letterSpacing: '-0.012em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-table-toolbar__subtitle': {
+            fontWeight: 500,
+            fontSize: theme.typography.body2.fontSize,
+            lineHeight: 1.58,
+            color: theme.palette.text.secondary,
+            maxWidth: 820
+          },
+          '.MuiStack-root.crm-table-toolbar__actions': {
+            flexShrink: 0,
+            gap: theme.spacing(0.8),
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          },
+          '.MuiStack-root.crm-table-toolbar__controls': {
+            gap: theme.spacing(1),
+            alignItems: 'stretch',
+            [theme.breakpoints.up('lg')]: {
+              flexDirection: 'row',
+              alignItems: 'flex-start'
+            }
+          },
+          '.MuiBox-root.crm-table-toolbar__search': {
+            minWidth: 0,
+            flex: '1 1 360px',
+            maxWidth: '100%'
+          },
+          '.MuiTextField-root.crm-table-toolbar__search-field': {
+            width: '100%'
+          },
+          '.MuiTextField-root.crm-table-toolbar__search-field .MuiInputAdornment-positionStart .MuiSvgIcon-root, .MuiTextField-root.crm-table-toolbar__search-field .MuiInputAdornment-positionStart .crm-icon, .MuiTextField-root.crm-table-toolbar__search-field .MuiInputAdornment-positionEnd .MuiSvgIcon-root, .MuiTextField-root.crm-table-toolbar__search-field .MuiInputAdornment-positionEnd .crm-icon': {
+            color: alpha(theme.palette.text.secondary, 0.86)
+          },
+          '.MuiTextField-root.crm-table-toolbar__search-field .MuiFormHelperText-root': {
+            marginTop: theme.spacing(0.65)
+          },
+          '.MuiStack-root.crm-table-toolbar__filters': {
+            gap: theme.spacing(0.85),
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            flex: '1 1 280px'
+          },
+          '.MuiStack-root.crm-table-toolbar__filters .MuiFormControlLabel-root': {
+            margin: 0,
+            padding: theme.spacing(0.2, 0.25),
+            borderRadius: 999,
+            alignItems: 'center'
+          },
+          '.MuiStack-root.crm-table-toolbar__filters .MuiTypography-root': {
+            maxWidth: '100%'
+          },
+          '.MuiStack-root.crm-table-toolbar__meta': {
+            gap: theme.spacing(0.75),
+            flexWrap: 'wrap',
+            alignItems: 'center'
           },
 
           '.MuiBox-root.crm-auth-screen': {
@@ -461,7 +866,7 @@ export const getComponents = (mode = 'light') => {
             maxWidth: 520,
             margin: '0 auto',
             animation: `crm-fade-in ${microMotion}`,
-            ...getHoverLift(theme)
+            boxShadow: shadow.lg || getCardShadow(theme)
           },
           '.MuiStack-root.crm-auth-header': {
             textAlign: 'center',
@@ -503,63 +908,101 @@ export const getComponents = (mode = 'light') => {
           },
 
           '.MuiBox-root.crm-app-shell': {
+            position: 'relative',
+            isolation: 'isolate',
             display: 'flex',
             minHeight: '100vh',
             backgroundColor: 'transparent',
-            animation: `crm-fade-in ${microMotion}`
+            animation: `crm-fade-in ${microMotion}`,
+            '&::before': {
+              content: '""',
+              position: 'fixed',
+              inset: 0,
+              zIndex: -2,
+              pointerEvents: 'none',
+              backgroundImage: gradients.appBackground
+            },
+            '&::after': {
+              content: '""',
+              position: 'fixed',
+              inset: 0,
+              zIndex: -1,
+              pointerEvents: 'none',
+              background:
+                isLight
+                  ? 'radial-gradient(circle at 18% 12%, rgba(58, 116, 245, 0.06) 0%, transparent 32%), radial-gradient(circle at 86% 8%, rgba(131, 168, 255, 0.08) 0%, transparent 26%)'
+                  : 'radial-gradient(circle at 18% 12%, rgba(95, 146, 255, 0.12) 0%, transparent 32%), radial-gradient(circle at 86% 8%, rgba(95, 146, 255, 0.08) 0%, transparent 26%)'
+            }
           },
           '.MuiBox-root.crm-app-shell__main': {
             flexGrow: 1,
             width: '100%',
             minHeight: '100vh',
             backgroundColor: 'transparent',
-            paddingBottom: theme.spacing(2)
+            paddingBottom: theme.spacing(3),
+            position: 'relative',
+            zIndex: 1
+          },
+          '.MuiBox-root.crm-app-shell__canvas': {
+            position: 'relative',
+            width: '100%',
+            paddingTop: theme.spacing(1.1),
+            paddingBottom: theme.spacing(1),
+            [theme.breakpoints.up('md')]: {
+              paddingTop: theme.spacing(1.5),
+              paddingBottom: theme.spacing(1.5)
+            }
           },
           '.MuiBox-root.crm-app-shell__content': {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(pageGap),
-            paddingTop: theme.spacing(0.5)
+            paddingTop: theme.spacing(1),
+            paddingBottom: theme.spacing(0.5)
           },
           '.MuiToolbar-root.crm-app-shell__offset': {
-            minHeight: 64,
+            minHeight: layoutTokens.headerHeight.xs + 24,
             [theme.breakpoints.up('md')]: {
-              minHeight: 70
+              minHeight: layoutTokens.headerHeight.md + 26
             }
           },
 
           '.MuiAppBar-root.crm-app-bar': {
             zIndex: theme.zIndex.drawer + 1,
-            borderBottom: `1px solid ${headerBorder}`,
-            backdropFilter: 'blur(20px) saturate(150%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+            top: 12,
+            right: 12,
+            left: 'auto',
+            border: `1px solid ${headerBorder}`,
+            backdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
+            WebkitBackdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             backgroundColor: headerSurface,
-            boxShadow: `0 8px 28px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.3)}`,
+            borderRadius: 22,
+            boxShadow: shadow.sm || `0 10px 24px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.18)}`,
             transition: theme.transitions.create(['width', 'margin-left'], {
               duration: motionTokens.standardDurationMs,
               easing: motionTokens.standardEasing
             })
           },
           '.MuiAppBar-root.crm-app-bar--expanded': {
-            width: `calc(100% - ${layoutTokens.drawerExpanded}px)`,
-            marginLeft: layoutTokens.drawerExpanded
+            width: `calc(100% - ${layoutTokens.drawerExpanded + 24}px)`,
+            marginLeft: layoutTokens.drawerExpanded + 12
           },
           '.MuiAppBar-root.crm-app-bar--collapsed': {
-            width: `calc(100% - ${layoutTokens.drawerCollapsed}px)`,
-            marginLeft: layoutTokens.drawerCollapsed
+            width: `calc(100% - ${layoutTokens.drawerCollapsed + 24}px)`,
+            marginLeft: layoutTokens.drawerCollapsed + 12
           },
           '.MuiAppBar-root.crm-app-bar--mobile': {
-            width: '100%',
-            marginLeft: 0
+            width: 'calc(100% - 24px)',
+            marginLeft: 12
           },
           '.MuiToolbar-root.crm-app-bar__toolbar': {
-            minHeight: 64,
+            minHeight: layoutTokens.headerHeight.xs,
             gap: theme.spacing(1.25),
             paddingLeft: theme.spacing(1.25),
             paddingRight: theme.spacing(1.25),
             [theme.breakpoints.up('md')]: {
-              minHeight: 70,
+              minHeight: layoutTokens.headerHeight.md,
               paddingLeft: theme.spacing(2),
               paddingRight: theme.spacing(2)
             }
@@ -576,14 +1019,80 @@ export const getComponents = (mode = 'light') => {
             flex: 1,
             minWidth: 0,
             maxWidth: '100%',
-            [theme.breakpoints.up('md')]: {
-              maxWidth: 580
+            gap: theme.spacing(1),
+            [theme.breakpoints.up('lg')]: {
+              gap: theme.spacing(1.4)
+            }
+          },
+          '.MuiBox-root.crm-app-bar__brand': {
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+            '& .crm-brand__copy': {
+              [theme.breakpoints.down('sm')]: {
+                display: 'none'
+              }
+            }
+          },
+          '.MuiStack-root.crm-app-bar__context': {
+            display: 'none',
+            minWidth: 0,
+            padding: theme.spacing(0.5, 0.85),
+            borderRadius: 16,
+            border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: surface.floating || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.82),
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
+            [theme.breakpoints.up('lg')]: {
+              display: 'grid'
+            }
+          },
+          '.MuiTypography-root.crm-app-bar__context-eyebrow': {
+            fontSize: '0.68rem',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTypography-root.crm-app-bar__context-title': {
+            fontWeight: 650,
+            letterSpacing: '-0.012em',
+            color: theme.palette.text.primary,
+            whiteSpace: 'nowrap'
+          },
+          '.MuiTypography-root.crm-app-bar__context-subtitle': {
+            color: alpha(theme.palette.text.secondary, 0.86),
+            lineHeight: 1.35,
+            whiteSpace: 'nowrap',
+            [theme.breakpoints.down('xl')]: {
+              display: 'none'
+            }
+          },
+          '.MuiIconButton-root.crm-app-bar__menu-trigger': {
+            flexShrink: 0,
+            border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            color: theme.palette.text.primary,
+            backgroundColor: surface.floating || alpha(theme.palette.background.paper, isLight ? 0.92 : 0.82),
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
+            '&:hover': {
+              borderColor: border.accent || alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+              backgroundColor: state.hover || alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             }
           },
           '.MuiBox-root.crm-app-bar__search': {
             flexGrow: 1,
+            minWidth: 0,
             width: '100%',
-            maxWidth: '100%'
+            maxWidth: '100%',
+            [theme.breakpoints.up('lg')]: {
+              maxWidth: 640
+            }
+          },
+          '.MuiBox-root.crm-app-bar__search .MuiPaper-root.crm-global-search__input-shell': {
+            minHeight: 46,
+            borderRadius: 16,
+            backgroundColor: surface.floating || alpha(theme.palette.background.paper, isLight ? 0.95 : 0.84),
+            borderColor: border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
           },
           '.MuiStack-root.crm-app-bar__user-area': {
             marginLeft: 'auto',
@@ -600,12 +1109,12 @@ export const getComponents = (mode = 'light') => {
             textTransform: 'none',
             whiteSpace: 'nowrap',
             color: theme.palette.text.primary,
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.38)}`,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.11 : 0.2),
-            boxShadow: `0 10px 22px ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.28)}`,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.78),
+            boxShadow: `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.16)}`,
             '&:hover': {
-              borderColor: alpha(theme.palette.primary.main, isLight ? 0.38 : 0.52),
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.18 : 0.28)
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             },
             [theme.breakpoints.down('sm')]: {
               minWidth: 38,
@@ -617,13 +1126,13 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiIconButton-root.crm-app-bar__notification': {
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.18 : 0.3)}`,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             color: theme.palette.text.primary,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.62 : 0.36),
-            boxShadow: `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.24)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76),
+            boxShadow: `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
             '&:hover': {
-              borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.48),
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             }
           },
           '.MuiBadge-root.crm-app-bar__notification-badge .MuiBadge-badge': {
@@ -634,7 +1143,7 @@ export const getComponents = (mode = 'light') => {
             fontWeight: 700,
             borderRadius: 999,
             border: `1px solid ${alpha(theme.palette.background.paper, isLight ? 0.92 : 0.74)}`,
-            boxShadow: `0 6px 14px ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.38)}`
+            boxShadow: `0 6px 12px ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.22)}`
           },
           '.MuiBox-root.crm-app-bar__user-info': {
             display: 'none',
@@ -647,11 +1156,11 @@ export const getComponents = (mode = 'light') => {
             borderRadius: 15,
             textTransform: 'none',
             color: theme.palette.text.primary,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.42 : 0.24),
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)}`,
-            boxShadow: `0 8px 20px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.26)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.82 : 0.72),
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            boxShadow: `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
             '&:hover': {
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.24)
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.07 : 0.15)
             },
             [theme.breakpoints.down('sm')]: {
               minWidth: 0,
@@ -665,22 +1174,22 @@ export const getComponents = (mode = 'light') => {
             marginLeft: theme.spacing(0.5)
           },
           '.MuiIconButton-root.crm-app-bar__theme-toggle': {
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.28)}`,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             color: theme.palette.text.primary,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.6 : 0.34),
-            boxShadow: `0 8px 20px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.24)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76),
+            boxShadow: `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
             '&:hover': {
-              borderColor: alpha(theme.palette.primary.main, isLight ? 0.36 : 0.5),
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             }
           },
           '.MuiMenu-paper.crm-app-bar__menu': {
             ...buildGlassSurface(theme, {
               radius: 16,
-              borderAlpha: isLight ? 0.14 : 0.24,
-              backgroundAlpha: isLight ? 0.78 : 0.62,
-              blur: 14,
-              shadowAlpha: isLight ? 0.13 : 0.34
+              borderAlpha: isLight ? 0.08 : 0.14,
+              backgroundAlpha: isLight ? 0.97 : 0.93,
+              blur: 10,
+              shadowAlpha: isLight ? 0.08 : 0.18
             }),
             minWidth: 220
           },
@@ -728,15 +1237,18 @@ export const getComponents = (mode = 'light') => {
           '.MuiDrawer-paper.crm-app-drawer__paper': {
             boxSizing: 'border-box',
             position: 'relative',
-            borderRight: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.36)}`,
-            backgroundImage: `linear-gradient(164deg, ${alpha(theme.palette.background.default, isLight ? 0.78 : 0.84)} 0%, ${alpha(theme.palette.background.paper, isLight ? 0.72 : 0.8)} 58%, ${alpha(theme.palette.background.default, isLight ? 0.68 : 0.76)} 100%), ${gradients.sidebarBackground}`,
-            backgroundColor: alpha(theme.palette.background.default, isLight ? 0.74 : 0.84),
-            backdropFilter: 'blur(12px) saturate(138%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(138%)',
+            top: 12,
+            left: 12,
+            height: 'calc(100% - 24px)',
+            border: `1px solid ${sidebarSurfaceBorder}`,
+            backgroundImage: gradients.sidebarBackground,
+            backgroundColor: surface.sidebar || alpha(theme.palette.background.default, isLight ? 0.98 : 0.96),
+            backdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
+            WebkitBackdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             color: sidebarTextPrimary,
             overflow: 'hidden',
-            borderRadius: '0 24px 24px 0',
-            boxShadow: `inset -1px 0 0 ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.14)}, 0 22px 42px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.38)}`,
+            borderRadius: component.sidebar?.radius || 24,
+            boxShadow: shadow.xl || `0 18px 34px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.18)}`,
             transition: theme.transitions.create(['width', 'background-color', 'border-color', 'box-shadow'], {
               duration: motionTokens.standardDurationMs,
               easing: motionTokens.standardEasing
@@ -746,25 +1258,25 @@ export const getComponents = (mode = 'light') => {
               position: 'absolute',
               inset: 0,
               pointerEvents: 'none',
-              background: `radial-gradient(circle at 14% 8%, ${alpha(theme.palette.primary.light, isLight ? 0.3 : 0.24)} 0%, transparent 44%), radial-gradient(circle at 80% 92%, ${alpha(theme.palette.primary.main, isLight ? 0.18 : 0.16)} 0%, transparent 48%)`,
-              opacity: isLight ? 0.32 : 0.56
+              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.2 : 0.05)} 0%, transparent 28%)`,
+              opacity: 1
             },
             '&::after': {
               content: '""',
               position: 'absolute',
               inset: 0,
               pointerEvents: 'none',
-              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.16 : 0.05)} 0%, transparent 28%)`
+              background: `radial-gradient(circle at 100% 0%, ${alpha(theme.palette.primary.main, isLight ? 0.05 : 0.08)} 0%, transparent 34%)`
             }
           },
           '.MuiDrawer-paper.crm-app-drawer__paper--expanded': {
-            width: layoutTokens.drawerExpanded
+            width: `calc(${layoutTokens.drawerExpanded}px - 24px)`
           },
           '.MuiDrawer-paper.crm-app-drawer__paper--collapsed': {
-            width: layoutTokens.drawerCollapsed
+            width: `calc(${layoutTokens.drawerCollapsed}px - 24px)`
           },
           '.MuiDrawer-paper.crm-app-drawer__paper--mobile': {
-            width: layoutTokens.drawerExpanded
+            width: `min(calc(100vw - 24px), ${layoutTokens.drawerExpanded}px)`
           },
 
           '.MuiBox-root.crm-app-shell__drawer-content': {
@@ -776,7 +1288,7 @@ export const getComponents = (mode = 'light') => {
             zIndex: 1
           },
           '.MuiBox-root.crm-app-shell__drawer-header': {
-            padding: theme.spacing(1.7, 1.5),
+            padding: theme.spacing(1.8, 1.55, 1.4),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -785,13 +1297,24 @@ export const getComponents = (mode = 'light') => {
               easing: motionTokens.standardEasing
             })
           },
+          '.MuiStack-root.crm-app-shell__drawer-header-copy': {
+            minWidth: 0,
+            gap: theme.spacing(0.5)
+          },
+          '.MuiTypography-root.crm-app-shell__drawer-kicker': {
+            fontWeight: 650,
+            fontSize: '0.68rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: alpha(sidebarTextSecondary, 0.92)
+          },
           '.MuiBox-root.crm-app-shell__drawer-header--collapsed': {
-            padding: theme.spacing(1.5, 0.9),
+            padding: theme.spacing(1.45, 0.85),
             justifyContent: 'center'
           },
           '.MuiDivider-root.crm-app-shell__drawer-divider': {
-            margin: theme.spacing(0, 1),
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.2 : 0.3),
+            margin: theme.spacing(0, 1.05),
+            borderColor: sidebarDivider,
             opacity: 0.92
           },
           '.MuiBox-root.crm-app-shell__drawer-content .MuiTypography-root.crm-brand__text': {
@@ -802,54 +1325,54 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiBox-root.crm-app-shell__drawer-header .MuiIconButton-root': {
             color: sidebarTextSecondary,
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.28),
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.76 : 0.36),
+            borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.82),
             '&:hover': {
-              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.16 : 0.24),
+              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.08 : 0.16),
               color: sidebarTextPrimary
             }
           },
 
           '.MuiList-root.crm-app-shell__nav-list': {
-            padding: theme.spacing(1.5, 0.95, 1.75),
+            padding: theme.spacing(1.3, 1.05, 1.65),
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(0.28),
+            gap: theme.spacing(0.35),
             overflowY: 'auto',
             overflowX: 'hidden'
           },
           '.MuiList-root.crm-app-shell__nav-list--collapsed': {
-            paddingLeft: theme.spacing(0.75),
-            paddingRight: theme.spacing(0.75)
+            paddingLeft: theme.spacing(0.7),
+            paddingRight: theme.spacing(0.7)
           },
           '.MuiListSubheader-root.crm-app-shell__section-title': {
-            padding: theme.spacing(0.75, 0.95, 0.4),
+            padding: theme.spacing(0.95, 1.05, 0.5),
             margin: 0,
             lineHeight: 1.2,
-            fontSize: theme.typography.caption.fontSize,
+            fontSize: '0.68rem',
             fontWeight: 700,
-            letterSpacing: '0.1em',
+            letterSpacing: '0.11em',
             textTransform: 'uppercase',
-            color: alpha(sidebarTextSecondary, 0.9),
+            color: alpha(sidebarTextSecondary, 0.92),
             backgroundColor: 'transparent'
           },
           '.MuiDivider-root.crm-app-shell__section-divider': {
-            margin: theme.spacing(0.75, 0.9),
+            margin: theme.spacing(0.9, 0.95),
             borderColor: sidebarDivider,
-            opacity: 0.74
+            opacity: 0.88
           },
 
           '.MuiListItemButton-root.crm-app-shell__nav-item': {
             marginBottom: theme.spacing(0.25),
-            padding: theme.spacing(0.58, 0.85),
-            borderRadius: 14,
+            padding: theme.spacing(0.72, 1.02),
+            borderRadius: component.sidebar?.itemRadius || 16,
             justifyContent: 'flex-start',
             minHeight: 46,
             color: sidebarTextPrimary,
             position: 'relative',
             overflow: 'hidden',
             isolation: 'isolate',
-            border: `1px solid transparent`,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.02 : 0.05)}`,
             transition: theme.transitions.create(
               ['background-color', 'color', 'transform', 'box-shadow', 'border-color'],
               { duration: microMotionMs }
@@ -860,7 +1383,7 @@ export const getComponents = (mode = 'light') => {
               left: theme.spacing(0.45),
               top: theme.spacing(0.58),
               bottom: theme.spacing(0.58),
-              width: 3,
+              width: 2,
               borderRadius: 999,
               backgroundColor: 'transparent',
               boxShadow: 'none',
@@ -872,35 +1395,35 @@ export const getComponents = (mode = 'light') => {
               inset: 0,
               pointerEvents: 'none',
               opacity: 0,
-              background: `linear-gradient(92deg, ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.22)} 0%, transparent 60%)`,
+              background: `linear-gradient(90deg, ${alpha(theme.palette.common.white, isLight ? 0.4 : 0.06)} 0%, transparent 42%)`,
               transition: `opacity ${microMotion}`
             },
             '&:hover': {
-              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.14 : 0.22),
-              borderColor: alpha(sidebarActiveIndicator, isLight ? 0.26 : 0.38),
+              backgroundColor: sidebarHoverBackground,
+              borderColor: alpha(sidebarActiveIndicator, isLight ? 0.16 : 0.26),
               color: sidebarTextPrimary,
-              transform: 'translateX(2px)',
-              boxShadow: `0 12px 24px ${alpha(theme.palette.text.primary, isLight ? 0.1 : 0.28)}`,
+              transform: 'translateY(-1px)',
+              boxShadow: shadow.xs || `0 10px 18px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
               '&::after': {
-                opacity: 0.95
+                opacity: 0.9
               }
             },
             '&.Mui-selected': {
-              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.2 : 0.32),
-              borderColor: alpha(sidebarActiveIndicator, isLight ? 0.38 : 0.54),
+              backgroundColor: sidebarActiveBackground,
+              borderColor: alpha(sidebarActiveIndicator, isLight ? 0.22 : 0.34),
               color: sidebarTextPrimary,
-              transform: 'translateX(3px)',
-              boxShadow: `0 14px 28px ${alpha(sidebarActiveIndicator, isLight ? 0.2 : 0.34)}`,
+              transform: 'translateY(-1px)',
+              boxShadow: shadow.glow || `0 12px 20px ${alpha(sidebarActiveIndicator, isLight ? 0.12 : 0.18)}`,
               '&::before': {
                 backgroundColor: sidebarActiveIndicator,
-                boxShadow: `0 0 14px ${alpha(sidebarActiveIndicator, isLight ? 0.5 : 0.66)}`
+                boxShadow: 'none'
               },
               '&::after': {
-                opacity: 1
+                opacity: 0.88
               }
             },
             '&.Mui-selected:hover': {
-              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.22 : 0.36)
+              backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.14 : 0.24)
             },
             '& .MuiListItemText-primary': {
               color: sidebarTextPrimary
@@ -939,15 +1462,15 @@ export const getComponents = (mode = 'light') => {
             marginRight: 0
           },
           '.MuiBox-root.crm-app-shell__nav-icon-shell': {
-            width: 30,
-            height: 30,
+            width: 32,
+            height: 32,
             borderRadius: 10,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.78 : 0.42),
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.28)}`,
-            boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, isLight ? 0.42 : 0.1)}, 0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.24)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.94 : 0.84),
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            boxShadow: `0 6px 12px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.12)}`,
             transition: theme.transitions.create(
               ['background-color', 'border-color', 'box-shadow', 'transform'],
               { duration: microMotionMs }
@@ -958,17 +1481,17 @@ export const getComponents = (mode = 'light') => {
             transform: 'translateX(1px)'
           },
           '.MuiListItemButton-root.crm-app-shell__nav-item:hover .MuiBox-root.crm-app-shell__nav-icon-shell': {
-            backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.2 : 0.3),
-            borderColor: alpha(sidebarActiveIndicator, isLight ? 0.36 : 0.54),
-            boxShadow: `0 10px 20px ${alpha(sidebarActiveIndicator, isLight ? 0.16 : 0.28)}`
+            backgroundColor: alpha(sidebarActiveIndicator, isLight ? 0.1 : 0.18),
+            borderColor: alpha(sidebarActiveIndicator, isLight ? 0.18 : 0.3),
+            boxShadow: `0 8px 14px ${alpha(sidebarActiveIndicator, isLight ? 0.08 : 0.16)}`
           },
           '.MuiListItemButton-root.crm-app-shell__nav-item.Mui-selected .MuiListItemIcon-root.crm-app-shell__nav-icon': {
             color: theme.palette.primary.contrastText
           },
           '.MuiListItemButton-root.crm-app-shell__nav-item.Mui-selected .MuiBox-root.crm-app-shell__nav-icon-shell': {
             backgroundColor: sidebarActiveIndicator,
-            borderColor: alpha(sidebarActiveIndicator, isLight ? 0.52 : 0.68),
-            boxShadow: `0 12px 24px ${alpha(sidebarActiveIndicator, isLight ? 0.26 : 0.4)}`
+            borderColor: alpha(sidebarActiveIndicator, isLight ? 0.28 : 0.42),
+            boxShadow: `0 10px 16px ${alpha(sidebarActiveIndicator, isLight ? 0.14 : 0.2)}`
           },
           '.MuiListItemText-root.crm-app-shell__nav-copy': {
             margin: 0,
@@ -1041,21 +1564,45 @@ export const getComponents = (mode = 'light') => {
           '.MuiStack-root.crm-page__header': {
             width: '100%',
             gap: theme.spacing(pageHeaderGap),
-            paddingBottom: theme.spacing(2),
-            marginBottom: theme.spacing(0.25)
+            position: 'relative',
+            paddingBottom: theme.spacing(2.5),
+            marginBottom: theme.spacing(0.5),
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`
           },
           '.MuiStack-root.crm-page__header--center': {
             alignItems: 'center',
             textAlign: 'center',
             justifyContent: 'center'
           },
+          '.MuiStack-root.crm-page__header--center .MuiBox-root.crm-page__breadcrumbs-shell': {
+            alignSelf: 'center'
+          },
+          '.MuiStack-root.crm-page__header--center .MuiStack-root.crm-page__header-actions': {
+            justifyContent: 'center'
+          },
           '.MuiStack-root.crm-page__header-copy': {
-            gap: theme.spacing(pageHeaderCopyGap),
-            maxWidth: 900
+            gap: theme.spacing(pageHeaderCopyGap + 0.2),
+            maxWidth: 940
           },
           '.MuiStack-root.crm-page__header-actions': {
             gap: theme.spacing(pageHeaderActionsGap),
-            flexWrap: 'wrap'
+            flexWrap: 'wrap',
+            alignSelf: 'stretch',
+            justifyContent: 'flex-start',
+            [theme.breakpoints.up('lg')]: {
+              alignSelf: 'flex-start',
+              justifyContent: 'flex-end'
+            }
+          },
+          '.MuiBox-root.crm-page__breadcrumbs-shell': {
+            display: 'inline-flex',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            padding: theme.spacing(0.45, 0.8),
+            borderRadius: 999,
+            border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: surface.cardSoft || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.84),
+            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
           },
           '.MuiTypography-root.crm-page__eyebrow': {
             fontWeight: labelTypography.default.fontWeight,
@@ -1066,11 +1613,24 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiBreadcrumbs-root.crm-page__breadcrumbs': {
             fontSize: theme.typography.caption.fontSize,
-            color: theme.palette.text.secondary
+            color: theme.palette.text.secondary,
+            '& .MuiBreadcrumbs-separator': {
+              marginLeft: theme.spacing(0.5),
+              marginRight: theme.spacing(0.5),
+              color: alpha(theme.palette.text.secondary, 0.55)
+            }
           },
           '.MuiLink-root.crm-page__breadcrumb-link': {
             fontWeight: 600,
-            color: theme.palette.text.secondary
+            color: theme.palette.text.secondary,
+            transition: `color ${microMotion}`,
+            '&:hover': {
+              color: theme.palette.text.primary
+            }
+          },
+          '.MuiTypography-root.crm-page__breadcrumb-current': {
+            fontWeight: 650,
+            color: theme.palette.text.primary
           },
           '.MuiBox-root.crm-page-grid': {
             display: 'grid',
@@ -1088,6 +1648,152 @@ export const getComponents = (mode = 'light') => {
             marginTop: theme.spacing(pageFooterMarginTop)
           },
 
+          '.MuiPaper-root.crm-surface-card': {
+            ...getCardSurface(theme, { soft: true }),
+            padding: theme.spacing(2.5)
+          },
+          '.MuiPaper-root.crm-surface-card--compact': {
+            padding: theme.spacing(2)
+          },
+          '.MuiPaper-root.crm-surface-card--nested, .MuiPaper-root.crm-surface-card__list-item, .MuiBox-root.crm-surface-card__selection-item': {
+            ...getInsetSurface(theme),
+            padding: theme.spacing(1.35, 1.45)
+          },
+          '.MuiStack-root.crm-surface-card__header': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(1.05),
+            paddingBottom: theme.spacing(1.55),
+            marginBottom: theme.spacing(1.65),
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
+          },
+          '.MuiStack-root.crm-surface-card__header--split': {
+            [theme.breakpoints.up('sm')]: {
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between'
+            }
+          },
+          '.MuiStack-root.crm-surface-card__header-main': {
+            gap: theme.spacing(0.35),
+            minWidth: 0,
+            flex: '1 1 auto'
+          },
+          '.MuiStack-root.crm-surface-card__actions': {
+            flexShrink: 0,
+            gap: theme.spacing(0.8),
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          },
+          '.MuiTypography-root.crm-surface-card__eyebrow': {
+            fontWeight: labelTypography.default.fontWeight,
+            fontSize: labelTypography.default.fontSize,
+            lineHeight: labelTypography.default.lineHeight,
+            letterSpacing: labelTypography.default.letterSpacing,
+            textTransform: labelTypography.default.textTransform,
+            color: alpha(theme.palette.text.secondary, 0.92)
+          },
+          '.MuiTypography-root.crm-surface-card__title': {
+            fontWeight: 650,
+            fontSize: theme.typography.h6.fontSize,
+            lineHeight: 1.28,
+            letterSpacing: '-0.012em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-surface-card__subtitle': {
+            fontWeight: sectionTypography.subtitle.fontWeight,
+            fontSize: sectionTypography.subtitle.fontSize,
+            lineHeight: sectionTypography.subtitle.lineHeight,
+            letterSpacing: sectionTypography.subtitle.letterSpacing,
+            color: theme.palette.text.secondary,
+            maxWidth: 760
+          },
+          '.MuiBox-root.crm-surface-card__meta-grid, .MuiBox-root.crm-surface-card__stat-grid': {
+            display: 'grid',
+            gap: theme.spacing(1.15),
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            },
+            [theme.breakpoints.up('lg')]: {
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-surface-card__meta-grid--wide': {
+            [theme.breakpoints.up('xl')]: {
+              gridTemplateColumns: 'repeat(5, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-surface-card__meta-item, .MuiBox-root.crm-surface-card__stat': {
+            ...getInsetSurface(theme),
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.45),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-surface-card__stat': {
+            ...getCompactMetricSurface(theme)
+          },
+          '.MuiTypography-root.crm-surface-card__meta-label, .MuiTypography-root.crm-surface-card__stat-label': {
+            fontWeight: labelTypography.subdued.fontWeight,
+            fontSize: labelTypography.subdued.fontSize,
+            lineHeight: labelTypography.subdued.lineHeight,
+            letterSpacing: labelTypography.subdued.letterSpacing,
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTypography-root.crm-surface-card__meta-value': {
+            fontWeight: 600,
+            lineHeight: 1.38,
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-surface-card__stat-value': {
+            fontWeight: metricTypography.value.fontWeight,
+            fontSize: '1.48rem',
+            lineHeight: 1.08,
+            letterSpacing: '-0.024em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-surface-card__stat-support': {
+            color: theme.palette.text.secondary
+          },
+          '.MuiStack-root.crm-surface-card__badge-row': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(0.75),
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          },
+          '.MuiStack-root.crm-surface-card__list': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(1.1)
+          },
+          '.MuiStack-root.crm-surface-card__list-copy': {
+            minWidth: 0,
+            width: '100%',
+            gap: theme.spacing(0.3)
+          },
+          '.MuiStack-root.crm-surface-card__action-row': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(1),
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap'
+          },
+          '.MuiBox-root.crm-surface-card__selection-item': {
+            transition: theme.transitions.create(
+              ['border-color', 'background-color', 'box-shadow', 'transform'],
+              { duration: microMotionMs }
+            )
+          },
+          '.MuiBox-root.crm-surface-card__selection-item--checked': {
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.36),
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14),
+            boxShadow: `0 10px 20px ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14)}`
+          },
+
           '.MuiDialog-root.crm-dialog .MuiPaper-root': {
             borderRadius: 24,
             animation: 'crm-modal-enter 300ms ease-out',
@@ -1097,17 +1803,45 @@ export const getComponents = (mode = 'light') => {
             padding: theme.spacing(2.35, 3, 1.15),
             borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.82 : 0.68)}`
           },
+          '.MuiStack-root.crm-dialog__title-stack': {
+            gap: theme.spacing(0.45)
+          },
+          '.MuiTypography-root.crm-dialog__title-text': {
+            fontWeight: 660,
+            letterSpacing: '-0.016em',
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-dialog__subtitle-text': {
+            color: alpha(theme.palette.text.secondary, 0.92),
+            maxWidth: 680
+          },
           '.MuiDialogContent-root.crm-dialog__content': {
             padding: theme.spacing(2.25, 3),
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(2)
+            gap: theme.spacing(2),
+            '& .MuiTextField-root, & .MuiAutocomplete-root, & .MuiFormControl-root': {
+              width: '100%'
+            },
+            '& .MuiFormControlLabel-root': {
+              margin: 0
+            },
+            '& .MuiAlert-root': {
+              alignSelf: 'stretch'
+            }
           },
           '.MuiDialogActions-root.crm-dialog__actions': {
             padding: theme.spacing(1.4, 3, 2.1),
             justifyContent: 'flex-end',
             gap: theme.spacing(1.2),
-            borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.8 : 0.64)}`
+            borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.8 : 0.64)}`,
+            '& > .MuiStack-root': {
+              width: '100%',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap',
+              gap: theme.spacing(1)
+            }
           },
           '.MuiStack-root.crm-dashboard': {
             gap: theme.spacing(3.25)
@@ -1117,15 +1851,16 @@ export const getComponents = (mode = 'light') => {
             padding: theme.spacing(3.6),
             position: 'relative',
             overflow: 'hidden',
-            backgroundImage: `linear-gradient(154deg, ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.24)} 0%, ${alpha(theme.palette.background.paper, isLight ? 0.84 : 0.68)} 46%, ${alpha(theme.palette.background.default, isLight ? 0.76 : 0.58)} 100%)`,
+            backgroundImage: gradients.dashboardHero,
             animation: `crm-fade-in ${microMotion}`,
             ...getHoverLift(theme),
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             '&::after': {
               content: '""',
               position: 'absolute',
               inset: 0,
               pointerEvents: 'none',
-              background: `radial-gradient(circle at 86% 12%, ${alpha(theme.palette.primary.light, isLight ? 0.2 : 0.3)} 0%, transparent 42%)`
+              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.18 : 0.04)} 0%, transparent 36%)`
             }
           },
           '.MuiBox-root.crm-dashboard__hero-grid': {
@@ -1135,24 +1870,223 @@ export const getComponents = (mode = 'light') => {
             gap: theme.spacing(2.6),
             gridTemplateColumns: 'minmax(0, 1fr)',
             [theme.breakpoints.up('md')]: {
-              gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 0.85fr)',
-              alignItems: 'center'
+              gridTemplateColumns: 'minmax(0, 1.18fr) minmax(320px, 0.82fr)',
+              alignItems: 'stretch'
+            },
+            [theme.breakpoints.up('lg')]: {
+              gridTemplateColumns: 'minmax(0, 1.24fr) minmax(340px, 0.84fr)'
             }
           },
           '.MuiStack-root.crm-dashboard__hero-copy': {
-            maxWidth: 760
+            maxWidth: 760,
+            gap: theme.spacing(1.2),
+            justifyContent: 'center'
           },
           '.MuiTypography-root.crm-dashboard__hero-eyebrow': {
             fontWeight: 700,
-            letterSpacing: '0.12em',
-            color: alpha(theme.palette.primary.main, 0.92)
+            letterSpacing: '0.1em',
+            color: alpha(theme.palette.primary.main, 0.84)
           },
           '.MuiTypography-root.crm-dashboard__hero-title': {
-            fontWeight: 650,
-            letterSpacing: '-0.025em'
+            fontWeight: 670,
+            letterSpacing: '-0.03em'
           },
           '.MuiTypography-root.crm-dashboard__hero-copy-text': {
             maxWidth: 700
+          },
+          '.MuiStack-root.crm-dashboard__hero-tags': {
+            position: 'relative',
+            zIndex: 1,
+            alignItems: 'center'
+          },
+          '.MuiBox-root.crm-dashboard__hero-highlight-grid': {
+            position: 'relative',
+            zIndex: 1,
+            display: 'grid',
+            gap: theme.spacing(1.1),
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            marginTop: theme.spacing(0.4),
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-dashboard__hero-highlight': {
+            ...getCompactMetricSurface(theme),
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: theme.spacing(0.5),
+            position: 'relative',
+            zIndex: 1,
+            minWidth: 0
+          },
+          '.MuiTypography-root.crm-dashboard__hero-highlight-label': {
+            color: alpha(theme.palette.text.secondary, 0.92),
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase'
+          },
+          '.MuiTypography-root.crm-dashboard__hero-highlight-value': {
+            letterSpacing: '-0.026em'
+          },
+          '.MuiTypography-root.crm-dashboard__hero-highlight-support': {
+            color: alpha(theme.palette.text.secondary, 0.9),
+            lineHeight: 1.5
+          },
+          '.MuiStack-root.crm-dashboard__hero-side': {
+            height: '100%',
+            gap: theme.spacing(1.35)
+          },
+          '.MuiPaper-root.crm-dashboard__control-card, .MuiPaper-root.crm-dashboard__actions-card': {
+            ...getInsetSurface(theme, {
+              radius: 18,
+              backgroundAlpha: isLight ? 0.84 : 0.64,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.06 : 0.14
+            }),
+            padding: theme.spacing(2.05),
+            position: 'relative',
+            zIndex: 1,
+            overflow: 'hidden'
+          },
+          '.MuiPaper-root.crm-dashboard__control-card': {
+            flex: 1,
+            minHeight: 0
+          },
+          '.MuiStack-root.crm-dashboard__control-main': {
+            position: 'relative',
+            zIndex: 1,
+            paddingBottom: theme.spacing(0.4),
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
+          },
+          '.MuiTypography-root.crm-dashboard__control-label': {
+            color: alpha(theme.palette.text.secondary, 0.92),
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase'
+          },
+          '.MuiTypography-root.crm-dashboard__control-value': {
+            letterSpacing: '-0.04em'
+          },
+          '.MuiTypography-root.crm-dashboard__control-support': {
+            color: theme.palette.text.secondary,
+            maxWidth: '30rem'
+          },
+          '.MuiStack-root.crm-dashboard__control-list': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(0.9)
+          },
+          '.MuiBox-root.crm-dashboard__control-item': {
+            ...getInsetSurface(theme, {
+              radius: 14,
+              backgroundAlpha: isLight ? 0.78 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.1
+            }),
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: theme.spacing(1.4),
+            padding: theme.spacing(1.15, 1.2),
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-dashboard__control-item--positive': {
+            borderColor: alpha(theme.palette.success.main, isLight ? 0.2 : 0.28),
+            backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.success.main, isLight ? 0.06 : 0.12)} 0%, ${alpha(theme.palette.background.paper, isLight ? 0.86 : 0.62)} 100%)`
+          },
+          '.MuiBox-root.crm-dashboard__control-item--warning': {
+            borderColor: alpha(theme.palette.warning.main, isLight ? 0.22 : 0.3),
+            backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.warning.main, isLight ? 0.08 : 0.14)} 0%, ${alpha(theme.palette.background.paper, isLight ? 0.86 : 0.62)} 100%)`
+          },
+          '.MuiBox-root.crm-dashboard__control-item--negative, .MuiBox-root.crm-dashboard__control-item--neutral': {
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.18 : 0.26),
+            backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, isLight ? 0.06 : 0.12)} 0%, ${alpha(theme.palette.background.paper, isLight ? 0.86 : 0.62)} 100%)`
+          },
+          '.MuiStack-root.crm-dashboard__control-item-copy': {
+            minWidth: 0,
+            flex: 1
+          },
+          '.MuiTypography-root.crm-dashboard__control-item-label': {
+            fontWeight: 620,
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-dashboard__control-item-note': {
+            color: alpha(theme.palette.text.secondary, 0.9),
+            lineHeight: 1.5
+          },
+          '.MuiTypography-root.crm-dashboard__control-item-value': {
+            flexShrink: 0,
+            fontWeight: 700,
+            color: theme.palette.text.primary,
+            letterSpacing: '0.01em'
+          },
+          '.MuiPaper-root.crm-dashboard__actions-card': {
+            minHeight: 0
+          },
+          '.MuiBox-root.crm-dashboard__actions-grid': {
+            position: 'relative',
+            zIndex: 1,
+            display: 'grid',
+            gap: theme.spacing(0.85),
+            gridTemplateColumns: 'minmax(0, 1fr)'
+          },
+          '.MuiPaper-root.crm-dashboard__quick-action-empty': {
+            ...getInsetSurface(theme, {
+              radius: 14,
+              backgroundAlpha: isLight ? 0.76 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.1
+            }),
+            padding: theme.spacing(1.3, 1.35),
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.35)
+          },
+          '.MuiButton-root.crm-dashboard__quick-action': {
+            width: '100%',
+            justifyContent: 'flex-start',
+            alignItems: 'stretch',
+            padding: theme.spacing(1.1, 1.2),
+            minHeight: 0,
+            borderRadius: 14,
+            textAlign: 'left',
+            color: theme.palette.text.primary,
+            borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.76 : 0.52),
+            boxShadow: 'none',
+            '&:hover': {
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.22 : 0.3),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14),
+              boxShadow: 'none'
+            }
+          },
+          '.MuiStack-root.crm-dashboard__quick-action-content': {
+            width: '100%',
+            minWidth: 0
+          },
+          '.MuiBox-root.crm-dashboard__quick-action-icon': {
+            width: 34,
+            height: 34,
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            color: theme.palette.primary.main,
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.24)}`
+          },
+          '.MuiStack-root.crm-dashboard__quick-action-copy': {
+            minWidth: 0,
+            flex: 1
+          },
+          '.MuiTypography-root.crm-dashboard__quick-action-label': {
+            fontWeight: 620,
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-dashboard__quick-action-note': {
+            color: alpha(theme.palette.text.secondary, 0.9),
+            lineHeight: 1.45,
+            whiteSpace: 'normal'
           },
           '.MuiStack-root.crm-dashboard__hero-kpis': {
             alignItems: 'flex-start',
@@ -1164,18 +2098,18 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-dashboard__hero-kpi': {
             ...buildGlassSurface(theme, {
               radius: 16,
-              borderAlpha: isLight ? 0.16 : 0.24,
-              backgroundAlpha: isLight ? 0.8 : 0.58,
-              blur: 12,
-              shadowAlpha: isLight ? 0.12 : 0.3
+              borderAlpha: isLight ? 0.08 : 0.14,
+              backgroundAlpha: isLight ? 0.96 : 0.9,
+              blur: 8,
+              shadowAlpha: isLight ? 0.06 : 0.14
             }),
             minWidth: 176,
             padding: theme.spacing(1.25, 1.5),
             textAlign: 'right'
           },
           '.MuiChip-root.crm-dashboard__hero-chip': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.38 : 0.52),
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24),
+            borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.9 : 0.82),
             color: theme.palette.text.primary,
             fontWeight: 620
           },
@@ -1194,12 +2128,36 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-dashboard__metric-card': {
             ...getDashboardGlass(theme),
             padding: theme.spacing(2.4),
-            minHeight: 220,
+            minHeight: 208,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             animation: `crm-fade-in ${microMotion}`,
             ...getHoverLift(theme)
+          },
+          '.MuiStack-root.crm-dashboard__metric-header': {
+            position: 'relative',
+            zIndex: 1,
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          },
+          '.MuiStack-root.crm-dashboard__metric-copy': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(0.4)
+          },
+          '.MuiTypography-root.crm-dashboard__metric-label': {
+            color: alpha(theme.palette.text.secondary, 0.88)
+          },
+          '.MuiTypography-root.crm-dashboard__metric-subtitle': {
+            maxWidth: '24rem',
+            color: theme.palette.text.secondary
+          },
+          '.MuiStack-root.crm-dashboard__metric-footer': {
+            position: 'relative',
+            zIndex: 1,
+            marginTop: 'auto',
+            gap: theme.spacing(1.25)
           },
           '.MuiBox-root.crm-dashboard__metric-icon': {
             width: 38,
@@ -1208,14 +2166,14 @@ export const getComponents = (mode = 'light') => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.28),
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.28 : 0.42)}`,
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)}`,
             color: theme.palette.primary.main,
             transition: `transform ${microMotion}, background-color ${microMotion}`
           },
           '.MuiPaper-root.crm-dashboard__metric-card:hover .MuiBox-root.crm-dashboard__metric-icon': {
             transform: 'translateY(-1px)',
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34)
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2)
           },
           '.MuiStack-root.crm-dashboard__metric-delta': {
             fontSize: '0.74rem',
@@ -1259,11 +2217,29 @@ export const getComponents = (mode = 'light') => {
             ...getDashboardGlass(theme),
             padding: theme.spacing(2.5),
             animation: `crm-fade-in ${microMotion}`,
-            ...getHoverLift(theme)
+            ...getHoverLift(theme),
+            minWidth: 0
+          },
+          '.MuiPaper-root.crm-dashboard__chart-card--primary': {
+            minHeight: '100%'
+          },
+          '.MuiPaper-root.crm-dashboard__chart-card--mix': {
+            minHeight: 0
+          },
+          '.MuiStack-root.crm-dashboard__side-stack': {
+            height: '100%',
+            gap: theme.spacing(2.2)
+          },
+          '.MuiStack-root.crm-dashboard__chart-header, .MuiStack-root.crm-dashboard__panel-header': {
+            position: 'relative',
+            zIndex: 1,
+            paddingBottom: theme.spacing(1.15),
+            marginBottom: theme.spacing(0.25),
+            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
           },
           '.MuiChip-root.crm-dashboard__chart-chip': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.5),
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.22)
+            borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.84)
           },
           '.MuiBox-root.crm-dashboard__area-chart': {
             width: '100%',
@@ -1300,8 +2276,42 @@ export const getComponents = (mode = 'light') => {
               gridTemplateColumns: 'repeat(6, minmax(0, 1fr))'
             }
           },
+          '.MuiBox-root.crm-dashboard__chart-meta-grid': {
+            position: 'relative',
+            zIndex: 1,
+            display: 'grid',
+            gap: theme.spacing(1),
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-dashboard__chart-meta-card': {
+            ...getInsetSurface(theme, {
+              radius: 14,
+              backgroundAlpha: isLight ? 0.76 : 0.56,
+              borderAlpha: isLight ? 0.08 : 0.14,
+              shadowAlpha: isLight ? 0.05 : 0.12
+            }),
+            padding: theme.spacing(1.15, 1.2),
+            minWidth: 0,
+            gap: theme.spacing(0.3)
+          },
+          '.MuiTypography-root.crm-dashboard__chart-meta-label': {
+            color: alpha(theme.palette.text.secondary, 0.9),
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase'
+          },
+          '.MuiTypography-root.crm-dashboard__chart-meta-value': {
+            fontWeight: 650,
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-dashboard__chart-meta-note': {
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
           '.MuiStack-root.crm-dashboard__mix-list': {
-            marginTop: theme.spacing(0.6)
+            marginTop: theme.spacing(0.6),
+            gap: theme.spacing(1.15)
           },
           '.MuiStack-root.crm-dashboard__mix-row': {
             gap: theme.spacing(0.55)
@@ -1310,7 +2320,7 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             height: 8,
             borderRadius: 999,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.18),
+            backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12),
             overflow: 'hidden'
           },
           '.MuiBox-root.crm-dashboard__mix-fill': {
@@ -1333,8 +2343,15 @@ export const getComponents = (mode = 'light') => {
             animation: `crm-fade-in ${microMotion}`,
             ...getHoverLift(theme)
           },
+          '.MuiPaper-root.crm-dashboard__activity-card--full': {
+            minWidth: 0
+          },
+          '.MuiStack-root.crm-dashboard__activity-list': {
+            gap: theme.spacing(0.55)
+          },
           '.MuiStack-root.crm-dashboard__activity-row': {
-            padding: theme.spacing(0.25, 0)
+            padding: theme.spacing(0.35, 0),
+            minWidth: 0
           },
           '.MuiStack-root.crm-dashboard__activity-copy': {
             width: '100%',
@@ -1346,7 +2363,7 @@ export const getComponents = (mode = 'light') => {
             borderRadius: '50%',
             marginTop: theme.spacing(0.78),
             flexShrink: 0,
-            boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, isLight ? 0.1 : 0.18)}`
+            boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, isLight ? 0.06 : 0.12)}`
           },
           '.MuiBox-root.crm-dashboard__activity-dot--success': {
             backgroundColor: theme.palette.success.main
@@ -1370,8 +2387,8 @@ export const getComponents = (mode = 'light') => {
             alignItems: 'center',
             justifyContent: 'center',
             color: theme.palette.primary.main,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.22),
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.24 : 0.36)}`
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)}`
           },
           '.MuiTypography-root.crm-dashboard__indicator-value': {
             fontWeight: 630,
@@ -1391,7 +2408,7 @@ export const getComponents = (mode = 'light') => {
             height: 7,
             borderRadius: 999,
             overflow: 'hidden',
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.18)
+            backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)
           },
           '.MuiBox-root.crm-dashboard__indicator-fill': {
             height: '100%',
@@ -1408,6 +2425,29 @@ export const getComponents = (mode = 'light') => {
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
             ...getCardSurface(theme, { soft: true })
           },
+          '.MuiStack-root.crm-layout-admin-panel__content': {
+            position: 'relative',
+            zIndex: 1,
+            gap: theme.spacing(2.1)
+          },
+          '.MuiStack-root.crm-layout-admin-panel__list': {
+            gap: theme.spacing(1.05)
+          },
+          '.MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-card-outline, .MuiPaper-root.crm-surface-card__list-item': {
+            ...getInsetSurface(theme),
+            position: 'relative',
+            zIndex: 1
+          },
+          '.MuiFormControlLabel-root.crm-layout-admin-panel__switch': {
+            margin: 0,
+            gap: theme.spacing(1),
+            alignItems: 'center'
+          },
+          '.MuiBox-root.crm-client-detail__hero-meta-item': {
+            ...getInsetSurface(theme),
+            minWidth: 0,
+            gap: theme.spacing(0.4)
+          },
 
           '.MuiBox-root.crm-client-detail__hero-meta, .MuiBox-root.crm-client-detail__summary-grid, .MuiBox-root.crm-client-detail__financial-grid': {
             gap: theme.spacing(2)
@@ -1415,15 +2455,15 @@ export const getComponents = (mode = 'light') => {
 
           '.crm-dynamic-grid .react-grid-item.react-grid-placeholder': {
             borderRadius: 15,
-            border: `1px dashed ${alpha(theme.palette.primary.main, isLight ? 0.44 : 0.56)}`,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.26),
-            boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.22 : 0.36)}`
+            border: `1px dashed ${alpha(theme.palette.primary.main, isLight ? 0.28 : 0.4)}`,
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.22)}`
           },
           '.MuiStack-root.crm-dynamic-grid__drag-handle': {
-            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.32)}`,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             borderRadius: 12,
             padding: theme.spacing(0.5, 1),
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.74 : 0.52),
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.84),
             color: theme.palette.text.secondary,
             cursor: 'grab',
             userSelect: 'none',
@@ -1445,11 +2485,14 @@ export const getComponents = (mode = 'light') => {
 
     MuiPaper: {
       styleOverrides: {
-        root: {
-          backgroundImage: 'none'
-        },
+        root: ({ theme }) => ({
+          backgroundImage: 'none',
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || theme.shadows[1],
+          position: 'relative'
+        }),
         outlined: ({ theme }) => ({
-          ...getCardSurface(theme, { soft: true })
+          ...getCardSurface(theme, { soft: true }),
+          padding: theme.spacing(1.9)
         })
       },
       variants: [
@@ -1458,7 +2501,8 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding)
+            padding: theme.spacing(cardPadding + 0.35),
+            backgroundImage: gradients.cardSurfaceSoft
           })
         },
         {
@@ -1477,7 +2521,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding)
+            padding: theme.spacing(cardPadding + 0.1)
           })
         },
         {
@@ -1485,7 +2529,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding)
+            padding: theme.spacing(cardPadding - 0.25)
           })
         },
         {
@@ -1493,7 +2537,8 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding)
+            padding: theme.spacing(2.25, cardPadding),
+            backgroundImage: gradients.cardSurfaceSoft
           })
         },
         {
@@ -1501,7 +2546,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding),
+            padding: theme.spacing(cardPadding - 0.2),
             flex: 1,
             minWidth: 0
           })
@@ -1511,7 +2556,9 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getTableSurface(theme),
             overflow: 'hidden',
-            padding: 0
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column'
           })
         }
       ]
@@ -1533,15 +2580,26 @@ export const getComponents = (mode = 'light') => {
     MuiCardHeader: {
       styleOverrides: {
         root: ({ theme }) => ({
-          padding: theme.spacing(cardPadding, cardPadding, 0)
+          padding: theme.spacing(cardPadding, cardPadding, 1.2),
+          position: 'relative',
+          zIndex: 1,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.56 : 0.44)}`
         }),
         title: ({ theme }) => ({
-          fontWeight: 620,
-          fontSize: theme.typography.h6.fontSize
+          fontWeight: 650,
+          fontSize: theme.typography.h6.fontSize,
+          letterSpacing: '-0.012em'
         }),
-        subheader: {
-          fontWeight: 500
-        }
+        subheader: ({ theme }) => ({
+          marginTop: theme.spacing(0.45),
+          fontWeight: 500,
+          color: theme.palette.text.secondary
+        }),
+        action: ({ theme }) => ({
+          alignSelf: 'center',
+          marginTop: 0,
+          marginRight: 0
+        })
       }
     },
 
@@ -1549,6 +2607,8 @@ export const getComponents = (mode = 'light') => {
       styleOverrides: {
         root: ({ theme }) => ({
           padding: theme.spacing(cardPadding),
+          position: 'relative',
+          zIndex: 1,
           '&:last-child': {
             paddingBottom: theme.spacing(cardPadding)
           }
@@ -1563,32 +2623,61 @@ export const getComponents = (mode = 'light') => {
       },
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 14,
-          minHeight: 42,
+          position: 'relative',
+          overflow: 'hidden',
+          isolation: 'isolate',
+          borderRadius: (getVisualTokens(theme).component || {}).button?.radius || 14,
+          minHeight: (getVisualTokens(theme).component || {}).button?.minHeight || 42,
           padding: theme.spacing(1.05, 2.15),
           fontWeight: 610,
           fontSize: theme.typography.button.fontSize,
           lineHeight: 1.2,
           letterSpacing: '0.012em',
           textTransform: 'none',
-          border: `1px solid ${alpha(theme.palette.divider, isLight ? 0.88 : 0.7)}`,
+          border: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || 'none',
           transition: theme.transitions.create(
             ['transform', 'box-shadow', 'background-color', 'border-color', 'color'],
             { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
           ),
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            opacity: 0,
+            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.22 : 0.08)} 0%, transparent 58%)`,
+            transition: `opacity ${microMotion}`
+          },
+          '& .MuiButton-startIcon, & .MuiButton-endIcon': {
+            transition: `transform ${microMotion}, opacity ${microMotion}`
+          },
           '&.Mui-focusVisible': {
-            boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, isLight ? 0.22 : 0.32)}`
+            boxShadow: (getVisualTokens(theme).shadow || {}).focus || `0 0 0 3px ${alpha(theme.palette.primary.main, isLight ? 0.22 : 0.32)}`
           },
           '&:not(.Mui-disabled):hover': {
-            transform: 'translateY(-1px)'
+            transform: 'translateY(-1px)',
+            '&::after': {
+              opacity: 1
+            },
+            '& .MuiButton-startIcon': {
+              transform: 'translateX(-1px)'
+            },
+            '& .MuiButton-endIcon': {
+              transform: 'translateX(1px)'
+            }
           },
           '&:not(.Mui-disabled):active': {
-            transform: 'translateY(0) scale(0.985)'
+            transform: 'translateY(0) scale(0.985)',
+            '&::after': {
+              opacity: 0.72
+            }
           },
           '&.Mui-disabled': {
-            color: alpha(theme.palette.text.primary, 0.42),
+            color: (getVisualTokens(theme).state || {}).disabledText || alpha(theme.palette.text.primary, 0.42),
             borderColor: alpha(theme.palette.divider, 0.5),
-            backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)
+            backgroundColor: (getVisualTokens(theme).state || {}).disabledBg || alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12),
+            boxShadow: 'none'
           }
         }),
         sizeSmall: ({ theme }) => ({
@@ -1598,7 +2687,7 @@ export const getComponents = (mode = 'light') => {
           fontSize: theme.typography.caption.fontSize
         }),
         sizeLarge: ({ theme }) => ({
-          minHeight: 50,
+          minHeight: (getVisualTokens(theme).component || {}).button?.minHeightLg || 50,
           borderRadius: 16,
           padding: theme.spacing(1.25, 2.85),
           fontSize: theme.typography.body1.fontSize
@@ -1607,24 +2696,24 @@ export const getComponents = (mode = 'light') => {
           color: theme.palette.primary.contrastText,
           backgroundImage: gradients.buttonPrimary,
           backgroundColor: theme.palette.primary.main,
-          borderColor: alpha(theme.palette.primary.main, isLight ? 0.46 : 0.58),
-          boxShadow: `0 10px 22px ${alpha(theme.palette.primary.main, isLight ? 0.28 : 0.42)}`,
+          borderColor: (getVisualTokens(theme).border || {}).accent || alpha(theme.palette.primary.main, isLight ? 0.36 : 0.46),
+          boxShadow: (getVisualTokens(theme).shadow || {}).glow || `0 10px 20px ${alpha(theme.palette.primary.main, isLight ? 0.18 : 0.26)}`,
           '&:hover': {
             backgroundImage: gradients.buttonPrimary,
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.56 : 0.66),
-            boxShadow: `0 14px 28px ${alpha(theme.palette.primary.main, isLight ? 0.34 : 0.48)}`
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.46 : 0.56),
+            boxShadow: (getVisualTokens(theme).shadow || {}).lg || `0 12px 24px ${alpha(theme.palette.primary.main, isLight ? 0.22 : 0.3)}`
           }
         }),
         outlined: ({ theme }) => ({
           color: theme.palette.text.primary,
-          borderColor: alpha(theme.palette.divider, isLight ? 0.88 : 0.72),
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.84 : 0.58),
-          backdropFilter: 'blur(8px) saturate(135%)',
-          WebkitBackdropFilter: 'blur(8px) saturate(135%)',
-          boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, isLight ? 0.54 : 0.08)}`,
+          borderColor: (getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+          backgroundColor: (getVisualTokens(theme).surface || {}).floating || alpha(theme.palette.background.paper, isLight ? 0.92 : 0.82),
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 6px 12px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.1)}`,
           '&:hover': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.36 : 0.52),
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.2)
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.36),
+            backgroundColor: (getVisualTokens(theme).state || {}).hover || alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)
           }
         }),
         text: ({ theme }) => ({
@@ -1634,29 +2723,54 @@ export const getComponents = (mode = 'light') => {
           boxShadow: 'none',
           '&:hover': {
             color: theme.palette.text.primary,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.2)
+            backgroundColor: (getVisualTokens(theme).state || {}).hover || alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)
+          }
+        }),
+        containedError: ({ theme }) => ({
+          color: theme.palette.error.contrastText,
+          backgroundImage: `linear-gradient(135deg, ${alpha(theme.palette.error.main, isLight ? 0.96 : 0.92)} 0%, ${alpha(theme.palette.error.dark || theme.palette.error.main, isLight ? 0.92 : 0.84)} 100%)`,
+          borderColor: alpha(theme.palette.error.main, isLight ? 0.34 : 0.44),
+          boxShadow: `0 10px 20px ${alpha(theme.palette.error.main, isLight ? 0.16 : 0.24)}`,
+          '&:hover': {
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.44 : 0.54),
+            boxShadow: `0 12px 24px ${alpha(theme.palette.error.main, isLight ? 0.2 : 0.28)}`
+          }
+        }),
+        outlinedError: ({ theme }) => ({
+          color: theme.palette.error.main,
+          borderColor: alpha(theme.palette.error.main, isLight ? 0.22 : 0.34),
+          backgroundColor: alpha(theme.palette.error.main, isLight ? 0.06 : 0.12),
+          '&:hover': {
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.32 : 0.44),
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.1 : 0.18)
+          }
+        }),
+        textError: ({ theme }) => ({
+          color: theme.palette.error.main,
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.08 : 0.14)
           }
         }),
         containedSecondary: ({ theme }) => ({
           color: theme.palette.text.primary,
           backgroundImage: 'none',
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.9 : 0.64),
-          borderColor: alpha(theme.palette.divider, isLight ? 0.86 : 0.72),
-          boxShadow: `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.2)}`,
+          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.94 : 0.84),
+          borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+          boxShadow: `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.12)}`,
           '&:hover': {
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.98 : 0.72),
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.32 : 0.48),
-            boxShadow: `0 12px 24px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.26)}`
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 1 : 0.9),
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+            boxShadow: `0 10px 18px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.14)}`
           }
         }),
         outlinedSecondary: ({ theme }) => ({
           color: theme.palette.text.secondary,
-          borderColor: alpha(theme.palette.divider, isLight ? 0.84 : 0.68),
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.66 : 0.44),
+          borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.9 : 0.8),
           '&:hover': {
             color: theme.palette.text.primary,
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.5),
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.18)
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)
           }
         })
       },
@@ -1664,14 +2778,14 @@ export const getComponents = (mode = 'light') => {
         {
           props: { variant: 'ghost' },
           style: ({ theme }) => ({
-            color: alpha(theme.palette.text.secondary, 0.94),
-            border: '1px solid transparent',
-            backgroundColor: 'transparent',
+            color: alpha(theme.palette.text.secondary, 0.96),
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.1)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.42 : 0.24),
             boxShadow: 'none',
             '&:hover': {
               color: theme.palette.text.primary,
-              borderColor: alpha(theme.palette.divider, isLight ? 0.82 : 0.68),
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.18)
+              borderColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             }
           })
         }
@@ -1681,18 +2795,53 @@ export const getComponents = (mode = 'light') => {
     MuiIconButton: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.62 : 0.38),
-          border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)}`,
-          boxShadow: `0 8px 18px ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.24)}`,
-          transition: `transform ${microMotion}, box-shadow ${microMotion}, background-color ${microMotion}`,
+          width: 38,
+          height: 38,
+          borderRadius: 12,
+          backgroundColor: (getVisualTokens(theme).surface || {}).floating || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.82),
+          border: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 6px 14px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.12)}`,
+          transition: `transform ${microMotion}, box-shadow ${microMotion}, background-color ${microMotion}, border-color ${microMotion}, color ${microMotion}`,
+          '&.Mui-focusVisible': {
+            boxShadow: (getVisualTokens(theme).shadow || {}).focus || `0 0 0 3px ${alpha(theme.palette.primary.main, isLight ? 0.2 : 0.28)}`
+          },
           '&:not(.Mui-disabled):hover': {
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24),
-            boxShadow: `0 10px 20px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.3)}`,
+            backgroundColor: (getVisualTokens(theme).state || {}).hover || alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            boxShadow: (getVisualTokens(theme).shadow || {}).sm || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.14)}`,
             transform: 'translateY(-1px)'
           },
           '&:not(.Mui-disabled):active': {
             transform: 'translateY(0) scale(0.99)'
+          },
+          '&.Mui-disabled': {
+            backgroundColor: (getVisualTokens(theme).state || {}).disabledBg || alpha(theme.palette.text.primary, isLight ? 0.06 : 0.1),
+            borderColor: alpha(theme.palette.divider, 0.6),
+            boxShadow: 'none'
           }
+        }),
+        sizeSmall: {
+          width: 32,
+          height: 32,
+          borderRadius: 10
+        },
+        colorError: ({ theme }) => ({
+          color: theme.palette.error.main,
+          borderColor: alpha(theme.palette.error.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.error.main, isLight ? 0.06 : 0.12),
+          '&:hover': {
+            borderColor: alpha(theme.palette.error.main, isLight ? 0.28 : 0.4),
+            backgroundColor: alpha(theme.palette.error.main, isLight ? 0.1 : 0.18)
+          }
+        }),
+        colorSuccess: ({ theme }) => ({
+          color: theme.palette.success.main,
+          borderColor: alpha(theme.palette.success.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.success.main, isLight ? 0.06 : 0.12)
+        }),
+        colorWarning: ({ theme }) => ({
+          color: theme.palette.warning.main,
+          borderColor: alpha(theme.palette.warning.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.08 : 0.14)
         })
       }
     },
@@ -1701,43 +2850,72 @@ export const getComponents = (mode = 'light') => {
       defaultProps: {
         size: 'medium',
         variant: 'outlined'
+      },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          width: '100%',
+          '& .MuiFormHelperText-root': {
+            marginTop: theme.spacing(0.75)
+          }
+        })
       }
     },
 
     MuiOutlinedInput: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 14,
-          minHeight: 46,
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.86 : 0.56),
-          backdropFilter: 'blur(10px) saturate(136%)',
-          WebkitBackdropFilter: 'blur(10px) saturate(136%)',
-          boxShadow: `inset 0 1px 0 ${alpha(theme.palette.common.white, isLight ? 0.58 : 0.08)}, 0 1px 2px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.2)}`,
+          borderRadius: (getVisualTokens(theme).component || {}).input?.radius || 14,
+          minHeight: (getVisualTokens(theme).component || {}).input?.minHeight || 46,
+          backgroundColor: (getVisualTokens(theme).surface || {}).input || alpha(theme.palette.background.paper, isLight ? 0.98 : 0.9),
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 2px 6px ${alpha(theme.palette.text.primary, isLight ? 0.03 : 0.1)}`,
           transition: theme.transitions.create(
             ['box-shadow', 'border-color', 'background-color', 'transform'],
             { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
           ),
           '& .MuiOutlinedInput-input': {
-            padding: theme.spacing(1.45, 1.65)
+            padding: theme.spacing(1.25, 1.5),
+            fontWeight: 500
           },
           '& .MuiOutlinedInput-input.MuiInputBase-inputSizeSmall': {
-            padding: theme.spacing(1.1, 1.35)
+            padding: theme.spacing(1, 1.2)
+          },
+          '& input[type="date"], & input[type="time"], & input[type="datetime-local"]': {
+            fontVariantNumeric: 'tabular-nums',
+            minHeight: 22
+          },
+          '&.MuiInputBase-multiline': {
+            minHeight: 0,
+            padding: theme.spacing(0.3)
+          },
+          '&.MuiInputBase-multiline .MuiOutlinedInput-input': {
+            padding: theme.spacing(0.95, 1.1),
+            lineHeight: 1.6
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+            minHeight: '1.4em'
           },
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: alpha(theme.palette.divider, isLight ? 0.84 : 0.66),
+            borderColor: (getVisualTokens(theme).border || {}).standard || alpha(theme.palette.text.primary, isLight ? 0.1 : 0.16),
             borderWidth: 1
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.32 : 0.5)
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.26 : 0.38)
           },
           '&.Mui-focused': {
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.96 : 0.68),
-            boxShadow: `0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.32 : 0.5)}, 0 0 0 4px ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)}, 0 10px 24px ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.24)}`,
+            backgroundColor: (getVisualTokens(theme).surface || {}).inputRaised || alpha(theme.palette.background.paper, isLight ? 1 : 0.94),
+            boxShadow: (getVisualTokens(theme).shadow || {}).focus || `0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.28 : 0.4)}, 0 0 0 4px ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2)}, 0 10px 18px ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)}`,
             transform: 'translateY(-1px)'
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.5 : 0.62),
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.4 : 0.52),
             borderWidth: 1
+          },
+          '&.Mui-error': {
+            boxShadow: `0 0 0 1px ${alpha(theme.palette.error.main, isLight ? 0.24 : 0.34)}, 0 0 0 4px ${alpha(theme.palette.error.main, isLight ? 0.08 : 0.14)}`
           },
           '&.Mui-error .MuiOutlinedInput-notchedOutline': {
             borderColor: theme.palette.error.main
@@ -1759,13 +2937,14 @@ export const getComponents = (mode = 'light') => {
         }),
         input: ({ theme }) => ({
           '&::placeholder': {
-            color: alpha(theme.palette.text.secondary, 0.72),
-            fontWeight: 470,
+            color: alpha(theme.palette.text.secondary, 0.64),
+            fontWeight: 480,
             letterSpacing: '0.01em',
             opacity: 1
           }
         }),
         inputMultiline: ({ theme }) => ({
+          lineHeight: 1.6,
           '&::placeholder': {
             color: alpha(theme.palette.text.secondary, 0.72),
             fontWeight: 470,
@@ -1781,6 +2960,9 @@ export const getComponents = (mode = 'light') => {
         root: ({ theme }) => ({
           '& .MuiInputBase-root': {
             borderRadius: 14
+          },
+          '& .MuiFormHelperText-root': {
+            minHeight: theme.spacing(2.1)
           }
         })
       }
@@ -1789,10 +2971,10 @@ export const getComponents = (mode = 'light') => {
     MuiInputLabel: {
       styleOverrides: {
         root: ({ theme }) => ({
-          fontWeight: 560,
-          fontSize: '0.78rem',
+          fontWeight: 600,
+          fontSize: '0.76rem',
           lineHeight: 1.2,
-          letterSpacing: '0.04em',
+          letterSpacing: '0.03em',
           textTransform: 'none',
           color: alpha(theme.palette.text.secondary, 0.9),
           '&.Mui-focused': {
@@ -1816,7 +2998,102 @@ export const getComponents = (mode = 'light') => {
           marginRight: theme.spacing(0.25),
           fontSize: '0.72rem',
           letterSpacing: '0.01em',
+          lineHeight: 1.45,
           color: alpha(theme.palette.text.secondary, 0.9)
+        }),
+        error: ({ theme }) => ({
+          color: theme.palette.error.main,
+          fontWeight: 560
+        }),
+        contained: {
+          marginLeft: 2,
+          marginRight: 2
+        }
+      }
+    },
+
+    MuiFormControlLabel: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          marginLeft: 0,
+          marginRight: 0,
+          gap: theme.spacing(1),
+          alignItems: 'flex-start',
+          '& .MuiFormControlLabel-label': {
+            fontSize: theme.typography.body2.fontSize,
+            lineHeight: 1.5,
+            fontWeight: 520,
+            color: theme.palette.text.primary
+          }
+        }),
+        labelPlacementStart: ({ theme }) => ({
+          justifyContent: 'space-between',
+          width: '100%',
+          '& .MuiFormControlLabel-label': {
+            marginRight: theme.spacing(1)
+          }
+        })
+      }
+    },
+
+    MuiSwitch: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          width: 44,
+          height: 28,
+          padding: 0,
+          '& .MuiSwitch-switchBase': {
+            padding: 2,
+            transitionDuration: `${motionTokens.microDurationMs}ms`,
+            '&.Mui-checked': {
+              transform: 'translateX(16px)',
+              color: theme.palette.common.white,
+              '& + .MuiSwitch-track': {
+                backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.88 : 0.76),
+                borderColor: alpha(theme.palette.primary.main, isLight ? 0.62 : 0.56),
+                opacity: 1
+              }
+            }
+          },
+          '& .MuiSwitch-thumb': {
+            boxSizing: 'border-box',
+            width: 24,
+            height: 24,
+            boxShadow: `0 4px 10px ${alpha(theme.palette.text.primary, isLight ? 0.14 : 0.28)}`
+          },
+          '& .MuiSwitch-track': {
+            borderRadius: 999,
+            backgroundColor: alpha(theme.palette.text.secondary, isLight ? 0.24 : 0.36),
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.16)}`,
+            opacity: 1
+          }
+        })
+      }
+    },
+
+    MuiCheckbox: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          padding: theme.spacing(0.4),
+          color: alpha(theme.palette.text.secondary, 0.86),
+          '& .MuiSvgIcon-root': {
+            fontSize: '1.15rem',
+            borderRadius: 6
+          },
+          '&.Mui-checked': {
+            color: theme.palette.primary.main
+          },
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.06 : 0.12)
+          }
+        })
+      }
+    },
+
+    MuiInputAdornment: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          color: alpha(theme.palette.text.secondary, 0.82)
         })
       }
     },
@@ -1826,11 +3103,14 @@ export const getComponents = (mode = 'light') => {
         icon: ({ theme }) => ({
           color: alpha(theme.palette.text.secondary, 0.92)
         }),
-        select: {
+        select: ({ theme }) => ({
+          minHeight: '1.4em',
+          display: 'flex',
+          alignItems: 'center',
           '&:focus': {
             borderRadius: 14
           }
-        }
+        })
       }
     },
 
@@ -1839,23 +3119,107 @@ export const getComponents = (mode = 'light') => {
         paper: ({ theme }) => ({
           ...buildGlassSurface(theme, {
             radius: 14,
-            borderAlpha: isLight ? 0.12 : 0.24,
-            backgroundAlpha: isLight ? 0.92 : 0.74,
-            blur: 12,
-            shadowAlpha: isLight ? 0.12 : 0.28
+            borderAlpha: isLight ? 0.08 : 0.14,
+            backgroundAlpha: isLight ? 0.98 : 0.94,
+            blur: 8,
+            shadowAlpha: isLight ? 0.08 : 0.16
           }),
           marginTop: theme.spacing(0.8)
         }),
+        root: ({ theme }) => ({
+          '& .MuiOutlinedInput-root': {
+            paddingTop: 0,
+            paddingBottom: 0
+          }
+        }),
         option: ({ theme }) => ({
-          minHeight: 38,
-          paddingTop: theme.spacing(0.8),
-          paddingBottom: theme.spacing(0.8),
+          minHeight: 40,
+          paddingTop: theme.spacing(0.9),
+          paddingBottom: theme.spacing(0.9),
           fontSize: '0.88rem',
           '&[aria-selected="true"]': {
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.26)
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
           },
           '&.Mui-focused': {
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.22)
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)
+          }
+        })
+      }
+    },
+    MuiBackdrop: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: (getVisualTokens(theme).overlay || {}).scrim || alpha(theme.palette.background.default, isLight ? 0.18 : 0.5),
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(116%)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(116%)`
+        })
+      }
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          border: 0,
+          backgroundImage: gradients.sidebarBackground,
+          backgroundColor: (getVisualTokens(theme).surface || {}).sidebar || alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).md || 14}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).md || 14}px) saturate(${(getVisualTokens(theme).surface || {}).saturate || 140}%)`
+        })
+      }
+    },
+    MuiMenu: {
+      defaultProps: {
+        elevation: 0
+      },
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          ...buildGlassSurface(theme, {
+            radius: 16,
+            borderAlpha: isLight ? 0.08 : 0.14,
+            backgroundAlpha: isLight ? 0.98 : 0.94,
+            blur: 10,
+            shadowAlpha: isLight ? 0.08 : 0.18,
+            backgroundColor: (getVisualTokens(theme).surface || {}).floating
+          }),
+          minWidth: 220,
+          marginTop: theme.spacing(0.8),
+          overflow: 'hidden'
+        }),
+        list: ({ theme }) => ({
+          padding: theme.spacing(0.75)
+        })
+      }
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          minHeight: 42,
+          margin: theme.spacing(0.25, 0),
+          padding: theme.spacing(1, 1.15),
+          borderRadius: 12,
+          fontSize: theme.typography.body2.fontSize,
+          fontWeight: 540,
+          color: theme.palette.text.primary,
+          transition: theme.transitions.create(
+            ['background-color', 'border-color', 'transform', 'color'],
+            { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
+          ),
+          '& .MuiListItemIcon-root': {
+            minWidth: 32,
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '& .MuiListItemText-secondary': {
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            transform: 'translateX(1px)'
+          },
+          '&.Mui-selected': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2),
+            color: theme.palette.text.primary
+          },
+          '&.Mui-selected:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)
           }
         })
       }
@@ -1870,9 +3234,9 @@ export const getComponents = (mode = 'light') => {
       styleOverrides: {
         root: ({ theme }) => ({
           '& .MuiBackdrop-root': {
-            backgroundColor: alpha(theme.palette.background.default, isLight ? 0.38 : 0.62),
-            backdropFilter: 'blur(12px) saturate(122%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(122%)'
+            backgroundColor: (getVisualTokens(theme).overlay || {}).modal || alpha(theme.palette.background.default, isLight ? 0.34 : 0.56),
+            backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(118%)`,
+            WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(118%)`
           },
           '& .MuiDialog-container': {
             padding: theme.spacing(2.2),
@@ -1883,17 +3247,18 @@ export const getComponents = (mode = 'light') => {
         }),
         paper: ({ theme }) => ({
           ...buildGlassSurface(theme, {
-            radius: 24,
-            borderAlpha: isLight ? 0.12 : 0.22,
-            backgroundAlpha: isLight ? 0.9 : 0.74,
-            blur: 18,
-            shadowAlpha: isLight ? 0.12 : 0.34
+            radius: (getVisualTokens(theme).component || {}).dialog?.radius || 24,
+            borderAlpha: isLight ? 0.08 : 0.14,
+            backgroundAlpha: isLight ? 0.98 : 0.94,
+            blur: (getVisualTokens(theme).blur || {}).md || 14,
+            shadowAlpha: isLight ? 0.1 : 0.2,
+            backgroundColor: (getVisualTokens(theme).surface || {}).dialog
           }),
           position: 'relative',
           overflow: 'hidden',
           margin: 0,
-          backgroundImage: `linear-gradient(170deg, ${alpha(theme.palette.background.paper, isLight ? 0.94 : 0.76)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.82 : 0.62)} 100%)`,
-          boxShadow: `0 18px 44px ${alpha(theme.palette.text.primary, isLight ? 0.16 : 0.42)}`,
+          backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 1 : 0.96)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.94 : 0.9)} 100%)`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xl || `0 18px 36px ${alpha(theme.palette.text.primary, isLight ? 0.12 : 0.24)}`,
           animation: 'crm-modal-enter 300ms ease-out',
           transformOrigin: 'center',
           '&::before': {
@@ -1901,7 +3266,7 @@ export const getComponents = (mode = 'light') => {
             position: 'absolute',
             inset: 0,
             pointerEvents: 'none',
-            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.22 : 0.06)} 0%, transparent 38%)`
+            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, isLight ? 0.16 : 0.04)} 0%, transparent 32%)`
           }
         })
       }
@@ -1940,6 +3305,7 @@ export const getComponents = (mode = 'light') => {
           justifyContent: 'flex-end',
           gap: theme.spacing(1.1),
           borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.82 : 0.64)}`,
+          backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.18 : 0.28)} 100%)`,
           '& .MuiButton-root': {
             minWidth: 108,
             borderRadius: 12
@@ -1972,9 +3338,11 @@ export const getComponents = (mode = 'light') => {
       styleOverrides: {
         root: ({ theme }) => ({
           borderRadius: 15,
-          boxShadow: theme.shadows[8],
+          boxShadow: (getVisualTokens(theme).shadow || {}).lg || theme.shadows[8],
           fontSize: theme.typography.body2.fontSize,
-          fontWeight: 560
+          fontWeight: 560,
+          backgroundColor: (getVisualTokens(theme).surface || {}).floating || alpha(theme.palette.background.paper, isLight ? 0.98 : 0.92),
+          border: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
         })
       }
     },
@@ -1985,7 +3353,9 @@ export const getComponents = (mode = 'light') => {
           borderRadius: 15,
           fontSize: theme.typography.body2.fontSize,
           fontWeight: 560,
-          backdropFilter: 'blur(10px)'
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+          border: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || 'none'
         })
       }
     },
@@ -2001,6 +3371,10 @@ export const getComponents = (mode = 'light') => {
           tableLayout: 'auto',
           '&.crm-table': {
             minWidth: 760
+          },
+          '&.crm-table--dense .MuiTableCell-root': {
+            paddingTop: theme.spacing(1.2),
+            paddingBottom: theme.spacing(1.2)
           },
           '& .MuiTableHead-root .MuiTableRow-root': {
             height: 54
@@ -2023,7 +3397,7 @@ export const getComponents = (mode = 'light') => {
           },
           '&::-webkit-scrollbar-thumb': {
             borderRadius: 999,
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.22 : 0.36)
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26)
           },
           '&::-webkit-scrollbar-track': {
             borderRadius: 999,
@@ -2036,9 +3410,12 @@ export const getComponents = (mode = 'light') => {
     MuiTableHead: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.82 : 0.58),
+          backgroundColor: (getVisualTokens(theme).surface || {}).tableHead || alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
           '& .MuiTableCell-root': {
-            borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.9 : 0.82)}`
+            borderBottom: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
+          },
+          '& .MuiTableRow-root': {
+            boxShadow: `inset 0 -1px 0 ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.08)}`
           }
         })
       }
@@ -2055,27 +3432,31 @@ export const getComponents = (mode = 'light') => {
           textTransform: 'uppercase',
           paddingTop: theme.spacing(1.55),
           paddingBottom: theme.spacing(1.55),
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.8 : 0.58),
-          backdropFilter: 'blur(8px) saturate(132%)',
-          WebkitBackdropFilter: 'blur(8px) saturate(132%)',
+          backgroundColor: (getVisualTokens(theme).surface || {}).tableHead || alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(120%)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(120%)`,
           '&.MuiTableCell-stickyHeader': {
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.88 : 0.64)
+            backgroundColor: (getVisualTokens(theme).surface || {}).tableHead || alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94)
           }
         }),
         body: ({ theme }) => ({
           fontSize: '0.89rem',
-          lineHeight: 1.46,
+          lineHeight: 1.52,
           color: theme.palette.text.primary,
           fontWeight: 500
         }),
         root: ({ theme }) => ({
-          padding: theme.spacing(2.05, 2.5),
-          borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.72 : 0.64)}`,
-          transition: theme.transitions.create(['border-color', 'background-color'], {
+          padding: theme.spacing(1.75, 2.25),
+          verticalAlign: 'top',
+          borderBottom: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`,
+          transition: theme.transitions.create(['border-color', 'background-color', 'box-shadow'], {
             duration: microMotionMs
           }),
           '&.MuiTableCell-sizeSmall': {
-            padding: theme.spacing(1.35, 1.9)
+            padding: theme.spacing(1.15, 1.65)
+          },
+          '& .MuiTypography-root': {
+            maxWidth: '100%'
           },
           '&.crm-table__cell--numeric': {
             fontVariantNumeric: 'tabular-nums'
@@ -2083,24 +3464,35 @@ export const getComponents = (mode = 'light') => {
           '&.crm-table__cell--actions': {
             width: '1%',
             whiteSpace: 'nowrap',
-            paddingRight: theme.spacing(1.75)
+            paddingRight: theme.spacing(1.65)
+          },
+          '& .MuiBox-root.crm-table__cell-content': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.35),
+            minWidth: 0
+          },
+          '& .MuiTypography-root.crm-table__cell-value': {
+            fontWeight: 520,
+            lineHeight: 1.48,
+            color: theme.palette.text.primary
           },
           '&.crm-table__cell--actions .MuiStack-root': {
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: theme.spacing(0.5),
+            gap: theme.spacing(0.45),
             flexWrap: 'nowrap'
           },
           '&.crm-table__cell--actions .MuiIconButton-root': {
-            width: 31,
-            height: 31,
+            width: 30,
+            height: 30,
             padding: 0,
-            borderRadius: 10,
-            border: `1px solid ${alpha(theme.palette.divider, isLight ? 0.9 : 0.78)}`,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.72 : 0.44),
-            boxShadow: 'none',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+            borderRadius: 9,
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.84),
+            boxShadow: `0 4px 10px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.12)}`,
+            backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+            WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
             transition: theme.transitions.create(
               ['background-color', 'border-color', 'transform', 'box-shadow'],
               { duration: microMotionMs }
@@ -2112,9 +3504,9 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '&.crm-table__cell--actions .MuiIconButton-root:hover': {
-            borderColor: alpha(theme.palette.primary.main, isLight ? 0.36 : 0.52),
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.16 : 0.26),
-            boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)}`,
+            borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.36),
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+            boxShadow: `0 8px 14px ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14)}`,
             transform: 'translateY(-1px)'
           },
           '&.crm-table__cell--empty': {
@@ -2131,12 +3523,15 @@ export const getComponents = (mode = 'light') => {
           transition: theme.transitions.create(['background-color', 'box-shadow'], {
             duration: microMotionMs
           }),
+          '&:nth-of-type(even):not(.crm-table__row--skeleton):not(.crm-table__row--empty)': {
+            backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.015 : 0.03)
+          },
           '&.MuiTableRow-hover:hover': {
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.17),
-            boxShadow: `inset 0 1px 0 ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.24)}`
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.045 : 0.12),
+            boxShadow: `inset 0 1px 0 ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)}, inset 0 -1px 0 ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)}`
           },
           '&.MuiTableRow-hover:hover .MuiTableCell-root': {
-            borderBottomColor: alpha(theme.palette.primary.main, isLight ? 0.2 : 0.34)
+            borderBottomColor: alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2)
           },
           '&.crm-table__row--skeleton:hover': {
             backgroundColor: 'transparent',
@@ -2173,17 +3568,19 @@ export const getComponents = (mode = 'light') => {
     MuiTablePagination: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.92 : 0.84)}`,
+          borderTop: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
           color: theme.palette.text.secondary,
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.8 : 0.62),
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)'
+          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.96 : 0.92),
+          backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.92 : 0.84)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.4 : 0.24)} 100%)`,
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`
         }),
         toolbar: ({ theme }) => ({
           minHeight: 60,
           paddingLeft: theme.spacing(2.2),
           paddingRight: theme.spacing(2.2),
-          color: theme.palette.text.secondary
+          color: theme.palette.text.secondary,
+          gap: theme.spacing(1)
         }),
         spacer: {
           flex: '1 1 24px'
@@ -2217,13 +3614,13 @@ export const getComponents = (mode = 'light') => {
             width: 30,
             height: 30,
             borderRadius: 9,
-            border: `1px solid ${alpha(theme.palette.divider, isLight ? 0.86 : 0.74)}`,
-            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.72 : 0.46),
-            boxShadow: 'none',
+            border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.86),
+            boxShadow: `0 4px 10px ${alpha(theme.palette.text.primary, isLight ? 0.04 : 0.12)}`,
             color: theme.palette.text.primary,
             '&:hover': {
-              borderColor: alpha(theme.palette.primary.main, isLight ? 0.34 : 0.48),
-              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)
+              borderColor: alpha(theme.palette.primary.main, isLight ? 0.24 : 0.34),
+              backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
             }
           }
         })
@@ -2233,20 +3630,20 @@ export const getComponents = (mode = 'light') => {
     MuiTooltip: {
       styleOverrides: {
         tooltip: ({ theme }) => ({
-          borderRadius: 10,
-          padding: theme.spacing(0.6, 1),
+          borderRadius: 12,
+          padding: theme.spacing(0.7, 1.05),
           fontSize: '0.72rem',
-          fontWeight: 560,
+          fontWeight: 570,
           letterSpacing: '0.01em',
           color: theme.palette.text.primary,
-          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
-          border: `1px solid ${alpha(theme.palette.divider, isLight ? 0.9 : 0.72)}`,
-          boxShadow: `0 8px 20px ${alpha(theme.palette.text.primary, isLight ? 0.1 : 0.24)}`,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)'
+          backgroundColor: (getVisualTokens(theme).surface || {}).floating || alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94),
+          border: `1px solid ${(getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
+          boxShadow: (getVisualTokens(theme).shadow || {}).md || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.14)}`,
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`
         }),
         arrow: ({ theme }) => ({
-          color: alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9)
+          color: (getVisualTokens(theme).surface || {}).floating || alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94)
         })
       }
     },
@@ -2257,30 +3654,46 @@ export const getComponents = (mode = 'light') => {
         indicatorColor: 'primary'
       },
       styleOverrides: {
-        root: {
-          minHeight: 42
-        },
-        indicator: ({ theme }) => ({
-          height: 3,
-          borderRadius: 999
-        })
+        root: ({ theme }) => ({
+          minHeight: 48,
+          padding: theme.spacing(0.45),
+          borderRadius: 16,
+          border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)}`,
+          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.54 : 0.34),
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || 'none'
+        }),
+        flexContainer: ({ theme }) => ({
+          gap: theme.spacing(0.4)
+        }),
+        indicator: {
+          display: 'none'
+        }
       }
     },
 
     MuiTab: {
       styleOverrides: {
         root: ({ theme }) => ({
-          minHeight: 42,
-          padding: theme.spacing(1, 2),
+          minHeight: 40,
+          minWidth: 0,
+          padding: theme.spacing(0.95, 1.6),
           textTransform: 'none',
           fontWeight: 600,
           fontSize: theme.typography.body2.fontSize,
-          borderRadius: 10,
+          borderRadius: 12,
+          color: alpha(theme.palette.text.secondary, 0.92),
+          transition: theme.transitions.create(
+            ['background-color', 'box-shadow', 'color', 'transform'],
+            { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
+          ),
           '&:hover': {
-            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.18)
+            color: theme.palette.text.primary,
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)
           },
           '&.Mui-selected': {
-            color: theme.palette.primary.main
+            color: theme.palette.text.primary,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.92 : 0.74),
+            boxShadow: (getVisualTokens(theme).shadow || {}).xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
           }
         })
       }
@@ -2289,16 +3702,105 @@ export const getComponents = (mode = 'light') => {
     MuiListItemButton: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 12
+          borderRadius: 12,
+          transition: theme.transitions.create(
+            ['background-color', 'transform', 'box-shadow', 'border-color'],
+            { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
+          ),
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.06 : 0.14)
+          },
+          '&.Mui-selected': {
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.18),
+            boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.14 : 0.22)}`
+          }
         })
       }
     },
 
     MuiChip: {
+      defaultProps: {
+        size: 'small'
+      },
       styleOverrides: {
         root: ({ theme }) => ({
+          borderRadius: (getVisualTokens(theme).component || {}).badge?.radius || 999,
+          fontWeight: 620,
+          fontSize: theme.typography.caption.fontSize,
+          lineHeight: 1,
+          borderColor: (getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14),
+          backgroundColor: (getVisualTokens(theme).surface || {}).badge || alpha(theme.palette.background.paper, isLight ? 0.92 : 0.84),
+          boxShadow: (getVisualTokens(theme).shadow || {}).xs || 'none',
+          backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+          WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`,
+          transition: theme.transitions.create(
+            ['background-color', 'border-color', 'box-shadow', 'transform', 'color'],
+            { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
+          ),
+          '&.MuiChip-clickable:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow: (getVisualTokens(theme).shadow || {}).sm || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`
+          },
+          '& .MuiChip-icon': {
+            marginLeft: 8,
+            marginRight: -2
+          },
+          '& .MuiChip-deleteIcon': {
+            color: alpha(theme.palette.text.secondary, 0.76),
+            transition: `color ${microMotion}`,
+            '&:hover': {
+              color: theme.palette.text.primary
+            }
+          }
+        }),
+        sizeSmall: {
+          height: 28
+        },
+        labelSmall: {
+          paddingLeft: 10,
+          paddingRight: 10
+        },
+        outlined: ({ theme }) => ({
+          borderColor: (getVisualTokens(theme).border || {}).soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)
+        }),
+        colorDefault: ({ theme }) => ({
+          color: alpha(theme.palette.text.secondary, 0.96)
+        }),
+        colorSuccess: ({ theme }) => ({
+          color: theme.palette.success.main,
+          borderColor: alpha(theme.palette.success.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.success.main, isLight ? 0.1 : 0.18)
+        }),
+        colorWarning: ({ theme }) => ({
+          color: theme.palette.warning.main,
+          borderColor: alpha(theme.palette.warning.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.warning.main, isLight ? 0.12 : 0.18)
+        }),
+        colorError: ({ theme }) => ({
+          color: theme.palette.error.main,
+          borderColor: alpha(theme.palette.error.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.error.main, isLight ? 0.1 : 0.18)
+        }),
+        colorPrimary: ({ theme }) => ({
+          color: theme.palette.primary.main,
+          borderColor: alpha(theme.palette.primary.main, isLight ? 0.18 : 0.28),
+          backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.1 : 0.18)
+        })
+      }
+    },
+
+    MuiBadge: {
+      styleOverrides: {
+        badge: ({ theme }) => ({
+          minWidth: 20,
+          height: 20,
+          padding: theme.spacing(0, 0.75),
           borderRadius: 999,
-          fontWeight: 560
+          fontWeight: 700,
+          letterSpacing: '0.01em',
+          backgroundImage: gradients.buttonPrimary,
+          boxShadow: (getVisualTokens(theme).shadow || {}).sm || 'none',
+          border: `1px solid ${(getVisualTokens(theme).border || {}).inverse || alpha(theme.palette.background.paper, 0.9)}`
         })
       }
     },
@@ -2306,12 +3808,56 @@ export const getComponents = (mode = 'light') => {
     MuiLinearProgress: {
       styleOverrides: {
         root: ({ theme }) => ({
-          height: 6,
+          height: 7,
           borderRadius: 999,
-          backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.14 : 0.24)
+          overflow: 'hidden',
+          backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16),
+          boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14)}`
         }),
         bar: ({ theme }) => ({
-          borderRadius: 999
+          borderRadius: 999,
+          backgroundImage: gradients.buttonPrimary
+        }),
+        dashed: {
+          display: 'none'
+        }
+      }
+    },
+
+    MuiCircularProgress: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          color: theme.palette.primary.main,
+          filter: `drop-shadow(0 4px 10px ${alpha(theme.palette.primary.main, isLight ? 0.12 : 0.2)})`
+        }),
+        circle: {
+          strokeLinecap: 'round'
+        }
+      }
+    },
+
+    MuiSkeleton: {
+      defaultProps: {
+        animation: 'wave'
+      },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)
+        }),
+        text: {
+          borderRadius: 8,
+          transform: 'scale(1, 0.88)'
+        },
+        rounded: {
+          borderRadius: 14
+        },
+        circular: {
+          borderRadius: '50%'
+        },
+        wave: ({ theme }) => ({
+          '&::after': {
+            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.common.white, isLight ? 0.36 : 0.08)}, transparent)`
+          }
         })
       }
     }

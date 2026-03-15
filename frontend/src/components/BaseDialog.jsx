@@ -38,10 +38,18 @@ export default function BaseDialog({
     >
       {(title || subtitle) && (
         <DialogTitle className="crm-dialog__title">
-          <Stack spacing={0.5}>
-            {title ? <Typography variant="h6">{title}</Typography> : null}
+          <Stack spacing={0.5} className="crm-dialog__title-stack">
+            {title ? (
+              <Typography variant="h6" className="crm-dialog__title-text">
+                {title}
+              </Typography>
+            ) : null}
             {subtitle ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                className="crm-dialog__subtitle-text"
+              >
                 {subtitle}
               </Typography>
             ) : null}
