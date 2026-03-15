@@ -2473,6 +2473,8 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-client-detail-page': {
             position: 'relative',
             isolation: 'isolate',
+            '--crm-client-detail-shell-gap': theme.spacing(1.15),
+            '--crm-client-detail-header-height': 'clamp(248px, 34dvh, 320px)',
             minHeight: 0,
             height: 'calc(100dvh - var(--layout-header-height) - var(--layout-content-padding-y) - var(--layout-content-padding-y) - 12px)',
             maxHeight:
@@ -2482,12 +2484,21 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-client-detail__shell': {
             height: '100%',
             minHeight: 0,
-            display: 'grid',
-            gridTemplateRows: 'minmax(0, 35%) minmax(0, 65%)',
-            gap: theme.spacing(1.15)
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--crm-client-detail-shell-gap)'
           },
-          '.MuiBox-root.crm-client-detail__header-zone, .MuiBox-root.crm-client-detail__operations-zone': {
-            minHeight: 0
+          '.MuiBox-root.crm-client-detail__header-zone': {
+            flex: '0 0 var(--crm-client-detail-header-height)',
+            height: 'var(--crm-client-detail-header-height)',
+            minHeight: 0,
+            maxHeight: 'var(--crm-client-detail-header-height)'
+          },
+          '.MuiBox-root.crm-client-detail__operations-zone': {
+            flex: '1 1 auto',
+            minHeight: 0,
+            height:
+              'calc(100% - var(--crm-client-detail-header-height) - var(--crm-client-detail-shell-gap))'
           },
           '.MuiBox-root.crm-client-detail__floating-actions': {
             position: 'absolute',

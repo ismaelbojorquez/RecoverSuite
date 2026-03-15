@@ -136,14 +136,14 @@ const normalizeStatusLabel = (value) => {
 const resolveStatusPresentation = (value) => {
   switch (value) {
     case 'paid':
-      return { label: 'Paid', color: 'success' };
+      return { label: 'Pagado', color: 'success' };
     case 'legal':
-      return { label: 'Legal', color: 'error' };
+      return { label: 'Jurídico', color: 'error' };
     case 'negotiated':
-      return { label: 'Negotiated', color: 'warning' };
+      return { label: 'Negociado', color: 'warning' };
     case 'active':
     default:
-      return { label: 'Active', color: 'primary' };
+      return { label: 'Activo', color: 'primary' };
   }
 };
 
@@ -264,19 +264,19 @@ const inferClientStatus = ({ client, credits, totalDebt }) => {
 
 const resolveRiskLevel = ({ status, totalDebt, totalOverdue }) => {
   if (status === 'legal') {
-    return { label: 'High Delinquency', color: 'error' };
+    return { label: 'Alta morosidad', color: 'error' };
   }
 
   if (totalDebt <= 0 || totalOverdue <= 0) {
-    return { label: 'Current', color: 'success' };
+    return { label: 'Al corriente', color: 'success' };
   }
 
   const ratio = totalDebt > 0 ? totalOverdue / totalDebt : 0;
   if (ratio >= 0.35) {
-    return { label: 'High Delinquency', color: 'error' };
+    return { label: 'Alta morosidad', color: 'error' };
   }
 
-  return { label: 'Risk', color: 'warning' };
+  return { label: 'Riesgo', color: 'warning' };
 };
 
 const normalizeComparableText = (value) =>
@@ -578,7 +578,7 @@ function ClientHeader({
             <Box className="crm-client-detail__header-summary-grid">
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Client Number
+                  Número de cliente
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {client?.numero_cliente || client?.id || clientId || '-'}
@@ -586,7 +586,7 @@ function ClientHeader({
               </Box>
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Portfolio
+                  Portafolio
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {portafolioId || '-'}
@@ -602,7 +602,7 @@ function ClientHeader({
               </Box>
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Status
+                  Estado
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {statusPresentation.label}
@@ -615,7 +615,7 @@ function ClientHeader({
         <Paper variant="outlined" className="crm-client-detail__header-card">
           <Stack className="crm-client-detail__header-card-head">
             <Typography variant="subtitle1" className="crm-client-detail__header-section-title">
-              Contact Information
+              Información de contacto
             </Typography>
           </Stack>
 
@@ -623,13 +623,13 @@ function ClientHeader({
             <Stack className="crm-client-detail__contact-groups">
             <Stack className="crm-client-detail__contact-group">
               <Typography variant="caption" className="crm-client-detail__contact-group-title">
-                Phones
+                Teléfonos
               </Typography>
               <Stack className="crm-client-detail__contact-card-list">
                 {phoneItems.length === 0 ? (
                   <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
                     <Typography variant="body2" color="text.secondary">
-                      No phones
+                      Sin teléfonos
                     </Typography>
                   </Box>
                 ) : (
@@ -666,7 +666,7 @@ function ClientHeader({
                             disabled={!actionPhone}
                             className="crm-client-detail__contact-action"
                           >
-                            Call
+                            Llamar
                           </Button>
                           <Button
                             size="small"
@@ -687,7 +687,7 @@ function ClientHeader({
                             onClick={() => onCopyValue && onCopyValue(rawPhone, 'Telefono copiado')}
                             className="crm-client-detail__contact-action"
                           >
-                            Copy
+                            Copiar
                           </Button>
                         </Stack>
                       </Box>
@@ -696,7 +696,7 @@ function ClientHeader({
                 )}
                 {hiddenPhoneCount > 0 && (
                   <Typography variant="caption" className="crm-client-detail__contact-more">
-                    +{hiddenPhoneCount} more
+                    +{hiddenPhoneCount} más
                   </Typography>
                 )}
               </Stack>
@@ -704,13 +704,13 @@ function ClientHeader({
 
             <Stack className="crm-client-detail__contact-group">
               <Typography variant="caption" className="crm-client-detail__contact-group-title">
-                Emails
+                Correos
               </Typography>
               <Stack className="crm-client-detail__contact-card-list">
                 {emailItems.length === 0 ? (
                   <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
                     <Typography variant="body2" color="text.secondary">
-                      No emails
+                      Sin correos
                     </Typography>
                   </Box>
                 ) : (
@@ -745,7 +745,7 @@ function ClientHeader({
                             disabled={!email}
                             className="crm-client-detail__contact-action"
                           >
-                            Email
+                            Correo
                           </Button>
                           <Button
                             size="small"
@@ -754,7 +754,7 @@ function ClientHeader({
                             onClick={() => onCopyValue && onCopyValue(email, 'Email copiado')}
                             className="crm-client-detail__contact-action"
                           >
-                            Copy
+                            Copiar
                           </Button>
                         </Stack>
                       </Box>
@@ -763,7 +763,7 @@ function ClientHeader({
                 )}
                 {hiddenEmailCount > 0 && (
                   <Typography variant="caption" className="crm-client-detail__contact-more">
-                    +{hiddenEmailCount} more
+                    +{hiddenEmailCount} más
                   </Typography>
                 )}
               </Stack>
@@ -771,13 +771,13 @@ function ClientHeader({
 
             <Stack className="crm-client-detail__contact-group">
               <Typography variant="caption" className="crm-client-detail__contact-group-title">
-                Addresses
+                Direcciones
               </Typography>
               <Stack className="crm-client-detail__contact-card-list">
                 {addressItems.length === 0 ? (
                   <Box className="crm-client-detail__contact-card crm-client-detail__contact-card--empty">
                     <Typography variant="body2" color="text.secondary">
-                      No addresses
+                      Sin direcciones
                     </Typography>
                   </Box>
                 ) : (
@@ -807,7 +807,7 @@ function ClientHeader({
                 )}
                 {hiddenAddressCount > 0 && (
                   <Typography variant="caption" className="crm-client-detail__contact-more">
-                    +{hiddenAddressCount} more
+                    +{hiddenAddressCount} más
                   </Typography>
                 )}
               </Stack>
@@ -819,10 +819,10 @@ function ClientHeader({
         <Paper variant="outlined" className="crm-client-detail__header-card">
           <Stack className="crm-client-detail__header-card-head">
             <Typography variant="subtitle1" className="crm-client-detail__header-section-title">
-              Credit Summary
+              Resumen crediticio
             </Typography>
             <Typography variant="body2" className="crm-client-detail__header-section-subtitle">
-              Collections overview for fast operational decisions.
+              Vista rápida de cobranza para decisiones operativas.
             </Typography>
           </Stack>
 
@@ -830,7 +830,7 @@ function ClientHeader({
             <Box className="crm-client-detail__header-summary-grid crm-client-detail__header-summary-grid--compact">
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Total Credits
+                  Total de créditos
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {totalCredits}
@@ -838,7 +838,7 @@ function ClientHeader({
               </Box>
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Total Debt
+                  Deuda total
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {formatCurrency(totalDebt)}
@@ -846,7 +846,7 @@ function ClientHeader({
               </Box>
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Total Overdue
+                  Total vencido
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {formatCurrency(totalOverdue)}
@@ -854,7 +854,7 @@ function ClientHeader({
               </Box>
               <Box className="crm-client-detail__header-summary-item">
                 <Typography variant="caption" className="crm-surface-card__meta-label">
-                  Last Payment
+                  Último pago
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__meta-value">
                   {formatDateShort(lastPaymentDate)}
@@ -876,7 +876,7 @@ function ClientHeader({
                 ].join(' ')}
               >
                 <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Days overdue
+                  Días de atraso
                 </Typography>
                 <Typography variant="body2" className="crm-client-detail__indicator-value">
                   {daysOverdueDisplay}
@@ -890,7 +890,7 @@ function ClientHeader({
                 ].join(' ')}
               >
                 <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Collection score
+                  Score de cobranza
                 </Typography>
                 <Typography variant="body2" className="crm-client-detail__indicator-value">
                   {collectionScore.label}
@@ -904,7 +904,7 @@ function ClientHeader({
                 ].join(' ')}
               >
                 <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Contactability
+                  Contactabilidad
                 </Typography>
                 <Typography variant="body2" className="crm-client-detail__indicator-value">
                   {contactability.label}
@@ -991,7 +991,7 @@ function ClientFloatingActions({
   const actions = [
     {
       id: 'call',
-      label: 'Call',
+      label: 'Llamar',
       icon: <PhoneOutlined fontSize="small" />,
       onClick: onCall,
       disabled: !hasPhone || typeof onCall !== 'function'
@@ -1042,7 +1042,7 @@ function ClientFloatingActions({
       <IconButton
         onClick={onToggle}
         className="crm-client-detail__floating-action-button crm-client-detail__floating-action-button--primary"
-        aria-label={open ? 'Close quick actions' : 'Open quick actions'}
+        aria-label={open ? 'Cerrar acciones rápidas' : 'Abrir acciones rápidas'}
       >
         {open ? <Close fontSize="small" /> : <Add fontSize="small" />}
       </IconButton>

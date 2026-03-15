@@ -72,7 +72,7 @@ const resolveAppliedCredit = (payment, creditsById) => {
     return '-';
   }
 
-  return creditsById.get(String(creditId)) || `Credito ${creditId}`;
+  return creditsById.get(String(creditId)) || `Crédito ${creditId}`;
 };
 
 function PaymentsWidget({
@@ -90,7 +90,7 @@ function PaymentsWidget({
       new Map(
         (Array.isArray(credits) ? credits : []).map((credit) => [
           String(credit.id),
-          credit.numero_credito || `Credito ${credit.id}`
+          credit.numero_credito || `Crédito ${credit.id}`
         ])
       ),
     [credits]
