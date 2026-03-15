@@ -21,3 +21,21 @@ ALTER TABLE saldo_fields DROP COLUMN IF EXISTS format_config;
 
 CREATE INDEX IF NOT EXISTS idx_saldo_fields_portfolio_id
   ON saldo_fields (portfolio_id);
+
+ALTER TABLE portfolios
+  ADD COLUMN IF NOT EXISTS debt_total_saldo_field_id BIGINT;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_portfolios_debt_total_saldo_field'
+  ) THEN
+    ALTER TABLE portfolios
+      ADD CONSTRAINT fk_portfolios_debt_total_saldo_field
+      FOREIGN KEY (debt_total_saldo_field_id)
+      REFERENCES saldo_fields(id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;

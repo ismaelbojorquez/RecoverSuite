@@ -77,16 +77,20 @@ export const createPortfolioHandler = async (req, res, next) => {
   try {
     const {
       client_id: clientIdRaw,
+      debt_total_saldo_field_id: debtTotalSaldoFieldIdRaw,
       name,
       description,
       is_active: isActiveRaw
     } = req.body || {};
 
     const clientId = parseInteger(clientIdRaw);
+    const debtTotalSaldoFieldId =
+      debtTotalSaldoFieldIdRaw === null ? null : parseInteger(debtTotalSaldoFieldIdRaw);
     const isActive = parseBoolean(isActiveRaw);
 
     const portfolio = await createPortfolioService({
       clientId,
+      debtTotalSaldoFieldId,
       name,
       description,
       isActive
@@ -103,16 +107,24 @@ export const updatePortfolioHandler = async (req, res, next) => {
     const id = parseInteger(req.params.id);
     const {
       client_id: clientIdRaw,
+      debt_total_saldo_field_id: debtTotalSaldoFieldIdRaw,
       name,
       description,
       is_active: isActiveRaw
     } = req.body || {};
 
     const clientId = clientIdRaw !== undefined ? parseInteger(clientIdRaw) : undefined;
+    const debtTotalSaldoFieldId =
+      debtTotalSaldoFieldIdRaw === undefined
+        ? undefined
+        : debtTotalSaldoFieldIdRaw === null
+          ? null
+          : parseInteger(debtTotalSaldoFieldIdRaw);
     const isActive = parseBoolean(isActiveRaw);
 
     const portfolio = await updatePortfolioService(id, {
       clientId,
+      debtTotalSaldoFieldId,
       name,
       description,
       isActive

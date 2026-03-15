@@ -123,7 +123,7 @@ function CreditsWidget({
     const baseColumns = [
       {
         id: 'credito',
-        label: 'Crédito',
+        label: 'Número',
         minWidth: 220,
         render: (row) => {
           if (row.__footer) {
@@ -133,21 +133,16 @@ function CreditsWidget({
                   Totales
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {row.creditCount} crédito{row.creditCount === 1 ? '' : 's'}
+                  {row.creditCount} registro{row.creditCount === 1 ? '' : 's'}
                 </Typography>
               </Stack>
             );
           }
 
           return (
-            <Stack spacing={0.15}>
-              <Typography variant="body2" className="crm-text-strong">
-                {row.numero_credito || `Crédito ${row.id}`}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {row.numero_credito_externo ? `Ref. ${row.numero_credito_externo}` : 'Sin referencia'}
-              </Typography>
-            </Stack>
+            <Typography variant="body2" className="crm-text-strong">
+              {row.numero_credito || row.id || '-'}
+            </Typography>
           );
         }
       },
@@ -258,7 +253,7 @@ function CreditsWidget({
             <Typography variant="body2" className="crm-surface-card__subtitle">
               {creditsEmpty
                 ? 'No hay créditos vinculados para mostrar en esta vista.'
-                : `${safeCredits.length} crédito${safeCredits.length === 1 ? '' : 's'} con saldos integrados en una sola tabla.`}
+                : `${safeCredits.length} registro${safeCredits.length === 1 ? '' : 's'} con saldos integrados en una sola tabla.`}
             </Typography>
           </Stack>
         </Stack>

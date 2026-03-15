@@ -2,8 +2,13 @@ import { apiFetch } from '../utils/api.js';
 
 const normalizeData = (payload) => payload?.data || payload || null;
 
-export const listAvailableDiscountLevels = async () => {
-  const payload = await apiFetch('/api/negotiations/discount-levels/available', {
+export const listAvailableDiscountLevels = async ({ portafolioId } = {}) => {
+  const params = new URLSearchParams();
+  if (portafolioId !== undefined && portafolioId !== null && portafolioId !== '') {
+    params.set('portafolio_id', String(portafolioId));
+  }
+
+  const payload = await apiFetch(`/api/negotiations/discount-levels/available?${params.toString()}`, {
     method: 'GET'
   });
 
@@ -31,6 +36,8 @@ export const createDiscountLevel = async ({
   nombre,
   descripcion,
   porcentaje_descuento,
+  regla_formula,
+  portfolio_ids,
   activo = true
 }) => {
   const payload = await apiFetch('/api/negotiations/discount-levels', {
@@ -39,6 +46,8 @@ export const createDiscountLevel = async ({
       nombre,
       descripcion,
       porcentaje_descuento,
+      regla_formula,
+      portfolio_ids,
       activo
     }
   });
@@ -48,7 +57,7 @@ export const createDiscountLevel = async ({
 
 export const updateDiscountLevel = async (
   id,
-  { nombre, descripcion, porcentaje_descuento, activo }
+  { nombre, descripcion, porcentaje_descuento, regla_formula, portfolio_ids, activo }
 ) => {
   const payload = await apiFetch(`/api/negotiations/discount-levels/${id}`, {
     method: 'PUT',
@@ -56,6 +65,8 @@ export const updateDiscountLevel = async (
       nombre,
       descripcion,
       porcentaje_descuento,
+      regla_formula,
+      portfolio_ids,
       activo
     }
   });
@@ -127,4 +138,3 @@ export const updateNegotiationStatus = async ({
 
   return normalizeData(payload);
 };
-

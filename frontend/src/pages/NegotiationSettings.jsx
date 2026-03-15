@@ -20,6 +20,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
+import { Parser } from 'expr-eval';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BaseDialog from '../components/BaseDialog.jsx';
 import BaseTable from '../components/BaseTable.jsx';
@@ -38,27 +39,38 @@ import {
   updateDiscountLevel
 } from '../services/negotiations.js';
 import { listGroups } from '../services/groups.js';
+import { listPortfolios } from '../services/portfolios.js';
 import { buildRoutePath } from '../routes/paths.js';
 
 const defaultForm = {
   nombre: '',
   descripcion: '',
-  porcentaje_descuento: '',
+  regla_formula: '',
+  portfolio_ids: [],
   activo: true
 };
 
-const parsePercentage = (value) => {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
+const formulaParser = new Parser({
+  operators: {
+    logical: true,
+    comparison: true,
+    additive: true,
+    multiplicative: true,
+    power: true,
+    factorial: false
+  }
+});
 
-const formatPercentage = (value) => {
+const formatFallbackRule = (value) => {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed)) {
     return '-';
   }
-  return `${parsed.toFixed(2)}%`;
+  return `adeudo_total * ${(Math.max(0, 1 - parsed / 100)).toFixed(4)}`;
 };
+
+const resolveRuleFormula = (row) =>
+  String(row?.regla_formula || '').trim() || formatFallbackRule(row?.porcentaje_descuento);
 
 export default function NegotiationSettings() {
   const { hasPermission } = usePermissions();
@@ -68,6 +80,7 @@ export default function NegotiationSettings() {
 
   const [rows, setRows] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
@@ -95,13 +108,15 @@ export default function NegotiationSettings() {
       setError('');
 
       try {
-        const [levels, availableGroups] = await Promise.all([
+        const [levels, availableGroups, availablePortfolios] = await Promise.all([
           listDiscountLevels({ includeInactive, signal }),
-          listGroups({ limit: 500, offset: 0, signal }).catch(() => [])
+          listGroups({ limit: 500, offset: 0, signal }).catch(() => []),
+          listPortfolios({ limit: 500, offset: 0, signal }).catch(() => [])
         ]);
 
         setRows(levels);
         setGroups(Array.isArray(availableGroups) ? availableGroups : []);
+        setPortfolios(Array.isArray(availablePortfolios) ? availablePortfolios : []);
       } catch (err) {
         if (!signal?.aborted) {
           setError(err.message || 'No fue posible cargar la configuracion de negociaciones.');
@@ -140,10 +155,12 @@ export default function NegotiationSettings() {
     setDialogForm({
       nombre: row.nombre || '',
       descripcion: row.descripcion || '',
-      porcentaje_descuento:
-        row.porcentaje_descuento !== undefined && row.porcentaje_descuento !== null
-          ? String(row.porcentaje_descuento)
-          : '',
+      regla_formula: String(row.regla_formula || '').trim() || formatFallbackRule(row.porcentaje_descuento),
+      portfolio_ids: Array.isArray(row.portafolios)
+        ? row.portafolios
+            .map((portfolio) => Number.parseInt(portfolio.id, 10))
+            .filter((id) => Number.isInteger(id) && id > 0)
+        : [],
       activo: Boolean(row.activo)
     });
     setDialogError('');
@@ -183,15 +200,27 @@ export default function NegotiationSettings() {
 
   const handleSaveLevel = async () => {
     const nombre = String(dialogForm.nombre || '').trim();
-    const porcentaje = parsePercentage(dialogForm.porcentaje_descuento);
+    const reglaFormula = String(dialogForm.regla_formula || '').trim();
 
     if (!nombre) {
-      setDialogError('El nombre del nivel es obligatorio.');
+      setDialogError('El nombre de la regla es obligatorio.');
       return;
     }
 
-    if (porcentaje === null || porcentaje < 0 || porcentaje > 100) {
-      setDialogError('El porcentaje debe estar entre 0 y 100.');
+    if (!reglaFormula) {
+      setDialogError('La regla es obligatoria.');
+      return;
+    }
+
+    if (!Array.isArray(dialogForm.portfolio_ids) || dialogForm.portfolio_ids.length === 0) {
+      setDialogError('Selecciona al menos un portafolio para la regla.');
+      return;
+    }
+
+    try {
+      formulaParser.parse(reglaFormula);
+    } catch (err) {
+      setDialogError(`La regla no es válida: ${err.message}`);
       return;
     }
 
@@ -202,22 +231,24 @@ export default function NegotiationSettings() {
       const payload = {
         nombre,
         descripcion: String(dialogForm.descripcion || '').trim() || null,
-        porcentaje_descuento: porcentaje,
+        porcentaje_descuento: 0,
+        regla_formula: reglaFormula,
+        portfolio_ids: dialogForm.portfolio_ids,
         activo: Boolean(dialogForm.activo)
       };
 
       if (dialogMode === 'create') {
         await createDiscountLevel(payload);
-        notify('Nivel de descuento creado', { severity: 'success' });
+        notify('Regla de negociación creada', { severity: 'success' });
       } else {
         await updateDiscountLevel(editingId, payload);
-        notify('Nivel de descuento actualizado', { severity: 'success' });
+        notify('Regla de negociación actualizada', { severity: 'success' });
       }
 
       setDialogOpen(false);
       await loadData();
     } catch (err) {
-      setDialogError(err.message || 'No fue posible guardar el nivel de descuento.');
+      setDialogError(err.message || 'No fue posible guardar la regla de negociación.');
     } finally {
       setSaving(false);
     }
@@ -229,14 +260,14 @@ export default function NegotiationSettings() {
         activo: !row.activo
       });
       notify(
-        !row.activo ? 'Nivel activado' : 'Nivel desactivado',
+        !row.activo ? 'Regla activada' : 'Regla desactivada',
         { severity: 'success' }
       );
       await loadData();
     } catch (err) {
       notify(
         err.message ||
-          (!row.activo ? 'No fue posible activar el nivel.' : 'No fue posible desactivar el nivel.'),
+          (!row.activo ? 'No fue posible activar la regla.' : 'No fue posible desactivar la regla.'),
         { severity: 'error' }
       );
     }
@@ -251,6 +282,23 @@ export default function NegotiationSettings() {
         next.delete(groupId);
       }
       return Array.from(next);
+    });
+  };
+
+  const handleTogglePortfolio = (portfolioId, checked) => {
+    setDialogForm((prev) => {
+      const next = new Set(
+        (Array.isArray(prev.portfolio_ids) ? prev.portfolio_ids : []).map((id) => Number(id))
+      );
+      if (checked) {
+        next.add(portfolioId);
+      } else {
+        next.delete(portfolioId);
+      }
+      return {
+        ...prev,
+        portfolio_ids: Array.from(next)
+      };
     });
   };
 
@@ -280,7 +328,7 @@ export default function NegotiationSettings() {
     () => [
       {
         id: 'nombre',
-        label: 'Nivel',
+        label: 'Regla',
         render: (row) => (
           <Stack spacing={0.25}>
             <Typography variant="body2" className="crm-text-strong">
@@ -295,9 +343,41 @@ export default function NegotiationSettings() {
         )
       },
       {
-        id: 'porcentaje_descuento',
-        label: 'Descuento',
-        render: (row) => formatPercentage(row.porcentaje_descuento)
+        id: 'regla_formula',
+        label: 'Regla',
+        minWidth: 260,
+        render: (row) => (
+          <Typography variant="body2" color="text.secondary">
+            {resolveRuleFormula(row)}
+          </Typography>
+        )
+      },
+      {
+        id: 'portafolios',
+        label: 'Portafolios',
+        render: (row) => {
+          const assignedPortfolios = Array.isArray(row.portafolios) ? row.portafolios : [];
+          if (assignedPortfolios.length === 0) {
+            return (
+              <Chip size="small" variant="outlined" color="warning" label="Sin portafolios" />
+            );
+          }
+
+          return (
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              {assignedPortfolios.slice(0, 2).map((portfolio) => (
+                <Chip key={`${row.id}-portfolio-${portfolio.id}`} size="small" label={portfolio.name} />
+              ))}
+              {assignedPortfolios.length > 2 && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`+${assignedPortfolios.length - 2}`}
+                />
+              )}
+            </Stack>
+          );
+        }
       },
       {
         id: 'grupos',
@@ -340,7 +420,7 @@ export default function NegotiationSettings() {
           <Stack direction="row" spacing={1} justifyContent="flex-end">
             {canWrite && (
               <>
-                <Tooltip title="Editar nivel">
+                <Tooltip title="Editar regla">
                   <IconButton size="small" onClick={() => openEditDialog(row)}>
                     <Edit fontSize="small" />
                   </IconButton>
@@ -377,7 +457,7 @@ export default function NegotiationSettings() {
             { label: 'Configuracion de negociaciones' }
           ]}
           title="Configuración de Negociaciones"
-          subtitle="Parámetros de descuento, grupos y reglas operativas."
+          subtitle="Parámetros de reglas, grupos y criterios operativos de negociación."
         />
         <PageContent>
           <EmptyState
@@ -399,7 +479,7 @@ export default function NegotiationSettings() {
           { label: 'Configuracion de negociaciones' }
         ]}
         title="Configuración de Negociaciones"
-        subtitle="Define niveles de descuento y asigna qué grupos pueden utilizarlos."
+        subtitle="Define reglas de negociación y asigna qué portafolios y grupos pueden utilizarlas."
         actions={
           <Stack direction="row" spacing={1}>
             <Button
@@ -412,7 +492,7 @@ export default function NegotiationSettings() {
             </Button>
             {canWrite && (
               <Button variant="contained" startIcon={<Add />} onClick={openCreateDialog}>
-                Nuevo nivel
+                Nueva regla
               </Button>
             )}
           </Stack>
@@ -430,8 +510,8 @@ export default function NegotiationSettings() {
           toolbar={
             <TableToolbar
               eyebrow="Filtros"
-              title="Niveles configurados"
-              subtitle="Organiza la vista y controla si los niveles inactivos deben formar parte del análisis."
+              title="Reglas configuradas"
+              subtitle="Organiza la vista y revisa en qué portafolios y grupos aplica cada regla."
               filters={
                 <>
                   <FormControlLabel
@@ -441,10 +521,10 @@ export default function NegotiationSettings() {
                         onChange={(event) => setIncludeInactive(event.target.checked)}
                       />
                     }
-                    label="Mostrar niveles inactivos"
+                    label="Mostrar reglas inactivas"
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Los niveles sin grupos asignados no serán visibles para gestores no administradores.
+                    Las reglas sin grupos asignados no serán visibles para gestores no administradores.
                   </Typography>
                 </>
               }
@@ -455,8 +535,8 @@ export default function NegotiationSettings() {
           loading={loading}
           emptyContent={
             <EmptyState
-              title="Sin niveles configurados"
-              description="Crea niveles de descuento para comenzar con las negociaciones."
+              title="Sin reglas configuradas"
+              description="Crea reglas para comenzar con las negociaciones."
               icon={GroupWork}
             />
           }
@@ -465,15 +545,15 @@ export default function NegotiationSettings() {
         <BaseDialog
           open={dialogOpen}
           onClose={closeDialog}
-          title={dialogMode === 'create' ? 'Nuevo nivel de descuento' : 'Editar nivel de descuento'}
-          subtitle="Estos niveles se usan al crear una negociación en el detalle del cliente."
+          title={dialogMode === 'create' ? 'Nueva regla de negociación' : 'Editar regla de negociación'}
+          subtitle="Estas reglas se usan al crear una negociación en el detalle del cliente."
           actions={
             <FormActions spacing={1}>
               <Button onClick={closeDialog} disabled={saving}>
                 Cancelar
               </Button>
               <Button variant="contained" onClick={handleSaveLevel} disabled={saving}>
-                {dialogMode === 'create' ? 'Crear nivel' : 'Guardar cambios'}
+                {dialogMode === 'create' ? 'Crear regla' : 'Guardar cambios'}
               </Button>
             </FormActions>
           }
@@ -481,8 +561,8 @@ export default function NegotiationSettings() {
           <Stack className="crm-form">
             {dialogError && <Alert severity="error">{dialogError}</Alert>}
             <FormSection
-              title="Nivel de descuento"
-              subtitle="Configura el nombre, porcentaje y descripcion visible para negociaciones."
+              title="Regla de negociación"
+              subtitle="Usa adeudo_total y las keys de saldo dinámico para construir la fórmula operativa."
             >
               <Stack className="crm-form__stack">
                 <FormField
@@ -494,17 +574,18 @@ export default function NegotiationSettings() {
                   required
                 />
                 <FormField
-                  label="Porcentaje de descuento"
-                  type="number"
-                  value={dialogForm.porcentaje_descuento}
+                  label="Regla"
+                  value={dialogForm.regla_formula}
                   onChange={(event) =>
                     setDialogForm((prev) => ({
                       ...prev,
-                      porcentaje_descuento: event.target.value
+                      regla_formula: event.target.value
                     }))
                   }
                   required
-                  inputProps={{ min: 0, max: 100, step: '0.01' }}
+                  multiline
+                  minRows={3}
+                  helperText="Ejemplo: adeudo_total * 0.5 + interes_vencido + honorarios / 3"
                 />
                 <FormField
                   label="Descripcion"
@@ -515,12 +596,69 @@ export default function NegotiationSettings() {
                   multiline
                   minRows={3}
                 />
+                <Alert severity="info">
+                  <strong>Variables:</strong> `adeudo_total` usa el campo configurado en el portafolio.
+                  También puedes usar las keys de campos dinámicos numéricos del mismo portafolio.
+                </Alert>
               </Stack>
             </FormSection>
 
             <FormSection
+              title="Portafolios aplicables"
+              subtitle="La regla sólo podrá usarse en los portafolios seleccionados."
+            >
+              {portfolios.length === 0 ? (
+                <Alert severity="warning">
+                  No se pudieron cargar portafolios para asignar la regla.
+                </Alert>
+              ) : (
+                <Stack className="crm-form__selection-list">
+                  {portfolios.map((portfolio) => {
+                    const portfolioId = Number.parseInt(portfolio.id, 10);
+                    if (!Number.isInteger(portfolioId) || portfolioId <= 0) {
+                      return null;
+                    }
+                    const checked = (dialogForm.portfolio_ids || []).includes(portfolioId);
+                    return (
+                      <Box
+                        key={`discount-portfolio-${portfolio.id}`}
+                        className={[
+                          'crm-form__selection-item',
+                          checked ? 'crm-form__selection-item--selected' : ''
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={checked}
+                              onChange={(event) =>
+                                handleTogglePortfolio(portfolioId, event.target.checked)
+                              }
+                            />
+                          }
+                          label={
+                            <Stack spacing={0.15}>
+                              <Typography variant="body2" className="crm-text-strong">
+                                {portfolio.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {portfolio.description || 'Sin descripcion'}
+                              </Typography>
+                            </Stack>
+                          }
+                        />
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+            </FormSection>
+
+            <FormSection
               title="Estado"
-              subtitle="Activa o desactiva el nivel sin perder su configuracion."
+              subtitle="Activa o desactiva la regla sin perder su configuracion."
             >
               <FormControlLabel
                 className="crm-form__toggle-row"
@@ -535,10 +673,10 @@ export default function NegotiationSettings() {
                 label={
                   <Stack spacing={0.25}>
                     <Typography variant="body2" className="crm-text-strong">
-                      Nivel activo
+                      Regla activa
                     </Typography>
                     <Typography variant="caption" className="crm-form__hint">
-                      Los niveles inactivos no apareceran para gestores no administradores.
+                      Las reglas inactivas no aparecerán para gestores no administradores.
                     </Typography>
                   </Stack>
                 }
@@ -553,7 +691,7 @@ export default function NegotiationSettings() {
           title="Grupos autorizados"
           subtitle={
             selectedLevel
-              ? `Define qué grupos pueden visualizar el nivel "${selectedLevel.nombre}".`
+              ? `Define qué grupos pueden visualizar la regla "${selectedLevel.nombre}".`
               : undefined
           }
           actions={
@@ -576,7 +714,7 @@ export default function NegotiationSettings() {
             ) : (
               <FormSection
                 title="Acceso por grupos"
-                subtitle="Marca los grupos que podran visualizar este nivel de descuento."
+                subtitle="Marca los grupos que podrán visualizar esta regla."
               >
                 <Stack className="crm-form__selection-list">
                   {groups.map((group) => {

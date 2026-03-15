@@ -1,13 +1,24 @@
 import pool from '../../config/db.js';
 
-const selectFields =
-  'id, client_id, name, description, is_active, created_at, updated_at';
+const selectFields = `
+  p.id,
+  p.client_id,
+  p.name,
+  p.description,
+  p.is_active,
+  p.debt_total_saldo_field_id,
+  sf.key AS debt_total_saldo_field_key,
+  sf.label AS debt_total_saldo_field_label,
+  p.created_at,
+  p.updated_at
+`;
 
 export const listPortfolios = async ({ limit, offset }) => {
   const result = await pool.query(
     `SELECT ${selectFields}
-     FROM portfolios
-     ORDER BY id
+     FROM portfolios p
+     LEFT JOIN saldo_fields sf ON sf.id = p.debt_total_saldo_field_id
+     ORDER BY p.id
      LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
@@ -18,23 +29,30 @@ export const listPortfolios = async ({ limit, offset }) => {
 export const getPortfolioById = async (id) => {
   const result = await pool.query(
     `SELECT ${selectFields}
-     FROM portfolios
-     WHERE id = $1`,
+     FROM portfolios p
+     LEFT JOIN saldo_fields sf ON sf.id = p.debt_total_saldo_field_id
+     WHERE p.id = $1`,
     [id]
   );
 
   return result.rows[0] || null;
 };
 
-export const createPortfolio = async ({ clientId, name, description, isActive }) => {
+export const createPortfolio = async ({
+  clientId,
+  name,
+  description,
+  isActive,
+  debtTotalSaldoFieldId
+}) => {
   const result = await pool.query(
-    `INSERT INTO portfolios (client_id, name, description, is_active)
-     VALUES ($1, $2, $3, $4)
-     RETURNING ${selectFields}`,
-    [clientId, name, description, isActive]
+    `INSERT INTO portfolios (client_id, name, description, is_active, debt_total_saldo_field_id)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [clientId, name, description, isActive, debtTotalSaldoFieldId ?? null]
   );
 
-  return result.rows[0];
+  return getPortfolioById(result.rows[0]?.id);
 };
 
 export const updatePortfolio = async (id, updates) => {
@@ -64,6 +82,10 @@ export const updatePortfolio = async (id, updates) => {
     setField('is_active', updates.isActive);
   }
 
+  if (updates.debtTotalSaldoFieldId !== undefined) {
+    setField('debt_total_saldo_field_id', updates.debtTotalSaldoFieldId);
+  }
+
   if (fields.length === 0) {
     return null;
   }
@@ -75,11 +97,15 @@ export const updatePortfolio = async (id, updates) => {
     `UPDATE portfolios
      SET ${fields.join(', ')}
      WHERE id = $${index}
-     RETURNING ${selectFields}`,
+     RETURNING id`,
     values
   );
 
-  return result.rows[0] || null;
+  if (!result.rows[0]?.id) {
+    return null;
+  }
+
+  return getPortfolioById(result.rows[0].id);
 };
 
 export const deletePortfolio = async (id) => {

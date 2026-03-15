@@ -4,16 +4,31 @@ CREATE TABLE IF NOT EXISTS discount_levels (
   nombre TEXT NOT NULL,
   descripcion TEXT,
   porcentaje_descuento NUMERIC(5,2) NOT NULL CHECK (porcentaje_descuento >= 0 AND porcentaje_descuento <= 100),
+  regla_formula TEXT,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE discount_levels
+  ADD COLUMN IF NOT EXISTS regla_formula TEXT;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_discount_levels_nombre_ci
   ON discount_levels ((lower(nombre)));
 
 CREATE INDEX IF NOT EXISTS idx_discount_levels_activo
   ON discount_levels (activo);
+
+-- Relacion de reglas de negociacion aplicables por portafolio.
+CREATE TABLE IF NOT EXISTS discount_level_portfolios (
+  discount_level_id BIGINT NOT NULL REFERENCES discount_levels(id) ON DELETE CASCADE,
+  portfolio_id BIGINT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (discount_level_id, portfolio_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_discount_level_portfolios_portfolio_id
+  ON discount_level_portfolios (portfolio_id);
 
 -- Relacion de niveles de descuento autorizados por grupo.
 CREATE TABLE IF NOT EXISTS discount_level_groups (
@@ -92,4 +107,3 @@ CREATE TABLE IF NOT EXISTS negotiation_events (
 
 CREATE INDEX IF NOT EXISTS idx_negotiation_events_negotiation_id
   ON negotiation_events (negotiation_id);
-

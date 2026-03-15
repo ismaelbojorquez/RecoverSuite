@@ -6,6 +6,7 @@ import {
   listPortfolios,
   updatePortfolio
 } from './portfolios.repository.js';
+import { getSaldoFieldById } from '../saldo-fields/saldo-fields.repository.js';
 import {
   buildCacheKey,
   cacheGet,
@@ -61,7 +62,13 @@ export const getPortfolioByIdService = async (id) => {
   return portfolio;
 };
 
-export const createPortfolioService = async ({ clientId, name, description, isActive }) => {
+export const createPortfolioService = async ({
+  clientId,
+  name,
+  description,
+  isActive,
+  debtTotalSaldoFieldId
+}) => {
   if (clientId !== undefined && clientId !== null) {
     ensurePositiveId(clientId, 'client');
   }
@@ -70,12 +77,20 @@ export const createPortfolioService = async ({ clientId, name, description, isAc
     throw createHttpError(400, 'Portfolio name is required');
   }
 
+  if (debtTotalSaldoFieldId !== undefined && debtTotalSaldoFieldId !== null) {
+    throw createHttpError(
+      400,
+      'Configura el campo de adeudo total después de crear el portafolio.'
+    );
+  }
+
   try {
     const created = await createPortfolio({
       clientId: clientId ?? null,
       name: normalizeName(name),
       description: description ? String(description).trim() : null,
-      isActive: isActive !== undefined ? isActive : true
+      isActive: isActive !== undefined ? isActive : true,
+      debtTotalSaldoFieldId: null
     });
 
     await invalidatePortfoliosCache();
@@ -88,6 +103,10 @@ export const createPortfolioService = async ({ clientId, name, description, isAc
 
 export const updatePortfolioService = async (id, updates) => {
   ensurePositiveId(id, 'portfolio');
+  const current = await getPortfolioById(id);
+  if (!current) {
+    throw createHttpError(404, 'Portfolio not found');
+  }
 
   const payload = {};
 
@@ -111,16 +130,31 @@ export const updatePortfolioService = async (id, updates) => {
     payload.isActive = updates.isActive;
   }
 
+  if (updates.debtTotalSaldoFieldId !== undefined) {
+    if (updates.debtTotalSaldoFieldId === null) {
+      payload.debtTotalSaldoFieldId = null;
+    } else {
+      ensurePositiveId(updates.debtTotalSaldoFieldId, 'saldo field');
+      const field = await getSaldoFieldById({ fieldId: updates.debtTotalSaldoFieldId });
+      if (!field || field.portfolio_id !== current.id) {
+        throw createHttpError(400, 'El campo de adeudo total no pertenece al portafolio.');
+      }
+      if (!['number', 'currency'].includes(String(field.field_type || '').toLowerCase())) {
+        throw createHttpError(
+          400,
+          'El campo de adeudo total debe ser numérico o monetario.'
+        );
+      }
+      payload.debtTotalSaldoFieldId = updates.debtTotalSaldoFieldId;
+    }
+  }
+
   if (Object.keys(payload).length === 0) {
     throw createHttpError(400, 'No updates provided');
   }
 
   try {
     const updated = await updatePortfolio(id, payload);
-
-    if (!updated) {
-      throw createHttpError(404, 'Portfolio not found');
-    }
 
     await invalidatePortfoliosCache();
 

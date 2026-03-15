@@ -5,6 +5,7 @@ const discountLevelBaseFields = `
   nombre,
   descripcion,
   porcentaje_descuento,
+  regla_formula,
   activo,
   created_at,
   updated_at
@@ -40,6 +41,7 @@ const negotiationSelect = `
   cl.public_id AS client_public_id,
   dl.nombre AS nivel_nombre,
   dl.porcentaje_descuento AS nivel_porcentaje_descuento,
+  dl.regla_formula AS nivel_regla_formula,
   u.username AS usuario_username,
   u.nombre AS usuario_nombre,
   COALESCE(
@@ -59,7 +61,8 @@ const negotiationSelect = `
 
 const normalizeGroupRows = (row) => ({
   ...row,
-  grupos: Array.isArray(row.grupos) ? row.grupos : []
+  grupos: Array.isArray(row.grupos) ? row.grupos : [],
+  portafolios: Array.isArray(row.portafolios) ? row.portafolios : []
 });
 
 export const listDiscountLevels = async ({ includeInactive = false } = {}, db = pool) => {
@@ -71,13 +74,21 @@ export const listDiscountLevels = async ({ includeInactive = false } = {}, db = 
            DISTINCT jsonb_build_object('id', g.id, 'name', g.name)
          ) FILTER (WHERE g.id IS NOT NULL),
          '[]'::jsonb
-       ) AS grupos
+       ) AS grupos,
+       COALESCE(
+         jsonb_agg(
+           DISTINCT jsonb_build_object('id', p.id, 'name', p.name)
+         ) FILTER (WHERE p.id IS NOT NULL),
+         '[]'::jsonb
+       ) AS portafolios
      FROM discount_levels dl
      LEFT JOIN discount_level_groups dlg ON dlg.discount_level_id = dl.id
      LEFT JOIN user_groups g ON g.id = dlg.group_id
+     LEFT JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
+     LEFT JOIN portfolios p ON p.id = dlp.portfolio_id
      WHERE ($1::BOOLEAN = TRUE OR dl.activo = TRUE)
      GROUP BY dl.id
-     ORDER BY dl.porcentaje_descuento ASC, dl.id ASC`,
+     ORDER BY dl.nombre ASC, dl.id ASC`,
     [Boolean(includeInactive)]
   );
 
@@ -86,23 +97,46 @@ export const listDiscountLevels = async ({ includeInactive = false } = {}, db = 
 
 export const getDiscountLevelById = async (id, db = pool) => {
   const result = await db.query(
-    `SELECT ${discountLevelFields}
+    `SELECT
+       ${discountLevelFields},
+       COALESCE(
+         jsonb_agg(
+           DISTINCT jsonb_build_object('id', g.id, 'name', g.name)
+         ) FILTER (WHERE g.id IS NOT NULL),
+         '[]'::jsonb
+       ) AS grupos,
+       COALESCE(
+         jsonb_agg(
+           DISTINCT jsonb_build_object('id', p.id, 'name', p.name)
+         ) FILTER (WHERE p.id IS NOT NULL),
+         '[]'::jsonb
+       ) AS portafolios
      FROM discount_levels dl
-     WHERE dl.id = $1`,
+     LEFT JOIN discount_level_groups dlg ON dlg.discount_level_id = dl.id
+     LEFT JOIN user_groups g ON g.id = dlg.group_id
+     LEFT JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
+     LEFT JOIN portfolios p ON p.id = dlp.portfolio_id
+     WHERE dl.id = $1
+     GROUP BY dl.id`,
     [id]
   );
 
-  return result.rows[0] || null;
+  return result.rows[0] ? normalizeGroupRows(result.rows[0]) : null;
 };
 
-export const getDiscountLevelByIdForUser = async ({ discountLevelId, userId, isAdmin = false }, db = pool) => {
+export const getDiscountLevelByIdForUser = async (
+  { discountLevelId, userId, portfolioId, isAdmin = false },
+  db = pool
+) => {
   if (isAdmin) {
     const result = await db.query(
       `SELECT ${discountLevelFields}
        FROM discount_levels dl
+       JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
        WHERE dl.id = $1
+         AND dlp.portfolio_id = $2
          AND dl.activo = TRUE`,
-      [discountLevelId]
+      [discountLevelId, portfolioId]
     );
     return result.rows[0] || null;
   }
@@ -120,24 +154,31 @@ export const getDiscountLevelByIdForUser = async ({ discountLevelId, userId, isA
      )
      SELECT DISTINCT ${discountLevelFields}
      FROM discount_levels dl
+     JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
      JOIN discount_level_groups dlg ON dlg.discount_level_id = dl.id
      JOIN user_groups_resolved ugr ON ugr.group_id = dlg.group_id
      WHERE dl.id = $2
+       AND dlp.portfolio_id = $3
        AND dl.activo = TRUE`,
-    [userId, discountLevelId]
+    [userId, discountLevelId, portfolioId]
   );
 
   return result.rows[0] || null;
 };
 
-export const listAvailableDiscountLevelsForUser = async ({ userId, isAdmin = false }, db = pool) => {
+export const listAvailableDiscountLevelsForUser = async (
+  { userId, portfolioId, isAdmin = false },
+  db = pool
+) => {
   if (isAdmin) {
     const result = await db.query(
       `SELECT ${discountLevelFields}
        FROM discount_levels dl
+       JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
        WHERE dl.activo = TRUE
-       ORDER BY dl.porcentaje_descuento ASC, dl.id ASC`,
-      []
+         AND dlp.portfolio_id = $1
+       ORDER BY dl.nombre ASC, dl.id ASC`,
+      [portfolioId]
     );
     return result.rows;
   }
@@ -155,25 +196,27 @@ export const listAvailableDiscountLevelsForUser = async ({ userId, isAdmin = fal
      )
      SELECT DISTINCT ${discountLevelFields}
      FROM discount_levels dl
+     JOIN discount_level_portfolios dlp ON dlp.discount_level_id = dl.id
      JOIN discount_level_groups dlg ON dlg.discount_level_id = dl.id
      JOIN user_groups_resolved ugr ON ugr.group_id = dlg.group_id
      WHERE dl.activo = TRUE
-     ORDER BY dl.porcentaje_descuento ASC, dl.id ASC`,
-    [userId]
+       AND dlp.portfolio_id = $2
+     ORDER BY dl.nombre ASC, dl.id ASC`,
+    [userId, portfolioId]
   );
 
   return result.rows;
 };
 
 export const createDiscountLevel = async (
-  { nombre, descripcion, porcentajeDescuento, activo = true },
+  { nombre, descripcion, porcentajeDescuento, reglaFormula = null, activo = true },
   db = pool
 ) => {
   const result = await db.query(
-    `INSERT INTO discount_levels (nombre, descripcion, porcentaje_descuento, activo)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO discount_levels (nombre, descripcion, porcentaje_descuento, regla_formula, activo)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING ${discountLevelBaseFields}`,
-    [nombre, descripcion, porcentajeDescuento, Boolean(activo)]
+    [nombre, descripcion, porcentajeDescuento, reglaFormula, Boolean(activo)]
   );
 
   return result.rows[0];
@@ -200,6 +243,10 @@ export const updateDiscountLevel = async (id, updates = {}, db = pool) => {
 
   if (updates.porcentajeDescuento !== undefined) {
     setField('porcentaje_descuento', updates.porcentajeDescuento);
+  }
+
+  if (updates.reglaFormula !== undefined) {
+    setField('regla_formula', updates.reglaFormula);
   }
 
   if (updates.activo !== undefined) {
@@ -248,6 +295,39 @@ export const setDiscountLevelGroups = async ({ discountLevelId, groupIds = [] },
 
   await db.query(
     `INSERT INTO discount_level_groups (discount_level_id, group_id)
+     VALUES ${placeholders.join(', ')}
+     ON CONFLICT DO NOTHING`,
+    values
+  );
+};
+
+export const setDiscountLevelPortfolios = async (
+  { discountLevelId, portfolioIds = [] },
+  db = pool
+) => {
+  await db.query(
+    `DELETE FROM discount_level_portfolios
+     WHERE discount_level_id = $1`,
+    [discountLevelId]
+  );
+
+  if (!Array.isArray(portfolioIds) || portfolioIds.length === 0) {
+    return;
+  }
+
+  const uniqueIds = Array.from(new Set(portfolioIds));
+  const values = [];
+  const placeholders = [];
+  let index = 1;
+
+  uniqueIds.forEach((portfolioId) => {
+    values.push(discountLevelId, portfolioId);
+    placeholders.push(`($${index}, $${index + 1})`);
+    index += 2;
+  });
+
+  await db.query(
+    `INSERT INTO discount_level_portfolios (discount_level_id, portfolio_id)
      VALUES ${placeholders.join(', ')}
      ON CONFLICT DO NOTHING`,
     values

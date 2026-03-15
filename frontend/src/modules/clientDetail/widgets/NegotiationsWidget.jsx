@@ -18,6 +18,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import { Parser } from 'expr-eval';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import BaseDialog from '../../../components/BaseDialog.jsx';
 import BaseTable from '../../../components/BaseTable.jsx';
@@ -29,6 +30,7 @@ import {
   listClientNegotiations,
   updateNegotiationStatus
 } from '../../../services/negotiations.js';
+import { getPortfolioById } from '../../../services/portfolios.js';
 
 const currencyFormatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -37,6 +39,16 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
 const dateFormatter = new Intl.DateTimeFormat('es-MX', {
   dateStyle: 'medium',
   timeStyle: 'short'
+});
+const formulaParser = new Parser({
+  operators: {
+    logical: true,
+    comparison: true,
+    additive: true,
+    multiplicative: true,
+    power: true,
+    factorial: false
+  }
 });
 
 const defaultCreateForm = {
@@ -56,6 +68,33 @@ const toNumber = (value) => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const roundCurrency = (value) => Math.round(value * 100) / 100;
+
+const normalizeText = (value) => String(value ?? '').trim();
+
+const normalizeVariableName = (value) => {
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_]+/g, '_')
+    .replace(/^_+/, '')
+    .replace(/_+/g, '_')
+    .toLowerCase()
+    .trim();
+
+  if (!normalized) {
+    return '';
+  }
+
+  return /^[a-z_]/.test(normalized) ? normalized : `v_${normalized}`;
+};
+
+const buildFallbackRuleFormula = (value) =>
+  `adeudo_total * ${(Math.max(0, 1 - (toNumber(value) ?? 0) / 100)).toFixed(4)}`;
+
+const resolveRuleFormula = (row) =>
+  normalizeText(row?.regla_formula) || buildFallbackRuleFormula(row?.porcentaje_descuento);
 
 const formatCurrency = (value) => {
   const parsed = toNumber(value);
@@ -87,6 +126,38 @@ const parsePrimaryBalance = (credit) => {
 
 const normalizeHistory = (history) => (Array.isArray(history) ? history : []);
 
+const matchesConfiguredDebtField = (balanceFieldId, configuredDebtFieldId) => {
+  if (configuredDebtFieldId === undefined || configuredDebtFieldId === null) {
+    return false;
+  }
+
+  const normalizedBalanceFieldId = String(balanceFieldId ?? '').trim();
+  const normalizedConfiguredFieldId = String(configuredDebtFieldId).trim();
+
+  return (
+    normalizedBalanceFieldId === normalizedConfiguredFieldId ||
+    normalizedBalanceFieldId === `dynamic:${normalizedConfiguredFieldId}`
+  );
+};
+
+const evaluateRuleFormula = ({ formula, context }) => {
+  try {
+    const parsed = formulaParser.parse(formula);
+    const variables = parsed.variables();
+    const resolvedContext = variables.reduce((accumulator, variableName) => {
+      accumulator[variableName] = context?.[variableName] ?? 0;
+      return accumulator;
+    }, {});
+    const result = Number(parsed.evaluate(resolvedContext));
+    if (!Number.isFinite(result) || result < 0) {
+      return 0;
+    }
+    return roundCurrency(result);
+  } catch {
+    return 0;
+  }
+};
+
 function NegotiationsWidget({
   clientId,
   portafolioId,
@@ -97,6 +168,7 @@ function NegotiationsWidget({
   const { notify } = useNotify();
   const safeCredits = useMemo(() => normalizeCredits(credits), [credits]);
   const [levels, setLevels] = useState([]);
+  const [portfolioConfig, setPortfolioConfig] = useState(null);
   const [activeNegotiation, setActiveNegotiation] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -121,24 +193,27 @@ function NegotiationsWidget({
       setError('');
 
       try {
-        const [negotiationData, levelsData] = await Promise.all([
+        const [negotiationData, levelsData, portfolioData] = await Promise.all([
           listClientNegotiations({
             clienteId: clientId,
             portafolioId,
             limit: 20,
             offset: 0
           }),
-          listAvailableDiscountLevels()
+          listAvailableDiscountLevels({ portafolioId }),
+          getPortfolioById({ id: portafolioId, signal }).catch(() => null)
         ]);
 
         setActiveNegotiation(negotiationData?.active || null);
         setHistory(normalizeHistory(negotiationData?.history));
         setLevels(Array.isArray(levelsData) ? levelsData : []);
+        setPortfolioConfig(portfolioData || null);
       } catch (err) {
         if (!signal?.aborted) {
           setError(err.message || 'No fue posible cargar las negociaciones del cliente.');
           setActiveNegotiation(null);
           setHistory([]);
+          setPortfolioConfig(null);
         }
       } finally {
         if (!signal?.aborted) {
@@ -188,23 +263,76 @@ function NegotiationsWidget({
     return safeCredits.filter((credit) => selectedIds.has(Number(credit.id)));
   }, [safeCredits, selectedCreditIds]);
 
-  const baseEstimate = useMemo(
-    () =>
-      selectedCredits.reduce((sum, credit) => sum + parsePrimaryBalance(credit), 0),
-    [selectedCredits]
+  const configuredDebtFieldId = useMemo(() => {
+    const parsed = Number.parseInt(portfolioConfig?.debt_total_saldo_field_id, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [portfolioConfig?.debt_total_saldo_field_id]);
+
+  const negotiationContext = useMemo(() => {
+    const totalsByVariable = new Map();
+    let adeudoTotal = 0;
+
+    selectedCredits.forEach((credit) => {
+      const balances = Array.isArray(credit?.balances) ? credit.balances : [];
+      let hasConfiguredDebtValue = false;
+
+      balances.forEach((balance) => {
+        const numericValue = toNumber(balance?.valor);
+        if (numericValue === null) {
+          return;
+        }
+
+        const fieldId = balance?.campo_saldo_id ?? balance?.campo_saldo?.id;
+        const variableName = normalizeVariableName(balance?.campo_saldo?.nombre_campo);
+
+        if (variableName) {
+          totalsByVariable.set(
+            variableName,
+            roundCurrency((totalsByVariable.get(variableName) || 0) + numericValue)
+          );
+        }
+
+        if (matchesConfiguredDebtField(fieldId, configuredDebtFieldId)) {
+          adeudoTotal += numericValue;
+          hasConfiguredDebtValue = true;
+        }
+      });
+
+      if (!hasConfiguredDebtValue) {
+        adeudoTotal += parsePrimaryBalance(credit);
+      }
+    });
+
+    const computedBaseAmount = roundCurrency(adeudoTotal);
+    const manualBaseAmount = toNumber(createForm.monto_base_total);
+    const effectiveBaseAmount =
+      manualBaseAmount !== null ? roundCurrency(manualBaseAmount) : computedBaseAmount;
+
+    return {
+      computedBaseAmount,
+      effectiveBaseAmount,
+      variables: Object.fromEntries(totalsByVariable.entries())
+    };
+  }, [configuredDebtFieldId, createForm.monto_base_total, selectedCredits]);
+
+  const selectedRuleFormula = useMemo(
+    () => (selectedLevel ? resolveRuleFormula(selectedLevel) : ''),
+    [selectedLevel]
   );
 
-  const discountPercentage = useMemo(() => {
-    const parsed = toNumber(selectedLevel?.porcentaje_descuento);
-    return parsed ?? 0;
-  }, [selectedLevel]);
-
   const negotiatedEstimate = useMemo(() => {
-    if (baseEstimate <= 0) {
+    if (!selectedRuleFormula) {
       return 0;
     }
-    return baseEstimate * (1 - discountPercentage / 100);
-  }, [baseEstimate, discountPercentage]);
+
+    return evaluateRuleFormula({
+      formula: selectedRuleFormula,
+      context: {
+        adeudo_total: negotiationContext.effectiveBaseAmount,
+        ...negotiationContext.variables
+      }
+    });
+  }, [negotiationContext.effectiveBaseAmount, negotiationContext.variables, selectedRuleFormula]);
 
   const handleToggleCredit = (creditId, checked) => {
     const resolvedId = Number.parseInt(creditId, 10);
@@ -226,7 +354,7 @@ function NegotiationsWidget({
   const handleCreateNegotiation = async () => {
     const nivelDescuentoId = Number.parseInt(createForm.nivel_descuento_id, 10);
     if (!Number.isInteger(nivelDescuentoId) || nivelDescuentoId <= 0) {
-      setError('Selecciona un nivel de descuento para iniciar la negociación.');
+      setError('Selecciona una regla para iniciar la negociación.');
       return;
     }
 
@@ -336,7 +464,7 @@ function NegotiationsWidget({
                 Negociación
               </Typography>
               <Typography variant="subtitle1" className="crm-surface-card__title">
-                Negociación activa
+                Regla activa
               </Typography>
               <Typography variant="caption" className="crm-surface-card__subtitle">
                 Solo puede existir una negociación activa por cliente, incluso si tiene múltiples créditos.
@@ -371,11 +499,7 @@ function NegotiationsWidget({
           ) : (
             <Stack spacing={1.5}>
               <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
-                <Chip color="primary" label={`Nivel: ${activeNegotiation.nivel_descuento_nombre}`} />
-                <Chip
-                  variant="outlined"
-                  label={`Descuento: ${activeNegotiation.nivel_descuento_porcentaje?.toFixed?.(2) || activeNegotiation.nivel_descuento_porcentaje}%`}
-                />
+                <Chip color="primary" label={`Regla: ${activeNegotiation.nivel_descuento_nombre}`} />
                 <Chip
                   variant="outlined"
                   label={`Base: ${formatCurrency(activeNegotiation.monto_base_total)}`}
@@ -387,9 +511,13 @@ function NegotiationsWidget({
                 <Chip
                   color="warning"
                   variant="outlined"
-                  label={`Descuento total: ${formatCurrency(activeNegotiation.monto_descuento_total)}`}
+                  label={`Quita total: ${formatCurrency(activeNegotiation.monto_descuento_total)}`}
                 />
               </Stack>
+
+              <Typography variant="body2" color="text.secondary">
+                Fórmula aplicada: {resolveRuleFormula(activeNegotiation)}
+              </Typography>
 
               <Typography variant="body2" color="text.secondary">
                 Iniciada: {formatDateTime(activeNegotiation.fecha_inicio)}
@@ -451,7 +579,7 @@ function NegotiationsWidget({
                   Iniciar nueva negociación
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__subtitle">
-                  Define el nivel de descuento, los créditos incluidos y el marco base del acuerdo.
+                  Selecciona la regla, los créditos incluidos y el marco base del acuerdo.
                 </Typography>
               </Stack>
             </Stack>
@@ -464,13 +592,20 @@ function NegotiationsWidget({
 
             {!activeNegotiation && levels.length === 0 ? (
               <Alert severity="warning">
-                No tienes niveles de descuento autorizados para negociar. Solicita asignación al administrador.
+                No tienes reglas autorizadas para negociar. Solicita asignación al administrador.
+              </Alert>
+            ) : null}
+
+            {!activeNegotiation && !portfolioConfig?.debt_total_saldo_field_id ? (
+              <Alert severity="info">
+                El portafolio no tiene configurado el campo de <strong>adeudo total</strong>.
+                Se usará el saldo principal detectado en cada crédito como base de cálculo.
               </Alert>
             ) : null}
 
             <TextField
               select
-              label="Nivel de descuento"
+              label="Regla de negociación"
               value={createForm.nivel_descuento_id}
               onChange={(event) =>
                 setCreateForm((prev) => ({
@@ -482,13 +617,19 @@ function NegotiationsWidget({
               disabled={Boolean(activeNegotiation) || levels.length === 0}
               fullWidth
             >
-              <option value="">Selecciona un nivel</option>
+              <option value="">Selecciona una regla</option>
               {levels.map((level) => (
                 <option key={`level-${level.id}`} value={level.id}>
-                  {level.nombre} ({formatPercentage(level.porcentaje_descuento)})
+                  {level.nombre}
                 </option>
               ))}
             </TextField>
+
+            {selectedRuleFormula ? (
+              <Alert severity="info">
+                <strong>Fórmula activa:</strong> {selectedRuleFormula}
+              </Alert>
+            ) : null}
 
             <Stack spacing={1}>
               <Typography variant="body2" className="crm-text-strong">
@@ -584,7 +725,11 @@ function NegotiationsWidget({
             <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
               <Chip
                 variant="outlined"
-                label={`Base estimada por saldos: ${formatCurrency(baseEstimate)}`}
+                label={`Base estimada (${portfolioConfig?.debt_total_saldo_field_label || 'saldo principal'}): ${formatCurrency(negotiationContext.computedBaseAmount)}`}
+              />
+              <Chip
+                variant="outlined"
+                label={`Adeudo total aplicado: ${formatCurrency(negotiationContext.effectiveBaseAmount)}`}
               />
               <Chip
                 variant="outlined"
@@ -654,7 +799,7 @@ function NegotiationsWidget({
               },
               {
                 id: 'nivel_descuento_nombre',
-                label: 'Nivel',
+                label: 'Regla',
                 render: (row) => row.nivel_descuento_nombre || '-'
               },
               {
@@ -748,12 +893,6 @@ function NegotiationsWidget({
     </Stack>
   );
 }
-
-const formatPercentage = (value) => {
-  const parsed = toNumber(value);
-  if (parsed === null) return '-';
-  return `${parsed.toFixed(2)}%`;
-};
 
 const MemoizedNegotiationsWidget = memo(NegotiationsWidget);
 MemoizedNegotiationsWidget.displayName = 'NegotiationsWidget';

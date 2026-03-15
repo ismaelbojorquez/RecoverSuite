@@ -80,10 +80,15 @@ export const listAvailableDiscountLevelsHandler = async (req, res, next) => {
     if (!userId) {
       throw createHttpError(401, 'Unauthorized');
     }
+    const portfolioId = parseInteger(req.query.portafolio_id ?? req.query.portafolioId);
+    if (!portfolioId) {
+      throw createHttpError(400, 'portafolio_id es requerido');
+    }
 
     const isAdmin = await resolveIsAdmin(req, userId);
     const data = await listAvailableDiscountLevelsForUserService({
       userId,
+      portfolioId,
       isAdmin
     });
 
@@ -96,6 +101,7 @@ export const listAvailableDiscountLevelsHandler = async (req, res, next) => {
 export const createDiscountLevelHandler = async (req, res, next) => {
   try {
     const payload = req.body || {};
+    payload.portfolio_ids = payload.portfolio_ids ?? payload.portfolioIds ?? [];
 
     const created = await createDiscountLevelService(payload);
     res.status(201).json({ data: created });
@@ -108,6 +114,9 @@ export const updateDiscountLevelHandler = async (req, res, next) => {
   try {
     const id = parseInteger(req.params.id);
     const payload = req.body || {};
+    if (payload.portfolio_ids === undefined && payload.portfolioIds !== undefined) {
+      payload.portfolio_ids = payload.portfolioIds;
+    }
     const updated = await updateDiscountLevelService(id, payload);
 
     res.status(200).json({ data: updated });
@@ -207,4 +216,3 @@ export const listClientNegotiationsHandler = async (req, res, next) => {
     next(err);
   }
 };
-
