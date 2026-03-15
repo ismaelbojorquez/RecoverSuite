@@ -92,9 +92,9 @@ export const PageHeader = ({
 
   return (
     <Stack
-      direction={{ xs: 'column', lg: 'row' }}
+      direction={{ xs: 'column', md: 'row' }}
       justifyContent="space-between"
-      alignItems={{ xs: 'flex-start', lg: 'flex-start' }}
+      alignItems={{ xs: 'flex-start', md: 'flex-start' }}
       className={[
         'crm-page__header',
         align === 'center' ? 'crm-page__header--center' : ''

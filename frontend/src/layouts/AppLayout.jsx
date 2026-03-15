@@ -35,7 +35,6 @@ import {
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import BrandMark from '../components/BrandMark.jsx';
-import Can from '../components/Can.jsx';
 import GlobalSearch from '../components/GlobalSearch.jsx';
 import IconRenderer from '../components/ui/IconRenderer.jsx';
 import usePermissions from '../hooks/usePermissions.js';
@@ -181,6 +180,7 @@ export default function AppLayout({ children }) {
   const { pathname, navigate } = useNavigation();
   const currentPath = pathname.split('?')[0];
   const { hasPermission } = usePermissions();
+  const canSearch = hasPermission('search.read');
 
   const appRoutes = useMemo(
     () => routes.filter((route) => route.layout === LAYOUTS.app),
@@ -422,29 +422,14 @@ export default function AppLayout({ children }) {
                   <IconRenderer icon={PanelLeft} size="sm" />
                 </IconButton>
               )}
-              {!isDesktop && (
-                <Box className="crm-app-bar__brand">
-                  <BrandMark />
-                </Box>
-              )}
-              {isDesktop && activeShellContext ? (
-                <Stack className="crm-app-bar__context" spacing={0.3}>
-                  <Typography variant="caption" className="crm-app-bar__context-eyebrow">
-                    {activeShellContext.section}
-                  </Typography>
-                  <Typography variant="body2" className="crm-app-bar__context-title">
-                    {activeShellContext.title}
-                  </Typography>
-                  <Typography variant="caption" className="crm-app-bar__context-subtitle">
-                    {activeShellContext.subtitle}
-                  </Typography>
-                </Stack>
-              ) : null}
-              <Box className="crm-app-bar__search">
-                <Can permission="search.read">
-                  <GlobalSearch />
-                </Can>
+              <Box className="crm-app-bar__brand">
+                <BrandMark collapsed={isDesktop} />
               </Box>
+              {canSearch ? (
+                <Box className="crm-app-bar__search">
+                  <GlobalSearch />
+                </Box>
+              ) : null}
             </Stack>
 
             <Stack
