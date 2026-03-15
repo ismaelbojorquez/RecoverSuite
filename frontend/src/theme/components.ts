@@ -4384,6 +4384,24 @@ export const getComponents = (mode = 'light') => {
       }
     },
 
+    MuiTableFooter: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94),
+          '& .MuiTableRow-root': {
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94)
+          },
+          '& .MuiTableCell-root': {
+            borderTop: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.16 : 0.22)}`,
+            borderBottom: 0,
+            backgroundColor: alpha(theme.palette.background.paper, isLight ? 0.98 : 0.94),
+            backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(118%)`,
+            WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(118%)`
+          }
+        })
+      }
+    },
+
     MuiTableSortLabel: {
       styleOverrides: {
         root: ({ theme }) => ({

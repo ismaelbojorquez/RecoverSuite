@@ -6,6 +6,7 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableFooter,
   TableHead,
   TablePagination,
   TableRow,
@@ -67,7 +68,11 @@ const isActionColumn = (column = {}) => {
 const buildCellClassName = (column, { head = false } = {}) =>
   [
     'crm-table__cell',
-    head ? 'crm-table__cell--head' : 'crm-table__cell--body',
+    head
+      ? 'crm-table__cell--head'
+      : column?.footer
+        ? 'crm-table__cell--footer'
+        : 'crm-table__cell--body',
     isActionColumn(column) ? 'crm-table__cell--actions' : '',
     column?.align === 'right' ? 'crm-table__cell--numeric' : ''
   ]
@@ -108,11 +113,13 @@ export default function BaseTable({
   size = 'medium',
   stickyHeader = false,
   dense = false,
-  toolbar = null
+  toolbar = null,
+  footerRows = []
 }) {
   const colCount = columns.length || 1;
   const showEmpty = !loading && rows.length === 0;
   const skeletonRowCount = Math.max(3, Math.min(5, pagination?.rowsPerPage || 3));
+  const safeFooterRows = Array.isArray(footerRows) ? footerRows : [];
   const EmptyComponent =
     emptyContent || (
       <EmptyState
@@ -241,6 +248,34 @@ export default function BaseTable({
               </TableRow>
             )}
           </TableBody>
+
+          {safeFooterRows.length > 0 ? (
+            <TableFooter className="crm-table__footer">
+              {safeFooterRows.map((row, footerIndex) => {
+                const key = row?.id ?? `footer-${footerIndex}`;
+                return (
+                  <TableRow key={key} className="crm-table__footer-row">
+                    {columns.map((column) => {
+                      const footerColumn = { ...column, footer: true };
+                      const cellValue = column.render ? column.render(row) : row[column.id];
+
+                      return (
+                        <TableCell
+                          key={`${key}-${column.id}`}
+                          className={buildCellClassName(footerColumn)}
+                          align={column.align || 'left'}
+                        >
+                          <Box className="crm-table__cell-content">
+                            {renderCellContent(cellValue, footerColumn)}
+                          </Box>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
+            </TableFooter>
+          ) : null}
         </Table>
       </TableContainer>
 
