@@ -1,11 +1,8 @@
 import {
   ArrowBack,
   EmailOutlined,
-  PaymentsOutlined,
   PlaceOutlined,
   PhoneOutlined,
-  PostAddOutlined,
-  WhatsApp,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -977,68 +974,6 @@ function ClientOperationsTabs({ activeTab, onTabChange, error, onErrorClear, tab
   );
 }
 
-function ClientQuickActions({
-  onCall,
-  onWhatsapp,
-  onNewGestion,
-  onRegisterPayment,
-  hasPhone = false
-}) {
-  const actions = [
-    {
-      id: 'call',
-      label: 'Llamar',
-      icon: <PhoneOutlined fontSize="small" />,
-      onClick: onCall,
-      disabled: !hasPhone || typeof onCall !== 'function'
-    },
-    {
-      id: 'whatsapp',
-      label: 'WhatsApp',
-      icon: <WhatsApp fontSize="small" />,
-      onClick: onWhatsapp,
-      disabled: !hasPhone || typeof onWhatsapp !== 'function'
-    },
-    {
-      id: 'gestion',
-      label: 'Nueva gestión',
-      icon: <PostAddOutlined fontSize="small" />,
-      onClick: onNewGestion,
-      disabled: typeof onNewGestion !== 'function'
-    },
-    {
-      id: 'payment',
-      label: 'Registrar pago',
-      icon: <PaymentsOutlined fontSize="small" />,
-      onClick: onRegisterPayment,
-      disabled: typeof onRegisterPayment !== 'function'
-    }
-  ];
-
-  return (
-    <Box className="crm-client-detail__quick-actions">
-      <Stack className="crm-client-detail__quick-actions-stack">
-        {actions.map((action) => (
-          <Button
-            key={action.id}
-            onClick={action.onClick}
-            disabled={action.disabled}
-            startIcon={action.icon}
-            variant="outlined"
-            size="small"
-            className="crm-client-detail__quick-action-button"
-            aria-label={action.label}
-          >
-            <Box component="span" className="crm-client-detail__quick-action-text">
-              {action.label}
-            </Box>
-          </Button>
-        ))}
-      </Stack>
-    </Box>
-  );
-}
-
 export default function ClientDetail({ routeParams }) {
   const { hasPermission } = usePermissions();
   const { notify } = useNotify();
@@ -1397,19 +1332,6 @@ export default function ClientDetail({ routeParams }) {
     setGestionesQuickAction({ mode: 'pago', token });
   }, [canLog]);
 
-  const handleQuickCall = useCallback(() => {
-    const phone = normalizePhoneForAction(primaryContactPhone);
-
-    if (!phone || typeof window === 'undefined') {
-      notify('No hay un telefono disponible para llamar.', { severity: 'warning' });
-      return;
-    }
-
-    setActiveTab(DETAIL_TAB_VALUES.gestiones);
-    setGestionesFocusReturnToken(Date.now());
-    window.open(`tel:${phone}`, '_self');
-  }, [notify, primaryContactPhone]);
-
   const handleBackToClients = useCallback(() => {
     navigate(
       portafolioId
@@ -1652,13 +1574,6 @@ export default function ClientDetail({ routeParams }) {
             </Box>
           </Box>
 
-          <ClientQuickActions
-            onCall={handleQuickCall}
-            onWhatsapp={handleQuickWhatsapp}
-            onNewGestion={handleQuickNewGestion}
-            onRegisterPayment={handleQuickRegisterPayment}
-            hasPhone={Boolean(primaryContactPhone)}
-          />
         </Box>
       </PageContent>
     </Page>
