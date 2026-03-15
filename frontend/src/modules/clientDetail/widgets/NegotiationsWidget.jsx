@@ -624,30 +624,30 @@ function NegotiationsWidget({
   );
 
   useEffect(() => {
-    if (!selectedLevel || negotiationContext.effectiveBaseAmount <= 0) {
+    if (negotiationContext.effectiveBaseAmount <= 0) {
       return;
     }
 
     setCreateForm((prev) => {
       const currentValue = toNumber(prev.monto_negociado_total);
+      const maximumAmount = negotiationContext.effectiveBaseAmount;
 
       if (
         currentValue !== null &&
         currentValue >= minimumNegotiatedAmount &&
-        currentValue <= negotiationContext.effectiveBaseAmount
+        currentValue <= maximumAmount
       ) {
         return prev;
       }
 
       return {
         ...prev,
-        monto_negociado_total: String(minimumNegotiatedAmount)
+        monto_negociado_total: String(maximumAmount)
       };
     });
   }, [
     minimumNegotiatedAmount,
-    negotiationContext.effectiveBaseAmount,
-    selectedLevel
+    negotiationContext.effectiveBaseAmount
   ]);
 
   useEffect(() => {
@@ -1113,11 +1113,6 @@ function NegotiationsWidget({
                         minRows={3}
                       />
 
-                      {selectedRuleFormula ? (
-                        <Alert severity="info" className="crm-alert--full-width">
-                          <strong>Fórmula activa:</strong> {selectedRuleFormula}
-                        </Alert>
-                      ) : null}
                     </Stack>
 
                     <Stack spacing={1.25} className="crm-negotiations__composer-column">
@@ -1140,8 +1135,8 @@ function NegotiationsWidget({
                           }}
                           helperText={
                             selectedLevel
-                              ? `Mínimo permitido: ${formatCurrency(minimumNegotiatedAmount)}`
-                              : 'Selecciona una regla para calcular el mínimo permitido'
+                              ? `Monto máximo: ${formatCurrency(negotiationContext.effectiveBaseAmount)}. Monto mínimo permitido: ${formatCurrency(minimumNegotiatedAmount)}`
+                              : `Monto máximo: ${formatCurrency(negotiationContext.effectiveBaseAmount)}. Selecciona una regla para calcular el mínimo permitido`
                           }
                           fullWidth
                         />
