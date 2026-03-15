@@ -21,6 +21,7 @@ const start = async () => {
     await ensureDatabaseSchema();
   } catch (err) {
     console.error('Failed to ensure database schema', err);
+    throw err;
   }
 
   try {
@@ -67,4 +68,7 @@ const shutdown = async () => {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
-start();
+start().catch((err) => {
+  console.error('Application bootstrap failed', err);
+  process.exit(1);
+});
