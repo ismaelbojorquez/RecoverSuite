@@ -1,14 +1,24 @@
 import pool from '../../config/db.js';
 
-const discountLevelFields = `
-  dl.id,
-  dl.nombre,
-  dl.descripcion,
-  dl.porcentaje_descuento,
-  dl.activo,
-  dl.created_at,
-  dl.updated_at
+const discountLevelBaseFields = `
+  id,
+  nombre,
+  descripcion,
+  porcentaje_descuento,
+  activo,
+  created_at,
+  updated_at
 `;
+
+const qualifyFields = (alias, fields) =>
+  fields
+    .split(',')
+    .map((field) => field.trim())
+    .filter(Boolean)
+    .map((field) => `${alias}.${field}`)
+    .join(',\n  ');
+
+const discountLevelFields = qualifyFields('dl', discountLevelBaseFields);
 
 const negotiationSelect = `
   n.id,
@@ -162,7 +172,7 @@ export const createDiscountLevel = async (
   const result = await db.query(
     `INSERT INTO discount_levels (nombre, descripcion, porcentaje_descuento, activo)
      VALUES ($1, $2, $3, $4)
-     RETURNING ${discountLevelFields}`,
+     RETURNING ${discountLevelBaseFields}`,
     [nombre, descripcion, porcentajeDescuento, Boolean(activo)]
   );
 
@@ -207,7 +217,7 @@ export const updateDiscountLevel = async (id, updates = {}, db = pool) => {
     `UPDATE discount_levels
      SET ${fields.join(', ')}
      WHERE id = $${index}
-     RETURNING ${discountLevelFields}`,
+     RETURNING ${discountLevelBaseFields}`,
     values
   );
 
@@ -444,4 +454,3 @@ export const listNegotiationsByClient = async ({ clientId, limit = 20, offset = 
 
   return result.rows;
 };
-

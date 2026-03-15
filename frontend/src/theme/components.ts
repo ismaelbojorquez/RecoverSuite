@@ -1328,7 +1328,17 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiBox-root.crm-app-shell__drawer-header--collapsed': {
             padding: theme.spacing(1.45, 0.85),
-            justifyContent: 'center'
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing(0.9)
+          },
+          '.MuiBox-root.crm-app-shell__drawer-header--collapsed .MuiStack-root.crm-app-shell__drawer-header-copy': {
+            alignItems: 'center',
+            textAlign: 'center'
+          },
+          '.MuiBox-root.crm-app-shell__drawer-header--collapsed .MuiIconButton-root': {
+            marginTop: theme.spacing(0.15)
           },
           '.MuiDivider-root.crm-app-shell__drawer-divider': {
             margin: theme.spacing(0, 1.05),
