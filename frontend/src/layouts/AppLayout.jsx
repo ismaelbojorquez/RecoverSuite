@@ -344,6 +344,7 @@ export default function AppLayout({ children }) {
                       .filter(Boolean)
                       .join(' ')}
                     data-permission={item.permission}
+                    aria-label={item.label}
                     selected={isActive}
                     disabled={Boolean(item.disabled)}
                     onClick={() => {
@@ -367,18 +368,15 @@ export default function AppLayout({ children }) {
                         <IconRenderer icon={Icon} size="sm" />
                       </Box>
                     </ListItemIcon>
-                    <ListItemText
-                      className={[
-                        'crm-app-shell__nav-copy',
-                        isCollapsed ? 'crm-app-shell__nav-copy--collapsed' : ''
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      primary={item.label}
-                      secondary={item.secondary}
-                      primaryTypographyProps={{ className: 'crm-text-medium' }}
-                      secondaryTypographyProps={{ className: 'crm-nav-item__secondary' }}
-                    />
+                    {!isCollapsed ? (
+                      <ListItemText
+                        className="crm-app-shell__nav-copy"
+                        primary={item.label}
+                        secondary={item.secondary}
+                        primaryTypographyProps={{ className: 'crm-text-medium' }}
+                        secondaryTypographyProps={{ className: 'crm-nav-item__secondary' }}
+                      />
+                    ) : null}
                   </ListItemButton>
                 </Tooltip>
               );
