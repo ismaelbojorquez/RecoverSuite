@@ -12,7 +12,6 @@ import {
   Box,
   Button,
   Chip,
-  IconButton,
   Paper,
   Skeleton,
   Stack,
@@ -978,7 +977,7 @@ function ClientOperationsTabs({ activeTab, onTabChange, error, onErrorClear, tab
   );
 }
 
-function ClientFloatingActions({
+function ClientQuickActions({
   onCall,
   onWhatsapp,
   onNewGestion,
@@ -1017,20 +1016,23 @@ function ClientFloatingActions({
   ];
 
   return (
-    <Box className="crm-client-detail__floating-actions">
-      <Stack className="crm-client-detail__floating-actions-menu">
+    <Box className="crm-client-detail__quick-actions">
+      <Stack className="crm-client-detail__quick-actions-stack">
         {actions.map((action) => (
-          <Stack key={action.id} direction="row" className="crm-client-detail__floating-action-row">
-            <Box className="crm-client-detail__floating-action-label">{action.label}</Box>
-            <IconButton
-              onClick={action.onClick}
-              disabled={action.disabled}
-              className="crm-client-detail__floating-action-button"
-              aria-label={action.label}
-            >
-              {action.icon}
-            </IconButton>
-          </Stack>
+          <Button
+            key={action.id}
+            onClick={action.onClick}
+            disabled={action.disabled}
+            startIcon={action.icon}
+            variant="outlined"
+            size="small"
+            className="crm-client-detail__quick-action-button"
+            aria-label={action.label}
+          >
+            <Box component="span" className="crm-client-detail__quick-action-text">
+              {action.label}
+            </Box>
+          </Button>
         ))}
       </Stack>
     </Box>
@@ -1650,7 +1652,7 @@ export default function ClientDetail({ routeParams }) {
             </Box>
           </Box>
 
-          <ClientFloatingActions
+          <ClientQuickActions
             onCall={handleQuickCall}
             onWhatsapp={handleQuickWhatsapp}
             onNewGestion={handleQuickNewGestion}

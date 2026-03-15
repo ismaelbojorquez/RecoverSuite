@@ -2500,7 +2500,7 @@ export const getComponents = (mode = 'light') => {
             height:
               'calc(100% - var(--crm-client-detail-header-height) - var(--crm-client-detail-shell-gap))'
           },
-          '.MuiBox-root.crm-client-detail__floating-actions': {
+          '.MuiBox-root.crm-client-detail__quick-actions': {
             position: 'absolute',
             right: theme.spacing(1.15),
             bottom: `calc(${theme.spacing(1.15)} + env(safe-area-inset-bottom, 0px))`,
@@ -2514,37 +2514,16 @@ export const getComponents = (mode = 'light') => {
               bottom: `calc(${theme.spacing(0.9)} + env(safe-area-inset-bottom, 0px))`
             }
           },
-          '.MuiStack-root.crm-client-detail__floating-actions-menu': {
+          '.MuiStack-root.crm-client-detail__quick-actions-stack': {
             gap: theme.spacing(0.55),
-            marginBottom: theme.spacing(0.65),
             pointerEvents: 'auto',
             animation: `crm-fade-in ${microMotion}`
           },
-          '.MuiStack-root.crm-client-detail__floating-action-row': {
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: theme.spacing(0.55)
-          },
-          '.MuiBox-root.crm-client-detail__floating-action-label': {
-            ...getInsetSurface(theme, {
-              radius: 999,
-              backgroundAlpha: isLight ? 0.86 : 0.68,
-              borderAlpha: isLight ? 0.08 : 0.14,
-              shadowAlpha: isLight ? 0.05 : 0.12
-            }),
+          '.MuiButton-root.crm-client-detail__quick-action-button': {
             pointerEvents: 'auto',
-            padding: theme.spacing(0.4, 0.8),
-            fontSize: '0.72rem',
-            fontWeight: 620,
-            lineHeight: 1,
-            color: theme.palette.text.primary,
-            whiteSpace: 'nowrap'
-          },
-          '.MuiIconButton-root.crm-client-detail__floating-action-button': {
-            pointerEvents: 'auto',
-            width: 44,
-            height: 44,
-            borderRadius: '50%',
+            minHeight: 38,
+            padding: theme.spacing(0.55, 1.1),
+            borderRadius: 999,
             color: theme.palette.text.primary,
             backgroundColor:
               (getVisualTokens(theme).surface || {}).floating ||
@@ -2555,6 +2534,8 @@ export const getComponents = (mode = 'light') => {
             WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(${surface.saturate || 140}%)`,
             position: 'relative',
             overflow: 'hidden',
+            justifyContent: 'flex-start',
+            gap: theme.spacing(0.5),
             transition: theme.transitions.create(
               ['transform', 'box-shadow', 'background-color', 'border-color'],
               { duration: motionTokens.microDurationMs, easing: motionTokens.microEasing }
@@ -2572,9 +2553,26 @@ export const getComponents = (mode = 'light') => {
               backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.08 : 0.14),
               boxShadow: shadow.lg || `0 16px 28px ${alpha(theme.palette.text.primary, isLight ? 0.1 : 0.22)}`
             },
+            '& .MuiButton-startIcon': {
+              marginRight: theme.spacing(0.6),
+              marginLeft: 0,
+              '& .MuiSvgIcon-root': {
+                fontSize: '1rem'
+              }
+            },
             '&.Mui-disabled': {
               opacity: 0.46,
               boxShadow: 'none'
+            },
+            [theme.breakpoints.down('sm')]: {
+              minWidth: 0,
+              padding: theme.spacing(0.52, 0.9),
+              '& .MuiButton-startIcon': {
+                marginRight: 0
+              },
+              '& .MuiBox-root.crm-client-detail__quick-action-text': {
+                display: 'none'
+              }
             }
           },
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
