@@ -347,6 +347,66 @@ const assertNegotiationAmounts = ({ montoBaseTotal, montoNegociadoTotal }) => {
   }
 };
 
+const normalizePaymentPlan = (value) => {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw createHttpError(400, 'plan_pagos debe ser un arreglo');
+  }
+
+  if (value.length === 0) {
+    throw createHttpError(400, 'Debes capturar al menos una parcialidad');
+  }
+
+  return value.map((item, index) => {
+    const fecha = normalizeText(item?.fecha);
+    const monto = parseOptionalCurrency(item?.monto, `plan_pagos[${index}].monto`);
+
+    if (!fecha || Number.isNaN(new Date(`${fecha}T12:00:00`).getTime())) {
+      throw createHttpError(400, `plan_pagos[${index}].fecha invalida`);
+    }
+
+    if (monto === null || monto <= 0) {
+      throw createHttpError(400, `plan_pagos[${index}].monto invalido`);
+    }
+
+    return {
+      parcialidad: index + 1,
+      fecha,
+      monto: roundCurrency(monto)
+    };
+  });
+};
+
+const assertPaymentPlanMatchesNegotiatedAmount = ({
+  paymentPlan,
+  totalNegotiatedAmount
+}) => {
+  if (!Array.isArray(paymentPlan) || paymentPlan.length === 0) {
+    return;
+  }
+
+  if (totalNegotiatedAmount === null) {
+    throw createHttpError(
+      400,
+      'No se puede validar el plan de pagos sin un monto negociado total'
+    );
+  }
+
+  const totalPlannedAmount = roundCurrency(
+    paymentPlan.reduce((sum, item) => sum + toNumber(item?.monto, 0), 0)
+  );
+
+  if (Math.abs(totalPlannedAmount - totalNegotiatedAmount) > 0.01) {
+    throw createHttpError(
+      400,
+      'La suma del plan de pagos no coincide con el monto negociado'
+    );
+  }
+};
+
 export const listDiscountLevelsService = async ({ includeInactive = false } = {}) => {
   return listDiscountLevels({ includeInactive });
 };
@@ -546,10 +606,10 @@ export const createNegotiationService = async ({
   clienteId,
   nivelDescuentoId,
   creditoIds,
-  referencia,
   observaciones,
   montoBaseTotal,
   montoNegociadoTotal,
+  planPagos,
   usuarioId,
   isAdmin = false
 }) => {
@@ -558,13 +618,13 @@ export const createNegotiationService = async ({
   const clientPublicId = ensureUuid(clienteId, 'cliente');
   const discountLevelId = parsePositiveInteger(nivelDescuentoId, 'nivel_descuento');
   const selectedCreditIds = normalizeCreditIds(creditoIds);
-  const referenciaNormalizada = normalizeText(referencia) || null;
   const observacionesNormalizadas = normalizeText(observaciones) || null;
   const requestedBaseAmount = parseOptionalCurrency(montoBaseTotal, 'monto_base_total');
   const requestedNegotiatedAmount = parseOptionalCurrency(
     montoNegociadoTotal,
     'monto_negociado_total'
   );
+  const normalizedPaymentPlan = normalizePaymentPlan(planPagos);
 
   const resolvedClient = await resolveClientInternalId({
     publicId: clientPublicId,
@@ -680,6 +740,11 @@ export const createNegotiationService = async ({
         ? requestedNegotiatedAmount
         : minimumNegotiatedAmount;
 
+    assertPaymentPlanMatchesNegotiatedAmount({
+      paymentPlan: normalizedPaymentPlan,
+      totalNegotiatedAmount: computedNegotiatedAmount
+    });
+
     assertNegotiationAmounts({
       montoBaseTotal: resolvedBaseAmount,
       montoNegociadoTotal: computedNegotiatedAmount
@@ -696,7 +761,7 @@ export const createNegotiationService = async ({
         portfolioId,
         discountLevelId,
         usuarioId: userId,
-        referencia: referenciaNormalizada,
+        referencia: null,
         observaciones: observacionesNormalizadas,
         porcentajeDescuento: percentage,
         montoBaseTotal: resolvedBaseAmount,
@@ -734,7 +799,8 @@ export const createNegotiationService = async ({
           porcentaje_descuento: percentage,
           regla_formula: ruleFormula,
           adeudo_total_campo_id: configuredDebtFieldId,
-          credito_ids: selectedCreditIds
+          credito_ids: selectedCreditIds,
+          plan_pagos: normalizedPaymentPlan
         },
         usuarioId: userId
       },

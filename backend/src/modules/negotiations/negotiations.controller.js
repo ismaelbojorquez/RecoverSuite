@@ -159,10 +159,14 @@ export const createNegotiationHandler = async (req, res, next) => {
       clienteId: body.cliente_id ?? body.clienteId,
       nivelDescuentoId: body.nivel_descuento_id ?? body.nivelDescuentoId,
       creditoIds: body.credito_ids ?? body.creditoIds,
-      referencia: body.referencia,
       observaciones: body.observaciones,
       montoBaseTotal: body.monto_base_total ?? body.montoBaseTotal,
       montoNegociadoTotal: body.monto_negociado_total ?? body.montoNegociadoTotal,
+      planPagos:
+        body.plan_pagos ??
+        body.planPagos ??
+        body.payment_plan ??
+        body.paymentPlan,
       usuarioId: userId,
       isAdmin
     });

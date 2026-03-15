@@ -69,7 +69,6 @@ const buildDefaultFirstDate = () => {
 
 const createDefaultCreateForm = () => ({
   nivel_descuento_id: '',
-  referencia: '',
   observaciones: '',
   monto_negociado_total: '',
   parcialidades: '1',
@@ -207,25 +206,42 @@ const clampNegotiatedAmount = ({ amount, minimumAmount, maximumAmount }) => {
   return roundCurrency(Math.min(Math.max(numericAmount, floor), ceiling));
 };
 
+const toInputDate = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
 const addPeriodsToDate = (value, periodicity, index) => {
   const baseDate = new Date(`${value}T12:00:00`);
   if (Number.isNaN(baseDate.getTime())) {
-    return null;
+    return '';
   }
 
   const nextDate = new Date(baseDate);
   if (periodicity === 'semanal') {
     nextDate.setDate(nextDate.getDate() + index * 7);
-    return nextDate;
+    return toInputDate(nextDate);
   }
 
   if (periodicity === 'quincenal') {
     nextDate.setDate(nextDate.getDate() + index * 15);
-    return nextDate;
+    return toInputDate(nextDate);
   }
 
   nextDate.setMonth(nextDate.getMonth() + index);
-  return nextDate;
+  return toInputDate(nextDate);
 };
 
 const buildPaymentSchedule = ({
@@ -253,10 +269,18 @@ const buildPaymentSchedule = ({
       id: `payment-${index + 1}`,
       parcialidad: index + 1,
       fecha: addPeriodsToDate(firstDate, periodicity, index),
-      monto: rowAmount
+      monto: rowAmount.toFixed(2)
     };
   });
 };
+
+const sumPaymentPlan = (rows = []) =>
+  roundCurrency(
+    rows.reduce((sum, row) => {
+      const amount = toNumber(row?.monto);
+      return sum + (amount ?? 0);
+    }, 0)
+  );
 
 function NegotiationMetric({ label, value, helper }) {
   return (
@@ -276,40 +300,85 @@ function NegotiationMetric({ label, value, helper }) {
   );
 }
 
-function SchedulePreview({ rows = [], totalAmount = 0 }) {
+function ScheduleEditor({
+  rows = [],
+  totalAmount = 0,
+  differenceAmount = 0,
+  onFieldChange,
+  onReset
+}) {
   if (!rows.length) {
     return (
       <Box className="crm-negotiations__schedule-empty">
         <Typography variant="body2" color="text.secondary">
-          Selecciona una regla y define las parcialidades para visualizar el calendario propuesto.
+          Selecciona una regla y define las parcialidades para construir el calendario de pagos.
         </Typography>
       </Box>
     );
   }
 
+  const isBalanced = Math.abs(differenceAmount) <= 0.01;
+
   return (
     <Stack spacing={1} className="crm-negotiations__schedule-list">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+        <Typography variant="caption" color="text.secondary">
+          Ajusta fechas y montos por parcialidad.
+        </Typography>
+        <Button size="small" variant="ghost" onClick={onReset}>
+          Redistribuir
+        </Button>
+      </Stack>
+
       {rows.map((row) => (
-        <Box key={row.id} className="crm-negotiations__schedule-row">
+        <Box key={row.id} className="crm-negotiations__schedule-row crm-negotiations__schedule-row--editable">
           <Typography variant="caption" className="crm-negotiations__schedule-index">
             Pago {row.parcialidad}
           </Typography>
-          <Typography variant="body2" className="crm-negotiations__schedule-date">
-            {formatDate(row.fecha)}
-          </Typography>
-          <Typography variant="body2" className="crm-negotiations__schedule-amount">
-            {formatCurrency(row.monto)}
-          </Typography>
+          <TextField
+            type="date"
+            value={row.fecha}
+            onChange={(event) => onFieldChange(row.id, 'fecha', event.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+            className="crm-negotiations__schedule-field"
+          />
+          <TextField
+            type="number"
+            value={row.monto}
+            onChange={(event) => onFieldChange(row.id, 'monto', event.target.value)}
+            inputProps={{ min: 0, step: '0.01' }}
+            size="small"
+            className="crm-negotiations__schedule-field"
+          />
         </Box>
       ))}
+
       <Box className="crm-negotiations__schedule-total">
-        <Typography variant="caption" color="text.secondary">
-          Total programado
-        </Typography>
-        <Typography variant="body2" className="crm-negotiations__schedule-amount">
-          {formatCurrency(totalAmount)}
-        </Typography>
+        <Stack spacing={0.15}>
+          <Typography variant="caption" color="text.secondary">
+            Total programado
+          </Typography>
+          <Typography variant="body2" className="crm-negotiations__schedule-amount">
+            {formatCurrency(sumPaymentPlan(rows))}
+          </Typography>
+        </Stack>
+        <Stack spacing={0.15} alignItems="flex-end">
+          <Typography variant="caption" color="text.secondary">
+            Monto a cobrar
+          </Typography>
+          <Typography variant="body2" className="crm-negotiations__schedule-amount">
+            {formatCurrency(totalAmount)}
+          </Typography>
+        </Stack>
       </Box>
+
+      {!isBalanced ? (
+        <Alert severity="warning" className="crm-alert--full-width">
+          La suma del calendario debe coincidir con el monto a cobrar. Diferencia actual:{' '}
+          {formatCurrency(differenceAmount)}
+        </Alert>
+      ) : null}
     </Stack>
   );
 }
@@ -333,6 +402,7 @@ function NegotiationsWidget({
 
   const [createForm, setCreateForm] = useState(() => createDefaultCreateForm());
   const [selectedCreditIds, setSelectedCreditIds] = useState([]);
+  const [paymentPlanRows, setPaymentPlanRows] = useState([]);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusAction, setStatusAction] = useState('cerrada');
   const [statusForm, setStatusForm] = useState(defaultStatusForm);
@@ -405,6 +475,13 @@ function NegotiationsWidget({
     }
   }, [safeCredits, selectedCreditIds.length]);
 
+  const selectedCredits = useMemo(() => {
+    const selectedIds = new Set(selectedCreditIds.map((id) => Number(id)));
+    return safeCredits.filter((credit) => selectedIds.has(Number(credit.id)));
+  }, [safeCredits, selectedCreditIds]);
+
+  const selectedCreditCount = selectedCredits.length;
+
   const selectedLevel = useMemo(() => {
     const selectedId = Number.parseInt(createForm.nivel_descuento_id, 10);
     if (!Number.isInteger(selectedId) || selectedId <= 0) {
@@ -413,11 +490,6 @@ function NegotiationsWidget({
 
     return levels.find((level) => Number(level.id) === selectedId) || null;
   }, [createForm.nivel_descuento_id, levels]);
-
-  const selectedCredits = useMemo(() => {
-    const selectedIds = new Set(selectedCreditIds.map((id) => Number(id)));
-    return safeCredits.filter((credit) => selectedIds.has(Number(credit.id)));
-  }, [safeCredits, selectedCreditIds]);
 
   const configuredDebtFieldId = useMemo(() => {
     const parsed = Number.parseInt(portfolioConfig?.debt_total_saldo_field_id, 10);
@@ -497,7 +569,6 @@ function NegotiationsWidget({
     );
   }, [negotiationContext.effectiveBaseAmount, ruleMinimumAmount]);
 
-  const selectedCreditCount = selectedCredits.length;
   const normalizedInstallments = useMemo(
     () => parsePositiveInteger(createForm.parcialidades, 1, 60),
     [createForm.parcialidades]
@@ -536,7 +607,7 @@ function NegotiationsWidget({
     );
   }, [negotiationContext.effectiveBaseAmount, proposedNegotiatedAmount]);
 
-  const schedulePreview = useMemo(
+  const generatedPaymentPlan = useMemo(
     () =>
       buildPaymentSchedule({
         totalAmount: proposedNegotiatedAmount,
@@ -579,6 +650,32 @@ function NegotiationsWidget({
     selectedLevel
   ]);
 
+  useEffect(() => {
+    setPaymentPlanRows(generatedPaymentPlan);
+  }, [generatedPaymentPlan]);
+
+  const paymentPlanTotal = useMemo(() => sumPaymentPlan(paymentPlanRows), [paymentPlanRows]);
+  const paymentPlanDifference = useMemo(
+    () => roundCurrency(paymentPlanTotal - proposedNegotiatedAmount),
+    [paymentPlanTotal, proposedNegotiatedAmount]
+  );
+
+  const paymentPlanHasInvalidRows = useMemo(
+    () =>
+      paymentPlanRows.some((row) => {
+        const amount = toNumber(row?.monto);
+        return !row?.fecha || amount === null || amount <= 0;
+      }),
+    [paymentPlanRows]
+  );
+
+  const paymentPlanMatchesAmount = Math.abs(paymentPlanDifference) <= 0.01;
+  const paymentPlanReady =
+    paymentPlanRows.length === normalizedInstallments &&
+    normalizedInstallments > 0 &&
+    !paymentPlanHasInvalidRows &&
+    paymentPlanMatchesAmount;
+
   const handleToggleCredit = (creditId, checked) => {
     const resolvedId = Number.parseInt(creditId, 10);
     if (!Number.isInteger(resolvedId) || resolvedId <= 0) {
@@ -617,6 +714,16 @@ function NegotiationsWidget({
     }));
   };
 
+  const handlePaymentPlanFieldChange = (rowId, field, value) => {
+    setPaymentPlanRows((prev) =>
+      prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const handleResetPaymentPlan = () => {
+    setPaymentPlanRows(generatedPaymentPlan);
+  };
+
   const handleCreateNegotiation = async () => {
     const nivelDescuentoId = Number.parseInt(createForm.nivel_descuento_id, 10);
     if (!Number.isInteger(nivelDescuentoId) || nivelDescuentoId <= 0) {
@@ -639,6 +746,11 @@ function NegotiationsWidget({
       return;
     }
 
+    if (!paymentPlanReady) {
+      setError('La suma de las parcialidades debe coincidir con el monto a cobrar.');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -647,13 +759,18 @@ function NegotiationsWidget({
         cliente_id: clientId,
         nivel_descuento_id: nivelDescuentoId,
         credito_ids: selectedCreditIds,
-        referencia: createForm.referencia.trim() || undefined,
         observaciones: createForm.observaciones.trim() || undefined,
         monto_base_total: negotiationContext.effectiveBaseAmount,
-        monto_negociado_total: proposedNegotiatedAmount || undefined
+        monto_negociado_total: proposedNegotiatedAmount || undefined,
+        plan_pagos: paymentPlanRows.map((row, index) => ({
+          parcialidad: index + 1,
+          fecha: row.fecha,
+          monto: Number.parseFloat(row.monto)
+        }))
       });
       notify('Negociación iniciada', { severity: 'success' });
       setCreateForm(createDefaultCreateForm());
+      setPaymentPlanRows([]);
       await loadData();
     } catch (err) {
       setError(err.message || 'No fue posible crear la negociación.');
@@ -740,8 +857,8 @@ function NegotiationsWidget({
                   {activeNegotiation ? 'Acuerdo activo' : 'Nuevo acuerdo'}
                 </Typography>
                 <Typography variant="caption" className="crm-surface-card__subtitle">
-                  El asesor ve primero el monto máximo a cobrar, el mínimo permitido por la regla
-                  y una propuesta de parcialidades sin salir del expediente.
+                  El flujo muestra primero los créditos, el mínimo permitido y un calendario de
+                  pagos editable para que el asesor entienda rápido qué está acordando.
                 </Typography>
               </Stack>
               <Stack direction="row" className="crm-surface-card__actions">
@@ -802,11 +919,6 @@ function NegotiationsWidget({
                           />
                         ))}
                       </Stack>
-                      {activeNegotiation.referencia ? (
-                        <Typography variant="body2">
-                          Referencia: {activeNegotiation.referencia}
-                        </Typography>
-                      ) : null}
                       {activeNegotiation.observaciones ? (
                         <Typography variant="body2" color="text.secondary">
                           {activeNegotiation.observaciones}
@@ -868,32 +980,86 @@ function NegotiationsWidget({
                   </Alert>
                 ) : null}
 
+                <Box className="crm-negotiations__credit-picker">
+                  <Stack spacing={0.85}>
+                    <Typography variant="body2" className="crm-text-strong">
+                      Créditos incluidos
+                    </Typography>
+                    {safeCredits.length === 0 ? (
+                      <Alert severity="warning">
+                        Este cliente no tiene créditos disponibles para negociar.
+                      </Alert>
+                    ) : (
+                      <Box className="crm-negotiations__credit-picker-list">
+                        {safeCredits.map((credit) => (
+                          <Box
+                            key={`credit-selector-${credit.id}`}
+                            className={[
+                              'crm-surface-card__selection-item',
+                              'crm-negotiations__credit-item',
+                              selectedCreditIds.includes(Number(credit.id))
+                                ? 'crm-surface-card__selection-item--checked'
+                                : ''
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={selectedCreditIds.includes(Number(credit.id))}
+                                  onChange={(event) =>
+                                    handleToggleCredit(credit.id, event.target.checked)
+                                  }
+                                />
+                              }
+                              label={
+                                <Stack spacing={0.15}>
+                                  <Typography variant="body2" className="crm-text-strong">
+                                    {credit.numero_credito || `Registro ${credit.id}`}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Producto: {credit.producto || 'SIN_PRODUCTO'}
+                                  </Typography>
+                                </Stack>
+                              }
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+
                 <Box className="crm-surface-card__meta-grid crm-negotiations__summary-grid">
                   <NegotiationMetric
                     label="Máximo a cobrar"
                     value={formatCurrency(negotiationContext.effectiveBaseAmount)}
                     helper={
-                      portfolioConfig?.debt_total_saldo_field_label || 'Calculado desde el campo principal'
+                      portfolioConfig?.debt_total_saldo_field_label ||
+                      'Calculado desde el campo principal'
                     }
                   />
                   <NegotiationMetric
                     label="Mínimo por regla"
                     value={
-                      selectedLevel ? formatCurrency(minimumNegotiatedAmount) : 'Selecciona una regla'
-                    }
-                    helper={selectedLevel ? resolveRuleFormula(selectedLevel) : 'Sin fórmula seleccionada'}
-                  />
-                  <NegotiationMetric
-                    label="Monto propuesto"
-                    value={
-                      proposedNegotiatedAmount > 0
-                        ? formatCurrency(proposedNegotiatedAmount)
-                        : 'Pendiente'
+                      selectedLevel
+                        ? formatCurrency(minimumNegotiatedAmount)
+                        : 'Selecciona una regla'
                     }
                     helper={
-                      proposedNegotiatedAmount > 0
-                        ? `Quita estimada: ${formatCurrency(estimatedDiscountAmount)}`
-                        : 'Define el acuerdo a cobrar'
+                      selectedLevel
+                        ? 'Monto mínimo permitido por la regla seleccionada'
+                        : 'Sin fórmula seleccionada'
+                    }
+                  />
+                  <NegotiationMetric
+                    label="Quita estimada"
+                    value={formatCurrency(estimatedDiscountAmount)}
+                    helper={
+                      selectedLevel
+                        ? 'Se calcula sobre el monto a cobrar actual'
+                        : 'Primero elige una regla'
                     }
                   />
                   <NegotiationMetric
@@ -933,76 +1099,25 @@ function NegotiationsWidget({
                         ))}
                       </TextField>
 
-                      <Box className="crm-negotiations__credit-picker">
-                        <Stack spacing={0.85}>
-                          <Typography variant="body2" className="crm-text-strong">
-                            Créditos incluidos
-                          </Typography>
-                          {safeCredits.length === 0 ? (
-                            <Alert severity="warning">
-                              Este cliente no tiene créditos disponibles para negociar.
-                            </Alert>
-                          ) : (
-                            <Box className="crm-negotiations__credit-picker-list">
-                              {safeCredits.map((credit) => (
-                                <Box
-                                  key={`credit-selector-${credit.id}`}
-                                  className={[
-                                    'crm-surface-card__selection-item',
-                                    'crm-negotiations__credit-item',
-                                    selectedCreditIds.includes(Number(credit.id))
-                                      ? 'crm-surface-card__selection-item--checked'
-                                      : ''
-                                  ]
-                                    .filter(Boolean)
-                                    .join(' ')}
-                                >
-                                  <FormControlLabel
-                                    control={
-                                      <Checkbox
-                                        checked={selectedCreditIds.includes(Number(credit.id))}
-                                        onChange={(event) =>
-                                          handleToggleCredit(credit.id, event.target.checked)
-                                        }
-                                      />
-                                    }
-                                    label={
-                                      <Stack spacing={0.15}>
-                                        <Typography variant="body2" className="crm-text-strong">
-                                          {credit.numero_credito || `Registro ${credit.id}`}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                          Producto: {credit.producto || 'SIN_PRODUCTO'}
-                                        </Typography>
-                                      </Stack>
-                                    }
-                                  />
-                                </Box>
-                              ))}
-                            </Box>
-                          )}
-                        </Stack>
-                      </Box>
-
-                      <TextField
-                        label="Referencia"
-                        value={createForm.referencia}
-                        onChange={(event) =>
-                          setCreateForm((prev) => ({ ...prev, referencia: event.target.value }))
-                        }
-                        fullWidth
-                      />
-
                       <TextField
                         label="Observaciones"
                         value={createForm.observaciones}
                         onChange={(event) =>
-                          setCreateForm((prev) => ({ ...prev, observaciones: event.target.value }))
+                          setCreateForm((prev) => ({
+                            ...prev,
+                            observaciones: event.target.value
+                          }))
                         }
                         fullWidth
                         multiline
-                        minRows={2}
+                        minRows={3}
                       />
+
+                      {selectedRuleFormula ? (
+                        <Alert severity="info" className="crm-alert--full-width">
+                          <strong>Fórmula activa:</strong> {selectedRuleFormula}
+                        </Alert>
+                      ) : null}
                     </Stack>
 
                     <Stack spacing={1.25} className="crm-negotiations__composer-column">
@@ -1087,16 +1202,20 @@ function NegotiationsWidget({
                             <CalendarMonthOutlined fontSize="small" />
                             <Box>
                               <Typography variant="body2" className="crm-text-strong">
-                                Calendario estimado
+                                Calendario de pagos
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                Vista previa de fechas y montos por parcialidad.
+                                Puedes editar fechas y montos. La suma debe cuadrar exactamente con
+                                el monto a cobrar.
                               </Typography>
                             </Box>
                           </Stack>
-                          <SchedulePreview
-                            rows={schedulePreview}
+                          <ScheduleEditor
+                            rows={paymentPlanRows}
                             totalAmount={proposedNegotiatedAmount}
+                            differenceAmount={paymentPlanDifference}
+                            onFieldChange={handlePaymentPlanFieldChange}
+                            onReset={handleResetPaymentPlan}
                           />
                         </Stack>
                       </Box>
@@ -1106,7 +1225,12 @@ function NegotiationsWidget({
                           variant="contained"
                           startIcon={<AddTask />}
                           onClick={handleCreateNegotiation}
-                          disabled={saving || levels.length === 0 || safeCredits.length === 0}
+                          disabled={
+                            saving ||
+                            levels.length === 0 ||
+                            safeCredits.length === 0 ||
+                            !paymentPlanReady
+                          }
                         >
                           Iniciar negociación
                         </Button>
@@ -1172,11 +1296,6 @@ function NegotiationsWidget({
                     label: 'Cobro',
                     align: 'right',
                     render: (row) => formatCurrency(row.monto_negociado_total)
-                  },
-                  {
-                    id: 'referencia',
-                    label: 'Referencia',
-                    render: (row) => row.referencia || '-'
                   }
                 ]}
                 rows={history}

@@ -2950,7 +2950,8 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiBox-root.crm-negotiations__credit-picker': {
             ...getInsetSurface(theme),
-            minHeight: 0
+            minHeight: 0,
+            padding: theme.spacing(1.05, 1.1)
           },
           '.MuiBox-root.crm-negotiations__credit-picker-list': {
             display: 'grid',
@@ -3001,9 +3002,28 @@ export const getComponents = (mode = 'light') => {
             backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.04 : 0.1),
             border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)}`
           },
+          '.MuiBox-root.crm-negotiations__schedule-row--editable': {
+            gridTemplateColumns: '64px minmax(150px, 1fr) minmax(126px, 0.82fr)',
+            [theme.breakpoints.down('sm')]: {
+              gridTemplateColumns: '1fr',
+              '& .crm-negotiations__schedule-index': {
+                marginBottom: theme.spacing(0.1)
+              }
+            }
+          },
           '.MuiTypography-root.crm-negotiations__schedule-index': {
             fontWeight: 700,
             color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTextField-root.crm-negotiations__schedule-field': {
+            width: '100%',
+            '& .MuiOutlinedInput-root': {
+              minHeight: 40
+            },
+            '& .MuiOutlinedInput-input': {
+              paddingTop: theme.spacing(1.05),
+              paddingBottom: theme.spacing(1.05)
+            }
           },
           '.MuiTypography-root.crm-negotiations__schedule-date': {
             color: theme.palette.text.primary
