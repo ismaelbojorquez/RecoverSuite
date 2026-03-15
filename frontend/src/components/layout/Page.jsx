@@ -27,6 +27,11 @@ const renderBreadcrumbs = (items, onNavigate) => {
     return null;
   }
 
+  // Skip single, non-actionable breadcrumbs to avoid wasting vertical space.
+  if (items.length === 1 && !items[0]?.href) {
+    return null;
+  }
+
   return (
     <Box className="crm-page__breadcrumbs-shell">
       <Breadcrumbs
@@ -89,6 +94,7 @@ export const PageHeader = ({
   align = 'left'
 }) => {
   const { navigate } = useNavigation();
+  const hasMeta = Boolean(eyebrow || breadcrumbs);
 
   return (
     <Stack
@@ -99,37 +105,50 @@ export const PageHeader = ({
         .filter(Boolean)
         .join(' ')}
     >
-      <Stack className="crm-page__header-copy">
-        {breadcrumbs ? renderBreadcrumbs(breadcrumbs, navigate) : null}
-        {eyebrow && (
-          <Typography
-            variant="overline"
-            color="text.secondary"
-            className="crm-page__eyebrow"
-          >
-            {eyebrow}
-          </Typography>
-        )}
-        {title && (
-          <Typography variant="h4" className="crm-page-title">
-            {title}
-          </Typography>
-        )}
-        {subtitle && (
-          <Typography variant="body2" color="text.secondary" className="crm-page-subtitle">
-            {subtitle}
-          </Typography>
-        )}
-      </Stack>
-      {actions && (
+      {hasMeta && (
         <Stack
           direction="row"
           alignItems="center"
-          className="crm-page__header-actions"
+          useFlexGap
+          flexWrap="wrap"
+          className="crm-page__header-meta"
         >
-          {actions}
+          {breadcrumbs ? renderBreadcrumbs(breadcrumbs, navigate) : null}
+          {eyebrow && (
+            <Typography
+              variant="overline"
+              color="text.secondary"
+              className="crm-page__eyebrow"
+            >
+              {eyebrow}
+            </Typography>
+          )}
         </Stack>
       )}
+
+      <Stack className="crm-page__header-main">
+        <Stack className="crm-page__header-copy">
+          {title && (
+            <Typography variant="h4" className="crm-page-title">
+              {title}
+            </Typography>
+          )}
+          {subtitle && (
+            <Typography variant="body2" color="text.secondary" className="crm-page-subtitle">
+              {subtitle}
+            </Typography>
+          )}
+        </Stack>
+        {actions && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            className="crm-page__header-actions"
+          >
+            {actions}
+          </Stack>
+        )}
+      </Stack>
     </Stack>
   );
 };

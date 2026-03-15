@@ -13,36 +13,36 @@ export const themeBehaviorTokens = Object.freeze({
 });
 
 export const layoutTokens = Object.freeze({
-  drawerExpanded: 272,
-  drawerCollapsed: 96,
-  contentMaxWidth: 1440,
+  drawerExpanded: 256,
+  drawerCollapsed: 88,
+  contentMaxWidth: 1560,
   headerHeight: Object.freeze({
-    xs: 70,
-    md: 76
+    xs: 58,
+    md: 62
   }),
   container: Object.freeze({
-    maxWidth: 1440,
+    maxWidth: 1560,
     paddingY: Object.freeze({
-      xs: 4,
-      md: 5
+      xs: 2.75,
+      md: 3.5
     }),
     paddingX: Object.freeze({
-      xs: 2,
-      sm: 2.5,
-      md: 3.5
+      xs: 1.5,
+      sm: 2,
+      md: 2.75
     })
   }),
   page: Object.freeze({
-    gap: 3.5,
-    sectionGap: 2.75,
-    sectionDenseGap: 1.75,
-    headerGap: 2,
-    headerCopyGap: 0.9,
-    headerActionsGap: 1.1,
-    footerMarginTop: 3
+    gap: 2.8,
+    sectionGap: 2.15,
+    sectionDenseGap: 1.35,
+    headerGap: 1.1,
+    headerCopyGap: 0.45,
+    headerActionsGap: 0.8,
+    footerMarginTop: 2.25
   }),
   grid: Object.freeze({
-    gap: 2.5,
+    gap: 1.9,
     columns: Object.freeze({
       xs: 1,
       sm: 2,
@@ -68,8 +68,8 @@ export const spacingTokens = Object.freeze({
     7: 7,
     8: 8
   }),
-  cardPadding: 3,
-  cardPaddingCompact: 2.25,
+  cardPadding: 2.5,
+  cardPaddingCompact: 1.75,
   pageGap: layoutTokens.page.gap,
   sectionGap: layoutTokens.page.sectionGap,
   sectionDenseGap: layoutTokens.page.sectionDenseGap,
@@ -351,17 +351,17 @@ export const componentTokensByMode = Object.freeze({
     }),
     table: Object.freeze({
       radius: 20,
-      rowHeight: 56,
-      denseRowHeight: 44
+      rowHeight: 50,
+      denseRowHeight: 40
     }),
     input: Object.freeze({
       radius: radiusTokens.sm,
-      minHeight: 48
+      minHeight: 44
     }),
     button: Object.freeze({
       radius: 14,
-      minHeight: 42,
-      minHeightLg: 50
+      minHeight: 40,
+      minHeightLg: 46
     }),
     badge: Object.freeze({
       radius: radiusTokens.pill
@@ -381,17 +381,17 @@ export const componentTokensByMode = Object.freeze({
     }),
     table: Object.freeze({
       radius: 20,
-      rowHeight: 56,
-      denseRowHeight: 44
+      rowHeight: 50,
+      denseRowHeight: 40
     }),
     input: Object.freeze({
       radius: radiusTokens.sm,
-      minHeight: 48
+      minHeight: 44
     }),
     button: Object.freeze({
       radius: 14,
-      minHeight: 42,
-      minHeightLg: 50
+      minHeight: 40,
+      minHeightLg: 46
     }),
     badge: Object.freeze({
       radius: radiusTokens.pill

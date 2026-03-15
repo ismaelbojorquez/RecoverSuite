@@ -194,8 +194,8 @@ export const getComponents = (mode = 'light') => {
       borderAlpha: isLight ? 0.08 : 0.14,
       shadowAlpha: isLight ? 0.05 : 0.12
     }),
-    minHeight: 112,
-    padding: theme.spacing(1.45, 1.6)
+    minHeight: 92,
+    padding: theme.spacing(1.1, 1.3)
   });
 
   return {
@@ -289,7 +289,7 @@ export const getComponents = (mode = 'light') => {
             alignItems: 'center',
             textAlign: 'center',
             gap: theme.spacing(1.5),
-            padding: theme.spacing(3.2, 3),
+            padding: theme.spacing(2.4, 2.3),
             boxShadow: shadow.lg || getCardShadow(theme)
           },
           '.MuiBox-root.crm-app-loader__spinner-shell': {
@@ -323,14 +323,14 @@ export const getComponents = (mode = 'light') => {
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 1.25, 2)),
-            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 2, 1)),
-            paddingBottom: theme.spacing(Math.max(containerPaddingY.xs - 0.5, 2)),
+            gap: theme.spacing(Math.max(pageGap - 1.4, 1.4)),
+            paddingTop: theme.spacing(Math.max(containerPaddingY.xs - 1.9, 0.75)),
+            paddingBottom: theme.spacing(Math.max(containerPaddingY.xs - 0.9, 1.25)),
             paddingLeft: theme.spacing(containerPaddingX.xs),
             paddingRight: theme.spacing(containerPaddingX.xs),
             [theme.breakpoints.up('md')]: {
-              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 2.5, 2)),
-              paddingBottom: theme.spacing(Math.max(containerPaddingY.md - 1, 3)),
+              paddingTop: theme.spacing(Math.max(containerPaddingY.md - 2.45, 1)),
+              paddingBottom: theme.spacing(Math.max(containerPaddingY.md - 1.4, 1.8)),
               paddingLeft: theme.spacing(containerPaddingX.md),
               paddingRight: theme.spacing(containerPaddingX.md)
             },
@@ -353,18 +353,18 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiTypography-root.crm-page-title': {
             fontWeight: pageTypography.title.fontWeight,
-            fontSize: 'clamp(1.5rem, 1.8vw, 1.88rem)',
-            lineHeight: 1.06,
+            fontSize: 'clamp(1.36rem, 1.55vw, 1.72rem)',
+            lineHeight: 1.04,
             letterSpacing: pageTypography.title.letterSpacing,
             color: theme.palette.text.primary
           },
           '.MuiTypography-root.crm-page-subtitle': {
             fontWeight: pageTypography.subtitle.fontWeight,
-            fontSize: '0.95rem',
-            lineHeight: 1.56,
+            fontSize: '0.9rem',
+            lineHeight: 1.48,
             letterSpacing: pageTypography.subtitle.letterSpacing,
             color: theme.palette.text.secondary,
-            maxWidth: 680
+            maxWidth: 620
           },
           '.MuiTypography-root.crm-section-title': {
             fontWeight: sectionTypography.title.fontWeight,
@@ -430,10 +430,10 @@ export const getComponents = (mode = 'light') => {
             }),
             width: '100%',
             maxWidth: 440,
-            padding: theme.spacing(3.1, 2.4),
+            padding: theme.spacing(2.2, 1.8),
             textAlign: 'center',
             [theme.breakpoints.down('sm')]: {
-              padding: theme.spacing(2.4, 1.5)
+              padding: theme.spacing(1.8, 1.2)
             }
           },
           '.MuiBox-root.crm-empty-state__icon-shell': {
@@ -545,7 +545,7 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiStack-root.crm-form': {
             width: '100%',
-            gap: theme.spacing(2.2)
+            gap: theme.spacing(1.6)
           },
           '.MuiFormControl-root.crm-form__field': {
             margin: 0,
@@ -553,8 +553,8 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-form__section': {
             position: 'relative',
-            gap: theme.spacing(1.35),
-            padding: theme.spacing(1.4, 1.45, 1.5),
+            gap: theme.spacing(1),
+            padding: theme.spacing(1.05, 1.1, 1.15),
             borderRadius: 18,
             border: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.06 : 0.12)}`,
             background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.72 : 0.5)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.34 : 0.18)} 100%)`,
@@ -576,17 +576,17 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiBox-root.crm-form__grid': {
             display: 'grid',
-            gap: theme.spacing(1.35),
+            gap: theme.spacing(1),
             gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
             [theme.breakpoints.up('sm')]: {
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
             }
           },
           '.MuiStack-root.crm-form__stack': {
-            gap: theme.spacing(1.35)
+            gap: theme.spacing(1)
           },
           '.MuiStack-root.crm-form__toggle-row': {
-            gap: theme.spacing(1.1),
+            gap: theme.spacing(0.8),
             alignItems: 'center',
             flexWrap: 'wrap'
           },
@@ -633,7 +633,7 @@ export const getComponents = (mode = 'light') => {
             lineHeight: 1.54
           },
           '.MuiStack-root.crm-form__actions': {
-            marginTop: theme.spacing(1.2),
+            marginTop: theme.spacing(0.8),
             justifyContent: 'flex-end',
             alignItems: 'center',
             flexWrap: 'wrap',
@@ -759,12 +759,12 @@ export const getComponents = (mode = 'light') => {
             zIndex: 1,
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(1.2),
-            padding: theme.spacing(2.05, 2.2, 1.7),
+            gap: theme.spacing(0.9),
+            padding: theme.spacing(1.45, 1.7, 1.2),
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
             background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, isLight ? 0.88 : 0.76)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.36 : 0.26)} 100%)`,
             [theme.breakpoints.down('sm')]: {
-              padding: theme.spacing(1.6, 1.3, 1.35)
+              padding: theme.spacing(1.1, 1.1, 1)
             }
           },
           '.MuiBox-root.crm-table-shell__toolbar::after': {
@@ -779,10 +779,10 @@ export const getComponents = (mode = 'light') => {
             zIndex: 1,
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(1.1)
+            gap: theme.spacing(0.8)
           },
           '.MuiStack-root.crm-table-toolbar__top': {
-            gap: theme.spacing(1.1),
+            gap: theme.spacing(0.8),
             [theme.breakpoints.up('md')]: {
               flexDirection: 'row',
               alignItems: 'flex-start',
@@ -825,7 +825,7 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiStack-root.crm-table-toolbar__controls': {
-            gap: theme.spacing(1),
+            gap: theme.spacing(0.8),
             alignItems: 'stretch',
             [theme.breakpoints.up('lg')]: {
               flexDirection: 'row',
@@ -973,27 +973,27 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 1.5, 1.75)),
-            paddingTop: theme.spacing(0.2),
+            gap: theme.spacing(Math.max(pageGap - 1.8, 1.15)),
+            paddingTop: 0,
             paddingBottom: 0
           },
           '.MuiToolbar-root.crm-app-shell__offset': {
-            minHeight: layoutTokens.headerHeight.xs + 10,
+            minHeight: layoutTokens.headerHeight.xs + 2,
             [theme.breakpoints.up('md')]: {
-              minHeight: layoutTokens.headerHeight.md + 12
+              minHeight: layoutTokens.headerHeight.md + 4
             }
           },
 
           '.MuiAppBar-root.crm-app-bar': {
             zIndex: theme.zIndex.drawer + 1,
-            top: 8,
-            right: 8,
+            top: 6,
+            right: 6,
             left: 'auto',
             border: `1px solid ${headerBorder}`,
             backdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             WebkitBackdropFilter: `blur(${blur.md || 14}px) saturate(${surface.saturate || 140}%)`,
             backgroundColor: headerSurface,
-            borderRadius: 16,
+            borderRadius: 14,
             boxShadow: shadow.sm || `0 10px 24px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.18)}`,
             transition: theme.transitions.create(['width', 'margin-left'], {
               duration: motionTokens.standardDurationMs,
@@ -1001,26 +1001,26 @@ export const getComponents = (mode = 'light') => {
             })
           },
           '.MuiAppBar-root.crm-app-bar--expanded': {
-            width: `calc(100% - ${layoutTokens.drawerExpanded + 16}px)`,
-            marginLeft: layoutTokens.drawerExpanded + 8
+            width: `calc(100% - ${layoutTokens.drawerExpanded + 12}px)`,
+            marginLeft: layoutTokens.drawerExpanded + 6
           },
           '.MuiAppBar-root.crm-app-bar--collapsed': {
-            width: `calc(100% - ${layoutTokens.drawerCollapsed + 16}px)`,
-            marginLeft: layoutTokens.drawerCollapsed + 8
+            width: `calc(100% - ${layoutTokens.drawerCollapsed + 12}px)`,
+            marginLeft: layoutTokens.drawerCollapsed + 6
           },
           '.MuiAppBar-root.crm-app-bar--mobile': {
-            width: 'calc(100% - 16px)',
-            marginLeft: 8
+            width: 'calc(100% - 12px)',
+            marginLeft: 6
           },
           '.MuiToolbar-root.crm-app-bar__toolbar': {
-            minHeight: 60,
-            gap: theme.spacing(0.9),
-            paddingLeft: theme.spacing(1),
-            paddingRight: theme.spacing(1),
+            minHeight: 52,
+            gap: theme.spacing(0.7),
+            paddingLeft: theme.spacing(0.75),
+            paddingRight: theme.spacing(0.75),
             [theme.breakpoints.up('md')]: {
-              minHeight: 64,
-              paddingLeft: theme.spacing(1.5),
-              paddingRight: theme.spacing(1.5)
+              minHeight: 56,
+              paddingLeft: theme.spacing(1.1),
+              paddingRight: theme.spacing(1.1)
             }
           },
           '.MuiContainer-root.crm-app-bar__inner': {
@@ -1568,42 +1568,57 @@ export const getComponents = (mode = 'light') => {
           '.MuiBox-root.crm-page__content': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(pageGap - 1.85, 1.35)),
+            gap: theme.spacing(Math.max(pageGap - 2.1, 1.05)),
             width: '100%'
           },
           '.MuiBox-root.crm-page__section': {
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(Math.max(sectionGap - 0.75, 1.5))
+            gap: theme.spacing(Math.max(sectionGap - 1, 1.25))
           },
           '.MuiBox-root.crm-page__section--dense': {
-            gap: theme.spacing(Math.max(sectionDenseGap - 0.5, 1.2))
+            gap: theme.spacing(Math.max(sectionDenseGap - 0.65, 1))
           },
           '.MuiStack-root.crm-page__header': {
             width: '100%',
-            gap: theme.spacing(0.7),
+            gap: theme.spacing(0.35),
             position: 'relative',
-            paddingBottom: theme.spacing(0.8),
+            paddingBottom: 0,
             marginBottom: 0,
-            borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`
+            borderBottom: 0
           },
           '.MuiStack-root.crm-page__header--center': {
             alignItems: 'center',
             textAlign: 'center',
             justifyContent: 'center'
           },
+          '.MuiStack-root.crm-page__header-meta': {
+            gap: theme.spacing(0.5),
+            minWidth: 0
+          },
+          '.MuiStack-root.crm-page__header-main': {
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(0.45),
+            minWidth: 0
+          },
           '.MuiStack-root.crm-page__header--center .MuiBox-root.crm-page__breadcrumbs-shell': {
             alignSelf: 'center'
+          },
+          '.MuiStack-root.crm-page__header--center .MuiStack-root.crm-page__header-main': {
+            alignItems: 'center'
           },
           '.MuiStack-root.crm-page__header--center .MuiStack-root.crm-page__header-actions': {
             justifyContent: 'center'
           },
           '.MuiStack-root.crm-page__header-copy': {
-            gap: theme.spacing(0.35),
-            maxWidth: 720
+            gap: theme.spacing(0.22),
+            maxWidth: 680,
+            minWidth: 0
           },
           '.MuiStack-root.crm-page__header-actions': {
-            gap: theme.spacing(0.8),
+            gap: theme.spacing(0.65),
             flexWrap: 'wrap',
             alignSelf: 'flex-start',
             justifyContent: 'flex-start',
@@ -1616,29 +1631,31 @@ export const getComponents = (mode = 'light') => {
             display: 'inline-flex',
             alignItems: 'center',
             alignSelf: 'flex-start',
-            padding: theme.spacing(0.1, 0.42),
-            borderRadius: 999,
-            border: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`,
-            backgroundColor: surface.cardSoft || alpha(theme.palette.background.paper, isLight ? 0.9 : 0.84),
-            boxShadow: shadow.xs || `0 8px 16px ${alpha(theme.palette.text.primary, isLight ? 0.05 : 0.14)}`,
+            padding: 0,
+            borderRadius: 0,
+            border: 0,
+            backgroundColor: 'transparent',
+            boxShadow: 'none',
             maxWidth: '100%'
           },
           '.MuiTypography-root.crm-page__eyebrow': {
             fontWeight: labelTypography.default.fontWeight,
-            fontSize: labelTypography.default.fontSize,
-            lineHeight: labelTypography.default.lineHeight,
+            fontSize: '0.68rem',
+            lineHeight: 1.25,
             textTransform: labelTypography.default.textTransform,
-            letterSpacing: labelTypography.default.letterSpacing
+            letterSpacing: '0.08em',
+            color: alpha(theme.palette.text.secondary, 0.82)
           },
           '.MuiBreadcrumbs-root.crm-page__breadcrumbs': {
-            fontSize: theme.typography.caption.fontSize,
+            fontSize: '0.72rem',
             color: theme.palette.text.secondary,
             maxWidth: '100%',
             overflow: 'hidden',
+            lineHeight: 1.2,
             '& .MuiBreadcrumbs-separator': {
-              marginLeft: theme.spacing(0.5),
-              marginRight: theme.spacing(0.5),
-              color: alpha(theme.palette.text.secondary, 0.55)
+              marginLeft: theme.spacing(0.35),
+              marginRight: theme.spacing(0.35),
+              color: alpha(theme.palette.text.secondary, 0.42)
             }
           },
           '.MuiLink-root.crm-page__breadcrumb-link': {
@@ -1650,8 +1667,8 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiTypography-root.crm-page__breadcrumb-current': {
-            fontWeight: 650,
-            color: theme.palette.text.primary
+            fontWeight: 600,
+            color: alpha(theme.palette.text.secondary, 0.9)
           },
           '.MuiBox-root.crm-page-grid': {
             display: 'grid',
@@ -1671,21 +1688,21 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiPaper-root.crm-surface-card': {
             ...getCardSurface(theme, { soft: true }),
-            padding: theme.spacing(2.5)
+            padding: theme.spacing(2.1)
           },
           '.MuiPaper-root.crm-surface-card--compact': {
-            padding: theme.spacing(2)
+            padding: theme.spacing(1.55)
           },
           '.MuiPaper-root.crm-surface-card--nested, .MuiPaper-root.crm-surface-card__list-item, .MuiBox-root.crm-surface-card__selection-item': {
             ...getInsetSurface(theme),
-            padding: theme.spacing(1.35, 1.45)
+            padding: theme.spacing(1.05, 1.15)
           },
           '.MuiStack-root.crm-surface-card__header': {
             position: 'relative',
             zIndex: 1,
-            gap: theme.spacing(1.05),
-            paddingBottom: theme.spacing(1.55),
-            marginBottom: theme.spacing(1.65),
+            gap: theme.spacing(0.7),
+            paddingBottom: theme.spacing(1.05),
+            marginBottom: theme.spacing(1.1),
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
           },
           '.MuiStack-root.crm-surface-card__header--split': {
@@ -1821,7 +1838,7 @@ export const getComponents = (mode = 'light') => {
             transformOrigin: 'center'
           },
           '.MuiDialogTitle-root.crm-dialog__title': {
-            padding: theme.spacing(2.35, 3, 1.15),
+            padding: theme.spacing(1.75, 2.4, 1),
             borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.82 : 0.68)}`
           },
           '.MuiStack-root.crm-dialog__title-stack': {
@@ -1837,10 +1854,10 @@ export const getComponents = (mode = 'light') => {
             maxWidth: 680
           },
           '.MuiDialogContent-root.crm-dialog__content': {
-            padding: theme.spacing(2.25, 3),
+            padding: theme.spacing(1.75, 2.4),
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(2),
+            gap: theme.spacing(1.35),
             '& .MuiTextField-root, & .MuiAutocomplete-root, & .MuiFormControl-root': {
               width: '100%'
             },
@@ -1852,24 +1869,24 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiDialogActions-root.crm-dialog__actions': {
-            padding: theme.spacing(1.4, 3, 2.1),
+            padding: theme.spacing(1.05, 2.4, 1.55),
             justifyContent: 'flex-end',
-            gap: theme.spacing(1.2),
+            gap: theme.spacing(0.85),
             borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.8 : 0.64)}`,
             '& > .MuiStack-root': {
               width: '100%',
               alignItems: 'center',
               justifyContent: 'flex-end',
               flexWrap: 'wrap',
-              gap: theme.spacing(1)
+              gap: theme.spacing(0.8)
             }
           },
           '.MuiStack-root.crm-dashboard': {
-            gap: theme.spacing(3.25)
+            gap: theme.spacing(2.2)
           },
           '.MuiPaper-root.crm-dashboard__hero': {
             ...getDashboardGlass(theme),
-            padding: theme.spacing(3.6),
+            padding: theme.spacing(2.5),
             position: 'relative',
             overflow: 'hidden',
             backgroundImage: gradients.dashboardHero,
@@ -1888,7 +1905,7 @@ export const getComponents = (mode = 'light') => {
             position: 'relative',
             zIndex: 1,
             display: 'grid',
-            gap: theme.spacing(2.6),
+            gap: theme.spacing(1.75),
             gridTemplateColumns: 'minmax(0, 1fr)',
             [theme.breakpoints.up('md')]: {
               gridTemplateColumns: 'minmax(0, 1.18fr) minmax(320px, 0.82fr)',
@@ -1900,7 +1917,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-dashboard__hero-copy': {
             maxWidth: 760,
-            gap: theme.spacing(1.2),
+            gap: theme.spacing(0.85),
             justifyContent: 'center'
           },
           '.MuiTypography-root.crm-dashboard__hero-eyebrow': {
@@ -1955,7 +1972,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-dashboard__hero-side': {
             height: '100%',
-            gap: theme.spacing(1.35)
+            gap: theme.spacing(1)
           },
           '.MuiPaper-root.crm-dashboard__control-card, .MuiPaper-root.crm-dashboard__actions-card': {
             ...getInsetSurface(theme, {
@@ -1964,7 +1981,7 @@ export const getComponents = (mode = 'light') => {
               borderAlpha: isLight ? 0.08 : 0.14,
               shadowAlpha: isLight ? 0.06 : 0.14
             }),
-            padding: theme.spacing(2.05),
+            padding: theme.spacing(1.65),
             position: 'relative',
             zIndex: 1,
             overflow: 'hidden'
@@ -1994,7 +2011,7 @@ export const getComponents = (mode = 'light') => {
           '.MuiStack-root.crm-dashboard__control-list': {
             position: 'relative',
             zIndex: 1,
-            gap: theme.spacing(0.9)
+            gap: theme.spacing(0.7)
           },
           '.MuiBox-root.crm-dashboard__control-item': {
             ...getInsetSurface(theme, {
@@ -2006,8 +2023,8 @@ export const getComponents = (mode = 'light') => {
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: theme.spacing(1.4),
-            padding: theme.spacing(1.15, 1.2),
+            gap: theme.spacing(1),
+            padding: theme.spacing(0.95, 1.05),
             minWidth: 0
           },
           '.MuiBox-root.crm-dashboard__control-item--positive': {
@@ -2047,7 +2064,7 @@ export const getComponents = (mode = 'light') => {
             position: 'relative',
             zIndex: 1,
             display: 'grid',
-            gap: theme.spacing(0.85),
+            gap: theme.spacing(0.65),
             gridTemplateColumns: 'minmax(0, 1fr)'
           },
           '.MuiPaper-root.crm-dashboard__quick-action-empty': {
@@ -2057,7 +2074,7 @@ export const getComponents = (mode = 'light') => {
               borderAlpha: isLight ? 0.08 : 0.14,
               shadowAlpha: isLight ? 0.05 : 0.1
             }),
-            padding: theme.spacing(1.3, 1.35),
+            padding: theme.spacing(1, 1.05),
             display: 'flex',
             flexDirection: 'column',
             gap: theme.spacing(0.35)
@@ -2066,7 +2083,7 @@ export const getComponents = (mode = 'light') => {
             width: '100%',
             justifyContent: 'flex-start',
             alignItems: 'stretch',
-            padding: theme.spacing(1.1, 1.2),
+            padding: theme.spacing(0.9, 1),
             minHeight: 0,
             borderRadius: 14,
             textAlign: 'left',
@@ -2111,7 +2128,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-dashboard__hero-kpis': {
             alignItems: 'flex-start',
-            gap: theme.spacing(1.15),
+            gap: theme.spacing(0.8),
             [theme.breakpoints.up('md')]: {
               alignItems: 'flex-end'
             }
@@ -2124,8 +2141,8 @@ export const getComponents = (mode = 'light') => {
               blur: 8,
               shadowAlpha: isLight ? 0.06 : 0.14
             }),
-            minWidth: 176,
-            padding: theme.spacing(1.25, 1.5),
+            minWidth: 164,
+            padding: theme.spacing(0.95, 1.2),
             textAlign: 'right'
           },
           '.MuiChip-root.crm-dashboard__hero-chip': {
@@ -2137,7 +2154,7 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiBox-root.crm-dashboard__metrics-grid': {
             display: 'grid',
-            gap: theme.spacing(2.2),
+            gap: theme.spacing(1.5),
             gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
             [theme.breakpoints.up('sm')]: {
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
@@ -2148,8 +2165,8 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiPaper-root.crm-dashboard__metric-card': {
             ...getDashboardGlass(theme),
-            padding: theme.spacing(2.4),
-            minHeight: 208,
+            padding: theme.spacing(1.8),
+            minHeight: 172,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -2178,7 +2195,7 @@ export const getComponents = (mode = 'light') => {
             position: 'relative',
             zIndex: 1,
             marginTop: 'auto',
-            gap: theme.spacing(1.25)
+            gap: theme.spacing(0.75)
           },
           '.MuiBox-root.crm-dashboard__metric-icon': {
             width: 38,
@@ -2228,7 +2245,7 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiBox-root.crm-dashboard__analytics-grid': {
             display: 'grid',
-            gap: theme.spacing(2.2),
+            gap: theme.spacing(1.5),
             gridTemplateColumns: 'minmax(0, 1fr)',
             [theme.breakpoints.up('lg')]: {
               gridTemplateColumns: 'minmax(0, 1.18fr) minmax(0, 0.82fr)'
@@ -2236,7 +2253,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiPaper-root.crm-dashboard__chart-card': {
             ...getDashboardGlass(theme),
-            padding: theme.spacing(2.5),
+            padding: theme.spacing(1.9),
             animation: `crm-fade-in ${microMotion}`,
             ...getHoverLift(theme),
             minWidth: 0
@@ -2249,13 +2266,13 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiStack-root.crm-dashboard__side-stack': {
             height: '100%',
-            gap: theme.spacing(2.2)
+            gap: theme.spacing(1.5)
           },
           '.MuiStack-root.crm-dashboard__chart-header, .MuiStack-root.crm-dashboard__panel-header': {
             position: 'relative',
             zIndex: 1,
-            paddingBottom: theme.spacing(1.15),
-            marginBottom: theme.spacing(0.25),
+            paddingBottom: theme.spacing(0.8),
+            marginBottom: 0,
             borderBottom: `1px solid ${border.soft || alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
           },
           '.MuiChip-root.crm-dashboard__chart-chip': {
@@ -2331,8 +2348,8 @@ export const getComponents = (mode = 'light') => {
             color: alpha(theme.palette.text.secondary, 0.9)
           },
           '.MuiStack-root.crm-dashboard__mix-list': {
-            marginTop: theme.spacing(0.6),
-            gap: theme.spacing(1.15)
+            marginTop: theme.spacing(0.35),
+            gap: theme.spacing(0.8)
           },
           '.MuiStack-root.crm-dashboard__mix-row': {
             gap: theme.spacing(0.55)
@@ -2352,7 +2369,7 @@ export const getComponents = (mode = 'light') => {
 
           '.MuiBox-root.crm-dashboard__lower-grid': {
             display: 'grid',
-            gap: theme.spacing(2.2),
+            gap: theme.spacing(1.5),
             gridTemplateColumns: 'minmax(0, 1fr)',
             [theme.breakpoints.up('lg')]: {
               gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 0.92fr)'
@@ -2360,7 +2377,7 @@ export const getComponents = (mode = 'light') => {
           },
           '.MuiPaper-root.crm-dashboard__activity-card, .MuiPaper-root.crm-dashboard__indicator-card': {
             ...getDashboardGlass(theme),
-            padding: theme.spacing(2.5),
+            padding: theme.spacing(1.9),
             animation: `crm-fade-in ${microMotion}`,
             ...getHoverLift(theme)
           },
@@ -2447,10 +2464,10 @@ export const getComponents = (mode = 'light') => {
             ...getCardSurface(theme, { soft: true })
           },
           '.MuiPaper-root.crm-client-detail__hero': {
-            padding: theme.spacing(2.7)
+            padding: theme.spacing(2.1)
           },
           '.MuiStack-root.crm-client-detail__hero-header': {
-            gap: theme.spacing(1.6)
+            gap: theme.spacing(1.1)
           },
           '.MuiStack-root.crm-client-detail__hero-copy': {
             maxWidth: 680
@@ -2528,7 +2545,7 @@ export const getComponents = (mode = 'light') => {
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: theme.spacing(2)
+            gap: theme.spacing(1.5)
           },
           '.MuiBox-root.crm-client-detail__summary-col--full, .MuiBox-root.crm-client-detail__financial-col--full': {
             [theme.breakpoints.up('lg')]: {
@@ -2536,9 +2553,9 @@ export const getComponents = (mode = 'light') => {
             }
           },
           '.MuiPaper-root.crm-credit-import__shell': {
-            padding: theme.spacing(2.7),
+            padding: theme.spacing(2.1),
             [theme.breakpoints.down('sm')]: {
-              padding: theme.spacing(1.7, 1.3)
+              padding: theme.spacing(1.25, 1.1)
             }
           },
           '.MuiBox-root.crm-credit-import__stepper-shell': {
@@ -2600,7 +2617,7 @@ export const getComponents = (mode = 'light') => {
             margin: 0
           },
           '.MuiStack-root.crm-credit-import__upload-stack': {
-            minHeight: 280,
+            minHeight: 220,
             padding: theme.spacing(1.4)
           },
           '.MuiBox-root.crm-credit-import__upload-icon': {
@@ -2671,7 +2688,7 @@ export const getComponents = (mode = 'light') => {
         }),
         outlined: ({ theme }) => ({
           ...getCardSurface(theme, { soft: true }),
-          padding: theme.spacing(1.9)
+          padding: theme.spacing(1.5)
         })
       },
       variants: [
@@ -2680,7 +2697,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding + 0.35),
+            padding: theme.spacing(cardPadding + 0.1),
             backgroundImage: gradients.cardSurfaceSoft
           })
         },
@@ -2689,9 +2706,9 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding + 0.5),
+            padding: theme.spacing(cardPadding + 0.15),
             [theme.breakpoints.down('sm')]: {
-              padding: theme.spacing(3)
+              padding: theme.spacing(2.2)
             }
           })
         },
@@ -2700,7 +2717,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding + 0.1)
+            padding: theme.spacing(cardPadding - 0.15)
           })
         },
         {
@@ -2708,7 +2725,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding - 0.25)
+            padding: theme.spacing(cardPadding - 0.55)
           })
         },
         {
@@ -2716,7 +2733,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(2.25, cardPadding),
+            padding: theme.spacing(1.65, cardPadding),
             backgroundImage: gradients.cardSurfaceSoft
           })
         },
@@ -2725,7 +2742,7 @@ export const getComponents = (mode = 'light') => {
           style: ({ theme }) => ({
             ...getCardSurface(theme, { soft: true }),
             ...getHoverLift(theme),
-            padding: theme.spacing(cardPadding - 0.2),
+            padding: theme.spacing(cardPadding - 0.45),
             flex: 1,
             minWidth: 0
           })
@@ -3418,9 +3435,9 @@ export const getComponents = (mode = 'light') => {
             WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).sm || 10}px) saturate(118%)`
           },
           '& .MuiDialog-container': {
-            padding: theme.spacing(2.2),
+            padding: theme.spacing(1.4),
             [theme.breakpoints.up('sm')]: {
-              padding: theme.spacing(3)
+              padding: theme.spacing(2.2)
             }
           }
         }),
@@ -3454,7 +3471,7 @@ export const getComponents = (mode = 'light') => {
     MuiDialogTitle: {
       styleOverrides: {
         root: ({ theme }) => ({
-          padding: theme.spacing(2.35, 3, 1.2),
+          padding: theme.spacing(1.75, 2.4, 1),
           fontWeight: 630,
           letterSpacing: '-0.01em',
           borderBottom: `1px solid ${alpha(theme.palette.divider, isLight ? 0.84 : 0.66)}`
@@ -3465,10 +3482,10 @@ export const getComponents = (mode = 'light') => {
     MuiDialogContent: {
       styleOverrides: {
         root: ({ theme }) => ({
-          padding: theme.spacing(2.3, 3),
+          padding: theme.spacing(1.75, 2.4),
           display: 'flex',
           flexDirection: 'column',
-          gap: theme.spacing(1.9),
+          gap: theme.spacing(1.35),
           '&.MuiDialogContent-dividers': {
             borderTop: 0,
             borderBottom: 0
@@ -3480,9 +3497,9 @@ export const getComponents = (mode = 'light') => {
     MuiDialogActions: {
       styleOverrides: {
         root: ({ theme }) => ({
-          padding: theme.spacing(1.45, 3, 2.15),
+          padding: theme.spacing(1.05, 2.4, 1.55),
           justifyContent: 'flex-end',
-          gap: theme.spacing(1.1),
+          gap: theme.spacing(0.85),
           borderTop: `1px solid ${alpha(theme.palette.divider, isLight ? 0.82 : 0.64)}`,
           backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0)} 0%, ${alpha(theme.palette.background.default, isLight ? 0.18 : 0.28)} 100%)`,
           '& .MuiButton-root': {
@@ -3559,7 +3576,7 @@ export const getComponents = (mode = 'light') => {
             paddingBottom: theme.spacing(1.2)
           },
           '& .MuiTableHead-root .MuiTableRow-root': {
-            height: 54
+            height: 48
           }
         })
       }
@@ -3616,8 +3633,8 @@ export const getComponents = (mode = 'light') => {
           lineHeight: 1.35,
           letterSpacing: '0.09em',
           textTransform: 'uppercase',
-          paddingTop: theme.spacing(1.55),
-          paddingBottom: theme.spacing(1.55),
+          paddingTop: theme.spacing(1.15),
+          paddingBottom: theme.spacing(1.15),
           backgroundColor: (getVisualTokens(theme).surface || {}).tableHead || alpha(theme.palette.background.paper, isLight ? 0.96 : 0.9),
           backdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(120%)`,
           WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px) saturate(120%)`,
@@ -3632,14 +3649,14 @@ export const getComponents = (mode = 'light') => {
           fontWeight: 500
         }),
         root: ({ theme }) => ({
-          padding: theme.spacing(1.75, 2.25),
+          padding: theme.spacing(1.3, 1.75),
           verticalAlign: 'top',
           borderBottom: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.07 : 0.12)}`,
           transition: theme.transitions.create(['border-color', 'background-color', 'box-shadow'], {
             duration: microMotionMs
           }),
           '&.MuiTableCell-sizeSmall': {
-            padding: theme.spacing(1.15, 1.65)
+            padding: theme.spacing(0.95, 1.35)
           },
           '& .MuiTypography-root': {
             maxWidth: '100%'
@@ -3762,11 +3779,11 @@ export const getComponents = (mode = 'light') => {
           WebkitBackdropFilter: `blur(${(getVisualTokens(theme).blur || {}).xs || 6}px)`
         }),
         toolbar: ({ theme }) => ({
-          minHeight: 60,
-          paddingLeft: theme.spacing(2.2),
-          paddingRight: theme.spacing(2.2),
+          minHeight: 52,
+          paddingLeft: theme.spacing(1.6),
+          paddingRight: theme.spacing(1.6),
           color: theme.palette.text.secondary,
-          gap: theme.spacing(1)
+          gap: theme.spacing(0.75)
         }),
         spacer: {
           flex: '1 1 24px'
