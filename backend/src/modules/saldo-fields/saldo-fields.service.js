@@ -11,7 +11,10 @@ import {
   setPortfolioDebtTotalSaldoField,
   updateSaldoField
 } from './saldo-fields.repository.js';
-import { invalidateClientDetailCache } from '../../utils/cache.js';
+import {
+  invalidateClientDetailCache,
+  invalidatePortfoliosCache
+} from '../../utils/cache.js';
 import { Parser } from 'expr-eval';
 
 const allowedFieldTypes = new Set([
@@ -228,6 +231,7 @@ const validateCalculatedField = ({ field, fields }) => {
 
 const invalidateCaches = async (portfolioId) => {
   await invalidateClientDetailCache({ portafolioId: portfolioId });
+  await invalidatePortfoliosCache();
 };
 
 export const listSaldoFieldsService = async ({ portfolioId }) => {

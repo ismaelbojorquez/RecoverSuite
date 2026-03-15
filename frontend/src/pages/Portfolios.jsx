@@ -392,7 +392,7 @@ export default function Portfolios() {
             },
             {
               id: 'debt_total_saldo_field_label',
-              label: 'Adeudo total',
+              label: 'Campo principal',
               render: (row) => (
                 <Typography variant="body2" color="text.secondary">
                   {row.debt_total_saldo_field_label || 'Sin configurar'}
@@ -589,7 +589,11 @@ export default function Portfolios() {
 
       <SaldoFieldsManager
         open={saldoManagerOpen}
-        onClose={() => setSaldoManagerOpen(false)}
+        onClose={() => {
+          setSaldoManagerOpen(false);
+          setSelectedPortfolio(null);
+          loadPortfolios();
+        }}
         portfolio={selectedPortfolio}
       />
 

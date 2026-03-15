@@ -654,16 +654,31 @@ export const createNegotiationService = async ({
     );
     const resolvedBaseAmount = requestedBaseAmount !== null ? requestedBaseAmount : baseFromCredits;
 
+    const formulaNegotiatedAmount = evaluateNegotiationRule({
+      formula: ruleFormula,
+      context: {
+        adeudo_total: resolvedBaseAmount,
+        ...Object.fromEntries(dynamicAggregates.totalsByVariable.entries())
+      }
+    });
+    const minimumNegotiatedAmount = roundCurrency(
+      Math.min(formulaNegotiatedAmount, resolvedBaseAmount)
+    );
+
+    if (
+      requestedNegotiatedAmount !== null &&
+      requestedNegotiatedAmount < minimumNegotiatedAmount
+    ) {
+      throw createHttpError(
+        400,
+        'El monto negociado no puede ser menor al minimo calculado por la regla'
+      );
+    }
+
     const computedNegotiatedAmount =
       requestedNegotiatedAmount !== null
         ? requestedNegotiatedAmount
-        : evaluateNegotiationRule({
-            formula: ruleFormula,
-            context: {
-              adeudo_total: resolvedBaseAmount,
-              ...Object.fromEntries(dynamicAggregates.totalsByVariable.entries())
-            }
-          });
+        : minimumNegotiatedAmount;
 
     assertNegotiationAmounts({
       montoBaseTotal: resolvedBaseAmount,

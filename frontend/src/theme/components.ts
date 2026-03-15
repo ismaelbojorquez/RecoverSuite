@@ -2903,6 +2903,147 @@ export const getComponents = (mode = 'light') => {
             minWidth: 0,
             minHeight: '100%'
           },
+          '.MuiBox-root.crm-negotiations': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: theme.spacing(1.1),
+            minHeight: '100%',
+            height: '100%'
+          },
+          '.MuiBox-root.crm-negotiations__grid': {
+            flex: 1,
+            minHeight: 0,
+            display: 'grid',
+            gap: theme.spacing(1.1),
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            [theme.breakpoints.up('lg')]: {
+              gridTemplateColumns: 'minmax(0, 1.22fr) minmax(340px, 0.78fr)'
+            }
+          },
+          '.MuiPaper-root.crm-negotiations__panel': {
+            minHeight: 0,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          },
+          '.MuiStack-root.crm-negotiations__panel-stack': {
+            minHeight: 0,
+            height: '100%'
+          },
+          '.MuiBox-root.crm-negotiations__summary-grid': {
+            [theme.breakpoints.up('xl')]: {
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__composer-grid': {
+            flex: 1,
+            minHeight: 0,
+            display: 'grid',
+            gap: theme.spacing(1.1),
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            [theme.breakpoints.up('xl')]: {
+              gridTemplateColumns: 'minmax(0, 1.02fr) minmax(320px, 0.98fr)'
+            }
+          },
+          '.MuiStack-root.crm-negotiations__composer-column': {
+            minHeight: 0
+          },
+          '.MuiBox-root.crm-negotiations__credit-picker': {
+            ...getInsetSurface(theme),
+            minHeight: 0
+          },
+          '.MuiBox-root.crm-negotiations__credit-picker-list': {
+            display: 'grid',
+            gap: theme.spacing(0.75),
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            maxHeight: 204,
+            overflow: 'auto',
+            paddingRight: theme.spacing(0.2),
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__credit-item': {
+            minHeight: 0,
+            '& .MuiFormControlLabel-root': {
+              margin: 0,
+              width: '100%',
+              alignItems: 'flex-start'
+            },
+            '& .MuiCheckbox-root': {
+              paddingTop: theme.spacing(0.35)
+            },
+            '& .MuiFormControlLabel-label': {
+              width: '100%'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__terms-grid': {
+            display: 'grid',
+            gap: theme.spacing(1),
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+            [theme.breakpoints.up('sm')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__schedule-panel': {
+            minHeight: 0
+          },
+          '.MuiStack-root.crm-negotiations__schedule-list': {
+            gap: theme.spacing(0.7)
+          },
+          '.MuiBox-root.crm-negotiations__schedule-row': {
+            display: 'grid',
+            gap: theme.spacing(0.75),
+            gridTemplateColumns: '68px minmax(0, 1fr) auto',
+            alignItems: 'center',
+            padding: theme.spacing(0.85, 1),
+            borderRadius: 14,
+            backgroundColor: alpha(theme.palette.primary.main, isLight ? 0.04 : 0.1),
+            border: `1px solid ${alpha(theme.palette.primary.main, isLight ? 0.08 : 0.16)}`
+          },
+          '.MuiTypography-root.crm-negotiations__schedule-index': {
+            fontWeight: 700,
+            color: alpha(theme.palette.text.secondary, 0.9)
+          },
+          '.MuiTypography-root.crm-negotiations__schedule-date': {
+            color: theme.palette.text.primary
+          },
+          '.MuiTypography-root.crm-negotiations__schedule-amount': {
+            fontWeight: 650,
+            color: theme.palette.text.primary,
+            fontVariantNumeric: 'tabular-nums'
+          },
+          '.MuiBox-root.crm-negotiations__schedule-total': {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing(1),
+            paddingTop: theme.spacing(0.35),
+            marginTop: theme.spacing(0.15),
+            borderTop: `1px solid ${alpha(theme.palette.text.primary, isLight ? 0.08 : 0.14)}`
+          },
+          '.MuiBox-root.crm-negotiations__schedule-empty': {
+            padding: theme.spacing(1.1, 0.25, 0.45)
+          },
+          '.MuiBox-root.crm-negotiations__history-table': {
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            '& .crm-table-shell': {
+              height: '100%'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__active-grid': {
+            display: 'grid',
+            gap: theme.spacing(1),
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            [theme.breakpoints.up('md')]: {
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'
+            }
+          },
+          '.MuiBox-root.crm-negotiations__block': {
+            minHeight: 0
+          },
           '.MuiStack-root.crm-gestiones__quick-actions': {
             gap: theme.spacing(0.65)
           },

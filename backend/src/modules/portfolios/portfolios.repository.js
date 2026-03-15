@@ -6,9 +6,9 @@ const selectFields = `
   p.name,
   p.description,
   p.is_active,
-  p.debt_total_saldo_field_id,
-  sf.key AS debt_total_saldo_field_key,
-  sf.label AS debt_total_saldo_field_label,
+  COALESCE(p.debt_total_saldo_field_id, sf_primary.id) AS debt_total_saldo_field_id,
+  COALESCE(sf_config.key, sf_primary.key) AS debt_total_saldo_field_key,
+  COALESCE(sf_config.label, sf_primary.label) AS debt_total_saldo_field_label,
   p.created_at,
   p.updated_at
 `;
@@ -17,7 +17,15 @@ export const listPortfolios = async ({ limit, offset }) => {
   const result = await pool.query(
     `SELECT ${selectFields}
      FROM portfolios p
-     LEFT JOIN saldo_fields sf ON sf.id = p.debt_total_saldo_field_id
+     LEFT JOIN saldo_fields sf_config ON sf_config.id = p.debt_total_saldo_field_id
+     LEFT JOIN LATERAL (
+       SELECT sf.id, sf.key, sf.label
+       FROM saldo_fields sf
+       WHERE sf.portfolio_id = p.id
+         AND sf.is_primary = TRUE
+       ORDER BY sf.id ASC
+       LIMIT 1
+     ) sf_primary ON TRUE
      ORDER BY p.id
      LIMIT $1 OFFSET $2`,
     [limit, offset]
@@ -30,7 +38,15 @@ export const getPortfolioById = async (id) => {
   const result = await pool.query(
     `SELECT ${selectFields}
      FROM portfolios p
-     LEFT JOIN saldo_fields sf ON sf.id = p.debt_total_saldo_field_id
+     LEFT JOIN saldo_fields sf_config ON sf_config.id = p.debt_total_saldo_field_id
+     LEFT JOIN LATERAL (
+       SELECT sf.id, sf.key, sf.label
+       FROM saldo_fields sf
+       WHERE sf.portfolio_id = p.id
+         AND sf.is_primary = TRUE
+       ORDER BY sf.id ASC
+       LIMIT 1
+     ) sf_primary ON TRUE
      WHERE p.id = $1`,
     [id]
   );

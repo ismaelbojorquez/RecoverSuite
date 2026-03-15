@@ -1,5 +1,6 @@
 import {
   AddTask,
+  CalendarMonthOutlined,
   CancelOutlined,
   CheckCircleOutline,
   Percent,
@@ -36,9 +37,12 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
   currency: 'MXN'
 });
-const dateFormatter = new Intl.DateTimeFormat('es-MX', {
+const dateTimeFormatter = new Intl.DateTimeFormat('es-MX', {
   dateStyle: 'medium',
   timeStyle: 'short'
+});
+const dateFormatter = new Intl.DateTimeFormat('es-MX', {
+  dateStyle: 'medium'
 });
 const formulaParser = new Parser({
   operators: {
@@ -51,13 +55,27 @@ const formulaParser = new Parser({
   }
 });
 
-const defaultCreateForm = {
+const PERIODICITY_OPTIONS = [
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'quincenal', label: 'Quincenal' },
+  { value: 'mensual', label: 'Mensual' }
+];
+
+const buildDefaultFirstDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().slice(0, 10);
+};
+
+const createDefaultCreateForm = () => ({
   nivel_descuento_id: '',
   referencia: '',
   observaciones: '',
-  monto_base_total: '',
-  monto_negociado_total: ''
-};
+  monto_negociado_total: '',
+  parcialidades: '1',
+  primera_fecha: buildDefaultFirstDate(),
+  periodicidad: 'quincenal'
+});
 
 const defaultStatusForm = {
   observaciones: '',
@@ -104,6 +122,17 @@ const formatCurrency = (value) => {
   return currencyFormatter.format(parsed);
 };
 
+const formatDate = (value) => {
+  if (!value) {
+    return '-';
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+  return dateFormatter.format(date);
+};
+
 const formatDateTime = (value) => {
   if (!value) {
     return '-';
@@ -112,7 +141,7 @@ const formatDateTime = (value) => {
   if (Number.isNaN(date.getTime())) {
     return '-';
   }
-  return dateFormatter.format(date);
+  return dateTimeFormatter.format(date);
 };
 
 const normalizeCredits = (credits) => (Array.isArray(credits) ? credits : []);
@@ -158,6 +187,133 @@ const evaluateRuleFormula = ({ formula, context }) => {
   }
 };
 
+const parsePositiveInteger = (value, fallback = 1, max = 60) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.min(parsed, max);
+};
+
+const clampNegotiatedAmount = ({ amount, minimumAmount, maximumAmount }) => {
+  const numericAmount = toNumber(amount);
+  if (numericAmount === null) {
+    return null;
+  }
+
+  const floor = Math.max(0, roundCurrency(minimumAmount ?? 0));
+  const ceiling = Math.max(floor, roundCurrency(maximumAmount ?? 0));
+  return roundCurrency(Math.min(Math.max(numericAmount, floor), ceiling));
+};
+
+const addPeriodsToDate = (value, periodicity, index) => {
+  const baseDate = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(baseDate.getTime())) {
+    return null;
+  }
+
+  const nextDate = new Date(baseDate);
+  if (periodicity === 'semanal') {
+    nextDate.setDate(nextDate.getDate() + index * 7);
+    return nextDate;
+  }
+
+  if (periodicity === 'quincenal') {
+    nextDate.setDate(nextDate.getDate() + index * 15);
+    return nextDate;
+  }
+
+  nextDate.setMonth(nextDate.getMonth() + index);
+  return nextDate;
+};
+
+const buildPaymentSchedule = ({
+  totalAmount,
+  installments,
+  firstDate,
+  periodicity
+}) => {
+  const amount = roundCurrency(toNumber(totalAmount) ?? 0);
+  const count = parsePositiveInteger(installments, 1, 60);
+
+  if (!firstDate || amount <= 0 || count <= 0) {
+    return [];
+  }
+
+  const baseAmount = roundCurrency(amount / count);
+  let remaining = amount;
+
+  return Array.from({ length: count }, (_, index) => {
+    const rowAmount =
+      index === count - 1 ? roundCurrency(Math.max(remaining, 0)) : baseAmount;
+    remaining = roundCurrency(remaining - rowAmount);
+
+    return {
+      id: `payment-${index + 1}`,
+      parcialidad: index + 1,
+      fecha: addPeriodsToDate(firstDate, periodicity, index),
+      monto: rowAmount
+    };
+  });
+};
+
+function NegotiationMetric({ label, value, helper }) {
+  return (
+    <Box className="crm-surface-card__meta-item">
+      <Typography variant="caption" className="crm-surface-card__meta-label">
+        {label}
+      </Typography>
+      <Typography variant="body2" className="crm-surface-card__meta-value">
+        {value}
+      </Typography>
+      {helper ? (
+        <Typography variant="caption" color="text.secondary">
+          {helper}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
+function SchedulePreview({ rows = [], totalAmount = 0 }) {
+  if (!rows.length) {
+    return (
+      <Box className="crm-negotiations__schedule-empty">
+        <Typography variant="body2" color="text.secondary">
+          Selecciona una regla y define las parcialidades para visualizar el calendario propuesto.
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Stack spacing={1} className="crm-negotiations__schedule-list">
+      {rows.map((row) => (
+        <Box key={row.id} className="crm-negotiations__schedule-row">
+          <Typography variant="caption" className="crm-negotiations__schedule-index">
+            Pago {row.parcialidad}
+          </Typography>
+          <Typography variant="body2" className="crm-negotiations__schedule-date">
+            {formatDate(row.fecha)}
+          </Typography>
+          <Typography variant="body2" className="crm-negotiations__schedule-amount">
+            {formatCurrency(row.monto)}
+          </Typography>
+        </Box>
+      ))}
+      <Box className="crm-negotiations__schedule-total">
+        <Typography variant="caption" color="text.secondary">
+          Total programado
+        </Typography>
+        <Typography variant="body2" className="crm-negotiations__schedule-amount">
+          {formatCurrency(totalAmount)}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
+
 function NegotiationsWidget({
   clientId,
   portafolioId,
@@ -175,7 +331,7 @@ function NegotiationsWidget({
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const [createForm, setCreateForm] = useState(defaultCreateForm);
+  const [createForm, setCreateForm] = useState(() => createDefaultCreateForm());
   const [selectedCreditIds, setSelectedCreditIds] = useState([]);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusAction, setStatusAction] = useState('cerrada');
@@ -304,23 +460,20 @@ function NegotiationsWidget({
     });
 
     const computedBaseAmount = roundCurrency(adeudoTotal);
-    const manualBaseAmount = toNumber(createForm.monto_base_total);
-    const effectiveBaseAmount =
-      manualBaseAmount !== null ? roundCurrency(manualBaseAmount) : computedBaseAmount;
 
     return {
       computedBaseAmount,
-      effectiveBaseAmount,
+      effectiveBaseAmount: computedBaseAmount,
       variables: Object.fromEntries(totalsByVariable.entries())
     };
-  }, [configuredDebtFieldId, createForm.monto_base_total, selectedCredits]);
+  }, [configuredDebtFieldId, selectedCredits]);
 
   const selectedRuleFormula = useMemo(
     () => (selectedLevel ? resolveRuleFormula(selectedLevel) : ''),
     [selectedLevel]
   );
 
-  const negotiatedEstimate = useMemo(() => {
+  const ruleMinimumAmount = useMemo(() => {
     if (!selectedRuleFormula) {
       return 0;
     }
@@ -333,6 +486,98 @@ function NegotiationsWidget({
       }
     });
   }, [negotiationContext.effectiveBaseAmount, negotiationContext.variables, selectedRuleFormula]);
+
+  const minimumNegotiatedAmount = useMemo(() => {
+    if (negotiationContext.effectiveBaseAmount <= 0) {
+      return 0;
+    }
+
+    return roundCurrency(
+      Math.min(ruleMinimumAmount, negotiationContext.effectiveBaseAmount)
+    );
+  }, [negotiationContext.effectiveBaseAmount, ruleMinimumAmount]);
+
+  const selectedCreditCount = selectedCredits.length;
+  const normalizedInstallments = useMemo(
+    () => parsePositiveInteger(createForm.parcialidades, 1, 60),
+    [createForm.parcialidades]
+  );
+
+  const proposedNegotiatedAmount = useMemo(() => {
+    const maximumAmount = negotiationContext.effectiveBaseAmount;
+    if (maximumAmount <= 0) {
+      return 0;
+    }
+
+    const clamped = clampNegotiatedAmount({
+      amount: createForm.monto_negociado_total,
+      minimumAmount: minimumNegotiatedAmount,
+      maximumAmount
+    });
+
+    if (clamped !== null) {
+      return clamped;
+    }
+
+    return minimumNegotiatedAmount;
+  }, [
+    createForm.monto_negociado_total,
+    minimumNegotiatedAmount,
+    negotiationContext.effectiveBaseAmount
+  ]);
+
+  const estimatedDiscountAmount = useMemo(() => {
+    if (negotiationContext.effectiveBaseAmount <= 0 || proposedNegotiatedAmount <= 0) {
+      return 0;
+    }
+
+    return roundCurrency(
+      Math.max(negotiationContext.effectiveBaseAmount - proposedNegotiatedAmount, 0)
+    );
+  }, [negotiationContext.effectiveBaseAmount, proposedNegotiatedAmount]);
+
+  const schedulePreview = useMemo(
+    () =>
+      buildPaymentSchedule({
+        totalAmount: proposedNegotiatedAmount,
+        installments: normalizedInstallments,
+        firstDate: createForm.primera_fecha,
+        periodicity: createForm.periodicidad
+      }),
+    [
+      createForm.periodicidad,
+      createForm.primera_fecha,
+      normalizedInstallments,
+      proposedNegotiatedAmount
+    ]
+  );
+
+  useEffect(() => {
+    if (!selectedLevel || negotiationContext.effectiveBaseAmount <= 0) {
+      return;
+    }
+
+    setCreateForm((prev) => {
+      const currentValue = toNumber(prev.monto_negociado_total);
+
+      if (
+        currentValue !== null &&
+        currentValue >= minimumNegotiatedAmount &&
+        currentValue <= negotiationContext.effectiveBaseAmount
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        monto_negociado_total: String(minimumNegotiatedAmount)
+      };
+    });
+  }, [
+    minimumNegotiatedAmount,
+    negotiationContext.effectiveBaseAmount,
+    selectedLevel
+  ]);
 
   const handleToggleCredit = (creditId, checked) => {
     const resolvedId = Number.parseInt(creditId, 10);
@@ -351,6 +596,27 @@ function NegotiationsWidget({
     });
   };
 
+  const handleNormalizeNegotiatedAmount = () => {
+    const normalizedAmount = clampNegotiatedAmount({
+      amount: createForm.monto_negociado_total,
+      minimumAmount: minimumNegotiatedAmount,
+      maximumAmount: negotiationContext.effectiveBaseAmount
+    });
+
+    setCreateForm((prev) => ({
+      ...prev,
+      monto_negociado_total:
+        normalizedAmount === null ? '' : String(normalizedAmount)
+    }));
+  };
+
+  const handleNormalizeInstallments = () => {
+    setCreateForm((prev) => ({
+      ...prev,
+      parcialidades: String(parsePositiveInteger(prev.parcialidades, 1, 60))
+    }));
+  };
+
   const handleCreateNegotiation = async () => {
     const nivelDescuentoId = Number.parseInt(createForm.nivel_descuento_id, 10);
     if (!Number.isInteger(nivelDescuentoId) || nivelDescuentoId <= 0) {
@@ -360,6 +626,16 @@ function NegotiationsWidget({
 
     if (selectedCreditIds.length === 0) {
       setError('Selecciona al menos un crédito para negociar.');
+      return;
+    }
+
+    if (negotiationContext.effectiveBaseAmount <= 0) {
+      setError('No hay un monto base válido para calcular la negociación.');
+      return;
+    }
+
+    if (proposedNegotiatedAmount < minimumNegotiatedAmount) {
+      setError('El monto a cobrar no puede ser menor al mínimo calculado por la regla.');
       return;
     }
 
@@ -373,15 +649,11 @@ function NegotiationsWidget({
         credito_ids: selectedCreditIds,
         referencia: createForm.referencia.trim() || undefined,
         observaciones: createForm.observaciones.trim() || undefined,
-        monto_base_total: createForm.monto_base_total
-          ? Number.parseFloat(createForm.monto_base_total)
-          : undefined,
-        monto_negociado_total: createForm.monto_negociado_total
-          ? Number.parseFloat(createForm.monto_negociado_total)
-          : undefined
+        monto_base_total: negotiationContext.effectiveBaseAmount,
+        monto_negociado_total: proposedNegotiatedAmount || undefined
       });
       notify('Negociación iniciada', { severity: 'success' });
-      setCreateForm(defaultCreateForm);
+      setCreateForm(createDefaultCreateForm());
       await loadData();
     } catch (err) {
       setError(err.message || 'No fue posible crear la negociación.');
@@ -449,392 +721,478 @@ function NegotiationsWidget({
   }
 
   return (
-    <Stack spacing={2}>
+    <Box className="crm-negotiations">
       {error && (
         <Alert severity="error" onClose={() => setError('')}>
           {error}
         </Alert>
       )}
 
-      <Paper variant="panel-sm">
-        <Stack spacing={2}>
-          <Stack className="crm-surface-card__header crm-surface-card__header--split">
-            <Stack className="crm-surface-card__header-main">
-              <Typography variant="overline" className="crm-surface-card__eyebrow">
-                Negociación
-              </Typography>
-              <Typography variant="subtitle1" className="crm-surface-card__title">
-                Regla activa
-              </Typography>
-              <Typography variant="caption" className="crm-surface-card__subtitle">
-                Solo puede existir una negociación activa por cliente, incluso si tiene múltiples créditos.
-              </Typography>
-            </Stack>
-            <Stack direction="row" className="crm-surface-card__actions">
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Refresh />}
-                onClick={() => loadData()}
-                disabled={loading}
-              >
-                Actualizar
-              </Button>
-            </Stack>
-          </Stack>
-
-          {loading ? (
-            <Stack spacing={1}>
-              <Skeleton width={220} />
-              <Skeleton width="70%" />
-              <Skeleton width="50%" />
-            </Stack>
-          ) : !activeNegotiation ? (
-            <EmptyState
-              title="Sin negociación activa"
-              description="Puedes iniciar una nueva negociación desde el formulario inferior."
-              icon={Percent}
-              dense
-            />
-          ) : (
-            <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
-                <Chip color="primary" label={`Regla: ${activeNegotiation.nivel_descuento_nombre}`} />
-                <Chip
-                  variant="outlined"
-                  label={`Base: ${formatCurrency(activeNegotiation.monto_base_total)}`}
-                />
-                <Chip
-                  variant="outlined"
-                  label={`Negociado: ${formatCurrency(activeNegotiation.monto_negociado_total)}`}
-                />
-                <Chip
-                  color="warning"
-                  variant="outlined"
-                  label={`Quita total: ${formatCurrency(activeNegotiation.monto_descuento_total)}`}
-                />
-              </Stack>
-
-              <Typography variant="body2" color="text.secondary">
-                Fórmula aplicada: {resolveRuleFormula(activeNegotiation)}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                Iniciada: {formatDateTime(activeNegotiation.fecha_inicio)}
-              </Typography>
-              {activeNegotiation.referencia ? (
-                <Typography variant="body2">
-                  Referencia: {activeNegotiation.referencia}
+      <Box className="crm-negotiations__grid">
+        <Paper variant="panel-sm" className="crm-negotiations__panel">
+          <Stack spacing={1.5} className="crm-negotiations__panel-stack">
+            <Stack className="crm-surface-card__header crm-surface-card__header--split">
+              <Stack className="crm-surface-card__header-main">
+                <Typography variant="overline" className="crm-surface-card__eyebrow">
+                  Negociación
                 </Typography>
-              ) : null}
-              {activeNegotiation.observaciones ? (
-                <Typography variant="body2">{activeNegotiation.observaciones}</Typography>
-              ) : null}
-
-              <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
-                {(activeNegotiation.creditos || []).map((credit) => (
-                  <Chip
-                    key={`active-credit-${activeNegotiation.id}-${credit.credito_id}`}
-                    size="small"
-                    label={credit.numero_credito || `Credito ${credit.credito_id}`}
-                    variant="outlined"
-                  />
-                ))}
+                <Typography variant="subtitle1" className="crm-surface-card__title">
+                  {activeNegotiation ? 'Acuerdo activo' : 'Nuevo acuerdo'}
+                </Typography>
+                <Typography variant="caption" className="crm-surface-card__subtitle">
+                  El asesor ve primero el monto máximo a cobrar, el mínimo permitido por la regla
+                  y una propuesta de parcialidades sin salir del expediente.
+                </Typography>
               </Stack>
-
-              {canWrite && (
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} className="crm-surface-card__action-row">
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<CheckCircleOutline />}
-                    onClick={() => openStatusDialog('cerrada')}
-                  >
-                    Cerrar negociación
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="warning"
-                    startIcon={<CancelOutlined />}
-                    onClick={() => openStatusDialog('cancelada')}
-                  >
-                    Cancelar negociación
-                  </Button>
-                </Stack>
-              )}
+              <Stack direction="row" className="crm-surface-card__actions">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Refresh />}
+                  onClick={() => loadData()}
+                  disabled={loading}
+                >
+                  Actualizar
+                </Button>
+              </Stack>
             </Stack>
-          )}
-        </Stack>
-      </Paper>
 
-      {canWrite && (
-        <Paper variant="panel-sm">
-          <Stack spacing={2}>
+            {loading ? (
+              <Stack spacing={1}>
+                <Skeleton width={220} />
+                <Skeleton width="100%" height={74} />
+                <Skeleton width="100%" height={200} />
+              </Stack>
+            ) : activeNegotiation ? (
+              <>
+                <Box className="crm-surface-card__meta-grid crm-negotiations__summary-grid">
+                  <NegotiationMetric
+                    label="Regla aplicada"
+                    value={activeNegotiation.nivel_descuento_nombre || '-'}
+                    helper={resolveRuleFormula(activeNegotiation)}
+                  />
+                  <NegotiationMetric
+                    label="Monto base"
+                    value={formatCurrency(activeNegotiation.monto_base_total)}
+                  />
+                  <NegotiationMetric
+                    label="Monto negociado"
+                    value={formatCurrency(activeNegotiation.monto_negociado_total)}
+                  />
+                  <NegotiationMetric
+                    label="Quita total"
+                    value={formatCurrency(activeNegotiation.monto_descuento_total)}
+                    helper={`Inicio: ${formatDateTime(activeNegotiation.fecha_inicio)}`}
+                  />
+                </Box>
+
+                <Box className="crm-negotiations__active-grid">
+                  <Box className="crm-surface-card__selection-item crm-negotiations__block">
+                    <Stack spacing={1}>
+                      <Typography variant="body2" className="crm-text-strong">
+                        Créditos incluidos
+                      </Typography>
+                      <Stack direction="row" className="crm-surface-card__badge-row">
+                        {(activeNegotiation.creditos || []).map((credit) => (
+                          <Chip
+                            key={`active-credit-${activeNegotiation.id}-${credit.credito_id}`}
+                            size="small"
+                            label={credit.numero_credito || `Registro ${credit.credito_id}`}
+                            variant="outlined"
+                          />
+                        ))}
+                      </Stack>
+                      {activeNegotiation.referencia ? (
+                        <Typography variant="body2">
+                          Referencia: {activeNegotiation.referencia}
+                        </Typography>
+                      ) : null}
+                      {activeNegotiation.observaciones ? (
+                        <Typography variant="body2" color="text.secondary">
+                          {activeNegotiation.observaciones}
+                        </Typography>
+                      ) : null}
+                    </Stack>
+                  </Box>
+
+                  <Box className="crm-surface-card__selection-item crm-negotiations__block">
+                    <Stack spacing={1}>
+                      <Typography variant="body2" className="crm-text-strong">
+                        Gestión del acuerdo
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Mientras exista esta negociación activa no se podrá crear otra para el
+                        cliente.
+                      </Typography>
+                      {canWrite ? (
+                        <Stack
+                          direction={{ xs: 'column', sm: 'row' }}
+                          spacing={1}
+                          className="crm-surface-card__action-row"
+                        >
+                          <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={<CheckCircleOutline />}
+                            onClick={() => openStatusDialog('cerrada')}
+                          >
+                            Cerrar negociación
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="warning"
+                            startIcon={<CancelOutlined />}
+                            onClick={() => openStatusDialog('cancelada')}
+                          >
+                            Cancelar negociación
+                          </Button>
+                        </Stack>
+                      ) : null}
+                    </Stack>
+                  </Box>
+                </Box>
+              </>
+            ) : (
+              <>
+                {levels.length === 0 ? (
+                  <Alert severity="warning">
+                    No tienes reglas autorizadas para negociar. Solicita la asignación al
+                    administrador.
+                  </Alert>
+                ) : null}
+
+                {!portfolioConfig?.debt_total_saldo_field_id ? (
+                  <Alert severity="info">
+                    El portafolio no tiene configurado el <strong>campo principal</strong>. Se
+                    usará el saldo principal detectado en cada crédito como base de cálculo.
+                  </Alert>
+                ) : null}
+
+                <Box className="crm-surface-card__meta-grid crm-negotiations__summary-grid">
+                  <NegotiationMetric
+                    label="Máximo a cobrar"
+                    value={formatCurrency(negotiationContext.effectiveBaseAmount)}
+                    helper={
+                      portfolioConfig?.debt_total_saldo_field_label || 'Calculado desde el campo principal'
+                    }
+                  />
+                  <NegotiationMetric
+                    label="Mínimo por regla"
+                    value={
+                      selectedLevel ? formatCurrency(minimumNegotiatedAmount) : 'Selecciona una regla'
+                    }
+                    helper={selectedLevel ? resolveRuleFormula(selectedLevel) : 'Sin fórmula seleccionada'}
+                  />
+                  <NegotiationMetric
+                    label="Monto propuesto"
+                    value={
+                      proposedNegotiatedAmount > 0
+                        ? formatCurrency(proposedNegotiatedAmount)
+                        : 'Pendiente'
+                    }
+                    helper={
+                      proposedNegotiatedAmount > 0
+                        ? `Quita estimada: ${formatCurrency(estimatedDiscountAmount)}`
+                        : 'Define el acuerdo a cobrar'
+                    }
+                  />
+                  <NegotiationMetric
+                    label="Parcialidades"
+                    value={`${normalizedInstallments}`}
+                    helper={`${selectedCreditCount} crédito${selectedCreditCount === 1 ? '' : 's'} incluido${selectedCreditCount === 1 ? '' : 's'}`}
+                  />
+                </Box>
+
+                {!canWrite ? (
+                  <Alert severity="info">
+                    Tu perfil puede consultar el histórico y los montos sugeridos, pero no iniciar
+                    nuevas negociaciones.
+                  </Alert>
+                ) : (
+                  <Box className="crm-negotiations__composer-grid">
+                    <Stack spacing={1.25} className="crm-negotiations__composer-column">
+                      <TextField
+                        select
+                        label="Regla de negociación"
+                        value={createForm.nivel_descuento_id}
+                        onChange={(event) =>
+                          setCreateForm((prev) => ({
+                            ...prev,
+                            nivel_descuento_id: event.target.value
+                          }))
+                        }
+                        SelectProps={{ native: true }}
+                        disabled={levels.length === 0}
+                        fullWidth
+                      >
+                        <option value="">Selecciona una regla</option>
+                        {levels.map((level) => (
+                          <option key={`level-${level.id}`} value={level.id}>
+                            {level.nombre}
+                          </option>
+                        ))}
+                      </TextField>
+
+                      <Box className="crm-negotiations__credit-picker">
+                        <Stack spacing={0.85}>
+                          <Typography variant="body2" className="crm-text-strong">
+                            Créditos incluidos
+                          </Typography>
+                          {safeCredits.length === 0 ? (
+                            <Alert severity="warning">
+                              Este cliente no tiene créditos disponibles para negociar.
+                            </Alert>
+                          ) : (
+                            <Box className="crm-negotiations__credit-picker-list">
+                              {safeCredits.map((credit) => (
+                                <Box
+                                  key={`credit-selector-${credit.id}`}
+                                  className={[
+                                    'crm-surface-card__selection-item',
+                                    'crm-negotiations__credit-item',
+                                    selectedCreditIds.includes(Number(credit.id))
+                                      ? 'crm-surface-card__selection-item--checked'
+                                      : ''
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                >
+                                  <FormControlLabel
+                                    control={
+                                      <Checkbox
+                                        checked={selectedCreditIds.includes(Number(credit.id))}
+                                        onChange={(event) =>
+                                          handleToggleCredit(credit.id, event.target.checked)
+                                        }
+                                      />
+                                    }
+                                    label={
+                                      <Stack spacing={0.15}>
+                                        <Typography variant="body2" className="crm-text-strong">
+                                          {credit.numero_credito || `Registro ${credit.id}`}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          Producto: {credit.producto || 'SIN_PRODUCTO'}
+                                        </Typography>
+                                      </Stack>
+                                    }
+                                  />
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </Stack>
+                      </Box>
+
+                      <TextField
+                        label="Referencia"
+                        value={createForm.referencia}
+                        onChange={(event) =>
+                          setCreateForm((prev) => ({ ...prev, referencia: event.target.value }))
+                        }
+                        fullWidth
+                      />
+
+                      <TextField
+                        label="Observaciones"
+                        value={createForm.observaciones}
+                        onChange={(event) =>
+                          setCreateForm((prev) => ({ ...prev, observaciones: event.target.value }))
+                        }
+                        fullWidth
+                        multiline
+                        minRows={2}
+                      />
+                    </Stack>
+
+                    <Stack spacing={1.25} className="crm-negotiations__composer-column">
+                      <Box className="crm-negotiations__terms-grid">
+                        <TextField
+                          label="Monto a cobrar"
+                          type="number"
+                          value={createForm.monto_negociado_total}
+                          onChange={(event) =>
+                            setCreateForm((prev) => ({
+                              ...prev,
+                              monto_negociado_total: event.target.value
+                            }))
+                          }
+                          onBlur={handleNormalizeNegotiatedAmount}
+                          inputProps={{
+                            min: minimumNegotiatedAmount || 0,
+                            max: negotiationContext.effectiveBaseAmount || 0,
+                            step: '0.01'
+                          }}
+                          helperText={
+                            selectedLevel
+                              ? `Mínimo permitido: ${formatCurrency(minimumNegotiatedAmount)}`
+                              : 'Selecciona una regla para calcular el mínimo permitido'
+                          }
+                          fullWidth
+                        />
+
+                        <TextField
+                          label="Parcialidades"
+                          type="number"
+                          value={createForm.parcialidades}
+                          onChange={(event) =>
+                            setCreateForm((prev) => ({
+                              ...prev,
+                              parcialidades: event.target.value
+                            }))
+                          }
+                          onBlur={handleNormalizeInstallments}
+                          inputProps={{ min: 1, max: 60, step: 1 }}
+                          fullWidth
+                        />
+
+                        <TextField
+                          label="Primera fecha de pago"
+                          type="date"
+                          value={createForm.primera_fecha}
+                          onChange={(event) =>
+                            setCreateForm((prev) => ({
+                              ...prev,
+                              primera_fecha: event.target.value
+                            }))
+                          }
+                          InputLabelProps={{ shrink: true }}
+                          fullWidth
+                        />
+
+                        <TextField
+                          select
+                          label="Periodicidad"
+                          value={createForm.periodicidad}
+                          onChange={(event) =>
+                            setCreateForm((prev) => ({
+                              ...prev,
+                              periodicidad: event.target.value
+                            }))
+                          }
+                          SelectProps={{ native: true }}
+                          fullWidth
+                        >
+                          {PERIODICITY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </TextField>
+                      </Box>
+
+                      <Box className="crm-surface-card__selection-item crm-negotiations__schedule-panel">
+                        <Stack spacing={1.1}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <CalendarMonthOutlined fontSize="small" />
+                            <Box>
+                              <Typography variant="body2" className="crm-text-strong">
+                                Calendario estimado
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Vista previa de fechas y montos por parcialidad.
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          <SchedulePreview
+                            rows={schedulePreview}
+                            totalAmount={proposedNegotiatedAmount}
+                          />
+                        </Stack>
+                      </Box>
+
+                      <Stack direction="row" className="crm-surface-card__action-row">
+                        <Button
+                          variant="contained"
+                          startIcon={<AddTask />}
+                          onClick={handleCreateNegotiation}
+                          disabled={saving || levels.length === 0 || safeCredits.length === 0}
+                        >
+                          Iniciar negociación
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Box>
+                )}
+              </>
+            )}
+          </Stack>
+        </Paper>
+
+        <Paper variant="panel-sm" className="crm-negotiations__panel crm-negotiations__history-panel">
+          <Stack spacing={1.25} className="crm-negotiations__panel-stack">
             <Stack className="crm-surface-card__header">
               <Stack className="crm-surface-card__header-main">
                 <Typography variant="overline" className="crm-surface-card__eyebrow">
-                  Configuración
+                  Histórico
                 </Typography>
                 <Typography variant="subtitle1" className="crm-surface-card__title">
-                  Iniciar nueva negociación
+                  Negociaciones anteriores
                 </Typography>
                 <Typography variant="body2" className="crm-surface-card__subtitle">
-                  Selecciona la regla, los créditos incluidos y el marco base del acuerdo.
+                  Revisa rápidamente acuerdos cerrados o cancelados sin salir del flujo actual.
                 </Typography>
               </Stack>
             </Stack>
 
-            {activeNegotiation ? (
-              <Alert severity="info">
-                Este cliente ya tiene una negociación activa. Ciérrala o cancélala para iniciar otra.
-              </Alert>
-            ) : null}
-
-            {!activeNegotiation && levels.length === 0 ? (
-              <Alert severity="warning">
-                No tienes reglas autorizadas para negociar. Solicita asignación al administrador.
-              </Alert>
-            ) : null}
-
-            {!activeNegotiation && !portfolioConfig?.debt_total_saldo_field_id ? (
-              <Alert severity="info">
-                El portafolio no tiene configurado el campo de <strong>adeudo total</strong>.
-                Se usará el saldo principal detectado en cada crédito como base de cálculo.
-              </Alert>
-            ) : null}
-
-            <TextField
-              select
-              label="Regla de negociación"
-              value={createForm.nivel_descuento_id}
-              onChange={(event) =>
-                setCreateForm((prev) => ({
-                  ...prev,
-                  nivel_descuento_id: event.target.value
-                }))
-              }
-              SelectProps={{ native: true }}
-              disabled={Boolean(activeNegotiation) || levels.length === 0}
-              fullWidth
-            >
-              <option value="">Selecciona una regla</option>
-              {levels.map((level) => (
-                <option key={`level-${level.id}`} value={level.id}>
-                  {level.nombre}
-                </option>
-              ))}
-            </TextField>
-
-            {selectedRuleFormula ? (
-              <Alert severity="info">
-                <strong>Fórmula activa:</strong> {selectedRuleFormula}
-              </Alert>
-            ) : null}
-
-            <Stack spacing={1}>
-              <Typography variant="body2" className="crm-text-strong">
-                Créditos incluidos
-              </Typography>
-              {safeCredits.length === 0 ? (
-                <Alert severity="warning">Este cliente no tiene créditos para negociar.</Alert>
-              ) : (
-                <Stack spacing={0.75}>
-                  {safeCredits.map((credit) => (
-                    <Box
-                      key={`credit-selector-${credit.id}`}
-                      className={[
-                        'crm-surface-card__selection-item',
-                        selectedCreditIds.includes(Number(credit.id))
-                          ? 'crm-surface-card__selection-item--checked'
-                          : ''
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    >
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={selectedCreditIds.includes(Number(credit.id))}
-                            onChange={(event) => handleToggleCredit(credit.id, event.target.checked)}
-                            disabled={Boolean(activeNegotiation)}
-                          />
+            <Box className="crm-negotiations__history-table">
+              <BaseTable
+                dense
+                loading={loading}
+                columns={[
+                  {
+                    id: 'fecha_inicio',
+                    label: 'Inicio',
+                    render: (row) => formatDate(row.fecha_inicio)
+                  },
+                  {
+                    id: 'estado',
+                    label: 'Estado',
+                    render: (row) => (
+                      <Chip
+                        size="small"
+                        color={
+                          row.estado === 'cerrada'
+                            ? 'success'
+                            : row.estado === 'cancelada'
+                              ? 'default'
+                              : 'warning'
                         }
-                        label={
-                          <Stack spacing={0.15}>
-                            <Typography variant="body2" className="crm-text-strong">
-                              {credit.numero_credito || `Credito ${credit.id}`}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Producto: {credit.producto || 'SIN_PRODUCTO'}
-                            </Typography>
-                          </Stack>
-                        }
+                        label={String(row.estado || '').toUpperCase()}
                       />
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <TextField
-                label="Monto base total (opcional)"
-                type="number"
-                value={createForm.monto_base_total}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, monto_base_total: event.target.value }))
+                    )
+                  },
+                  {
+                    id: 'nivel_descuento_nombre',
+                    label: 'Regla',
+                    render: (row) => row.nivel_descuento_nombre || '-'
+                  },
+                  {
+                    id: 'monto_negociado_total',
+                    label: 'Cobro',
+                    align: 'right',
+                    render: (row) => formatCurrency(row.monto_negociado_total)
+                  },
+                  {
+                    id: 'referencia',
+                    label: 'Referencia',
+                    render: (row) => row.referencia || '-'
+                  }
+                ]}
+                rows={history}
+                emptyContent={
+                  <EmptyState
+                    dense
+                    title="Sin historial"
+                    description="Todavía no hay negociaciones cerradas o canceladas para este cliente."
+                    icon={Percent}
+                  />
                 }
-                inputProps={{ min: 0, step: '0.01' }}
-                fullWidth
-                disabled={Boolean(activeNegotiation)}
               />
-              <TextField
-                label="Monto negociado total (opcional)"
-                type="number"
-                value={createForm.monto_negociado_total}
-                onChange={(event) =>
-                  setCreateForm((prev) => ({ ...prev, monto_negociado_total: event.target.value }))
-                }
-                inputProps={{ min: 0, step: '0.01' }}
-                fullWidth
-                disabled={Boolean(activeNegotiation)}
-              />
-            </Stack>
-
-            <TextField
-              label="Referencia"
-              value={createForm.referencia}
-              onChange={(event) =>
-                setCreateForm((prev) => ({ ...prev, referencia: event.target.value }))
-              }
-              fullWidth
-              disabled={Boolean(activeNegotiation)}
-            />
-            <TextField
-              label="Observaciones"
-              value={createForm.observaciones}
-              onChange={(event) =>
-                setCreateForm((prev) => ({ ...prev, observaciones: event.target.value }))
-              }
-              fullWidth
-              multiline
-              minRows={2}
-              disabled={Boolean(activeNegotiation)}
-            />
-
-            <Stack direction="row" spacing={1} className="crm-surface-card__badge-row">
-              <Chip
-                variant="outlined"
-                label={`Base estimada (${portfolioConfig?.debt_total_saldo_field_label || 'saldo principal'}): ${formatCurrency(negotiationContext.computedBaseAmount)}`}
-              />
-              <Chip
-                variant="outlined"
-                label={`Adeudo total aplicado: ${formatCurrency(negotiationContext.effectiveBaseAmount)}`}
-              />
-              <Chip
-                variant="outlined"
-                label={`Negociado estimado: ${formatCurrency(negotiatedEstimate)}`}
-              />
-            </Stack>
-
-            <Stack direction="row" className="crm-surface-card__action-row">
-              <Button
-                variant="contained"
-                startIcon={<AddTask />}
-                onClick={handleCreateNegotiation}
-                disabled={
-                  saving ||
-                  Boolean(activeNegotiation) ||
-                  levels.length === 0 ||
-                  safeCredits.length === 0
-                }
-              >
-                Iniciar negociación
-              </Button>
-            </Stack>
+            </Box>
           </Stack>
         </Paper>
-      )}
-
-      <Paper variant="panel-sm">
-        <Stack spacing={2}>
-          <Stack className="crm-surface-card__header">
-            <Stack className="crm-surface-card__header-main">
-              <Typography variant="overline" className="crm-surface-card__eyebrow">
-                Histórico
-              </Typography>
-              <Typography variant="subtitle1" className="crm-surface-card__title">
-                Historial de negociaciones
-              </Typography>
-              <Typography variant="body2" className="crm-surface-card__subtitle">
-                Acuerdos anteriores cerrados o cancelados con su contexto financiero.
-              </Typography>
-            </Stack>
-          </Stack>
-          <BaseTable
-            dense
-            loading={loading}
-            columns={[
-              {
-                id: 'fecha_inicio',
-                label: 'Inicio',
-                render: (row) => formatDateTime(row.fecha_inicio)
-              },
-              {
-                id: 'estado',
-                label: 'Estado',
-                render: (row) => (
-                  <Chip
-                    size="small"
-                    color={
-                      row.estado === 'cerrada'
-                        ? 'success'
-                        : row.estado === 'cancelada'
-                          ? 'default'
-                          : 'warning'
-                    }
-                    label={String(row.estado || '').toUpperCase()}
-                  />
-                )
-              },
-              {
-                id: 'nivel_descuento_nombre',
-                label: 'Regla',
-                render: (row) => row.nivel_descuento_nombre || '-'
-              },
-              {
-                id: 'monto_base_total',
-                label: 'Monto base',
-                align: 'right',
-                render: (row) => formatCurrency(row.monto_base_total)
-              },
-              {
-                id: 'monto_negociado_total',
-                label: 'Monto negociado',
-                align: 'right',
-                render: (row) => formatCurrency(row.monto_negociado_total)
-              },
-              {
-                id: 'creditos',
-                label: 'Créditos',
-                render: (row) => {
-                  const creditCount = Array.isArray(row.creditos) ? row.creditos.length : 0;
-                  return creditCount > 0 ? `${creditCount}` : '-';
-                }
-              }
-            ]}
-            rows={history}
-            emptyContent={
-              <EmptyState
-                dense
-                title="Sin historial"
-                description="No hay negociaciones cerradas o canceladas para este cliente."
-                icon={Percent}
-              />
-            }
-          />
-        </Stack>
-      </Paper>
+      </Box>
 
       <BaseDialog
         open={statusDialogOpen}
@@ -890,7 +1248,7 @@ function NegotiationsWidget({
           fullWidth
         />
       </BaseDialog>
-    </Stack>
+    </Box>
   );
 }
 
