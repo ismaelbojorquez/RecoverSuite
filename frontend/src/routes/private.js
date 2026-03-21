@@ -2,6 +2,7 @@ import {
   FolderKanban,
   History,
   LayoutDashboard,
+  Megaphone,
   Percent,
   ShieldCheck,
   ShieldUser,
@@ -18,6 +19,8 @@ import UsersPage from '../pages/Users.jsx';
 import Groups from '../pages/Groups.jsx';
 import NegotiationSettings from '../pages/NegotiationSettings.jsx';
 import Dictamenes from '../pages/Dictamenes.jsx';
+import Campaigns from '../pages/Campaigns.jsx';
+import CampaignDetail from '../pages/CampaignDetail.jsx';
 import Profile from '../pages/Profile.jsx';
 import Forbidden from '../pages/Forbidden.jsx';
 import NotFound from '../pages/NotFound.jsx';
@@ -100,6 +103,27 @@ export const privateRoutes = [
     }
   },
   {
+    id: 'campaigns',
+    path: ROUTE_PATHS.campaigns,
+    component: Campaigns,
+    permission: ['imports.read', 'gestiones.view_all', 'gestiones.view_portfolio'],
+    nav: {
+      section: 'administracion',
+      label: 'Campañas',
+      icon: Megaphone,
+      order: 2
+    }
+  },
+  {
+    id: 'campaignDetail',
+    path: ROUTE_PATHS.campaignDetail,
+    component: CampaignDetail,
+    permission: ['imports.read', 'gestiones.view_all', 'gestiones.view_portfolio'],
+    nav: {
+      hidden: true
+    }
+  },
+  {
     id: 'users',
     path: ROUTE_PATHS.users,
     component: UsersPage,
@@ -108,7 +132,7 @@ export const privateRoutes = [
       section: 'administracion',
       label: 'Usuarios',
       icon: ShieldUser,
-      order: 2
+      order: 3
     }
   },
   {

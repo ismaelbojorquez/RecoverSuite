@@ -5,7 +5,9 @@ import {
   createStringEnumField,
   normalizeChannelList,
   queueStateValues,
+  DECISION_ACTION_TYPES,
   DECISION_CONTACT_CHANNELS,
+  DECISION_PRIORITY_LEVELS,
   schemaSerializationOptions
 } from './decisionEngine.shared.js';
 
@@ -50,6 +52,25 @@ const queueSchema = new Schema(
       max: 100,
       default: 50
     },
+    prioridadEtiqueta: {
+      ...createStringEnumField(DECISION_PRIORITY_LEVELS, {
+        default: 'MEDIA',
+        alias: 'prioridad_etiqueta',
+        index: true
+      })
+    },
+    accion: {
+      ...createStringEnumField(DECISION_ACTION_TYPES, {
+        default: 'CONTACTAR',
+        index: true
+      })
+    },
+    canal: {
+      ...createStringEnumField(DECISION_CONTACT_CHANNELS, {
+        default: undefined,
+        index: true
+      })
+    },
     canalActual: {
       ...createStringEnumField(DECISION_CONTACT_CHANNELS, {
         default: undefined,
@@ -86,6 +107,11 @@ const queueSchema = new Schema(
     metadata: {
       type: Schema.Types.Mixed,
       default: undefined
+    },
+    razon: {
+      type: String,
+      trim: true,
+      default: undefined
     }
   },
   {
@@ -99,8 +125,26 @@ const queueSchema = new Schema(
 
 queueSchema.pre('validate', function ensureOrderedChannels(next) {
   this.canalesHabilitados = normalizeChannelList(this.canalesHabilitados);
+
+  if (!this.canal && this.siguienteCanal) {
+    this.canal = this.siguienteCanal;
+  }
+
+  if (!this.siguienteCanal && this.canal) {
+    this.siguienteCanal = this.canal;
+  }
+
   next();
 });
+
+queueSchema.index(
+  { clienteId: 1, estado: 1, updatedAt: -1 },
+  { name: 'queue_active_cliente_estado_updated_idx' }
+);
+queueSchema.index(
+  { estado: 1, prioridad: -1, updatedAt: -1 },
+  { name: 'queue_dispatch_estado_prioridad_updated_idx' }
+);
 
 const Queue = mongoose.models.Queue || mongoose.model('Queue', queueSchema);
 

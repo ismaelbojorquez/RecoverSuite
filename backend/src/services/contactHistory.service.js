@@ -1,30 +1,31 @@
-import mongoose from 'mongoose';
 import ContactHistory from '../models/ContactHistory.js';
+import { connectMongo } from '../config/mongo.js';
 import {
   DECISION_CONTACT_CHANNELS,
   DECISION_CONTACT_HISTORY_RESULTS
 } from '../models/decisionEngine.shared.js';
+import {
+  resolveDecisionClientId,
+  resolveDecisionDictamenId,
+  resolveDecisionUserId
+} from './decisionIdentity.service.js';
 
 const normalizeText = (value) => String(value || '').trim().toUpperCase();
 
-const toObjectIdOrThrow = (value, label, { required = true } = {}) => {
-  if (value === null || value === undefined || value === '') {
-    if (required) {
-      throw new Error(`${label} es obligatorio.`);
-    }
+export const mapDictamenTipoContactoToHistoryResult = (value) => {
+  const normalized = normalizeText(value);
 
-    return undefined;
+  switch (normalized) {
+    case 'CONTACTADO':
+      return 'CONTACTADO';
+    case 'RECHAZO':
+      return 'RECHAZO';
+    case 'NO_CONTACTADO':
+      return 'NO_CONTACTADO';
+    case 'INVALIDO':
+    default:
+      return 'NO_CONTACTADO';
   }
-
-  if (value instanceof mongoose.Types.ObjectId) {
-    return value;
-  }
-
-  if (!mongoose.isValidObjectId(value)) {
-    throw new Error(`${label} es invalido.`);
-  }
-
-  return new mongoose.Types.ObjectId(value);
 };
 
 export const registrarIntento = async (
@@ -34,6 +35,8 @@ export const registrarIntento = async (
   dictamenId,
   options = {}
 ) => {
+  await connectMongo();
+
   const normalizedCanal = normalizeText(canal);
   const normalizedResultado = normalizeText(resultado);
 
@@ -46,12 +49,12 @@ export const registrarIntento = async (
   }
 
   const payload = {
-    clienteId: toObjectIdOrThrow(clienteId, 'clienteId'),
+    clienteId: resolveDecisionClientId(clienteId),
     canal: normalizedCanal,
     fecha: options.fecha ? new Date(options.fecha) : new Date(),
     resultado: normalizedResultado,
-    dictamenId: toObjectIdOrThrow(dictamenId, 'dictamenId', { required: false }),
-    agenteId: toObjectIdOrThrow(options.agenteId, 'agenteId', { required: false })
+    dictamenId: resolveDecisionDictamenId(dictamenId, { required: false }),
+    agenteId: resolveDecisionUserId(options.agenteId, { required: false })
   };
 
   if (Number.isNaN(payload.fecha.getTime())) {
@@ -65,5 +68,6 @@ export const registrarIntento = async (
 };
 
 export default {
-  registrarIntento
+  registrarIntento,
+  mapDictamenTipoContactoToHistoryResult
 };

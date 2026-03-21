@@ -1,4 +1,12 @@
-import { CHANNEL_SCORE_FIELDS, CONTACT_CHANNELS, normalizeChannel } from './dictamenes.constants.js';
+import {
+  CHANNEL_SCORE_FIELDS,
+  CONTACT_CHANNELS,
+  normalizeChannel,
+  normalizeContactResultType
+} from './dictamenes.constants.js';
+
+const CHANNEL_FAILURE_PENALTY = 5;
+const CHANNEL_SUCCESS_BONUS = 10;
 
 const toFiniteNumber = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -15,6 +23,15 @@ const roundScore = (value) => {
   }
 
   return Number.parseFloat(value.toFixed(2));
+};
+
+const clampScore = (value) => {
+  const parsed = toFiniteNumber(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  return Math.min(100, Math.max(0, roundScore(parsed) ?? 0));
 };
 
 export const inferRiskLevelFromScore = (value) => {
@@ -49,6 +66,24 @@ const sortRowsByRecency = (rows) =>
 const resolveChannelScore = (row, channel) => {
   const field = CHANNEL_SCORE_FIELDS[channel];
   return toFiniteNumber(row?.[field]) ?? toFiniteNumber(row?.score_global);
+};
+
+const applyAdaptiveChannelAdjustment = (score, contactResultType) => {
+  const currentScore = toFiniteNumber(score);
+  if (currentScore === null) {
+    return null;
+  }
+
+  const normalizedContactResult = normalizeContactResultType(contactResultType);
+  if (!normalizedContactResult) {
+    return clampScore(currentScore);
+  }
+
+  if (normalizedContactResult === 'CONTACTADO') {
+    return clampScore(currentScore + CHANNEL_SUCCESS_BONUS);
+  }
+
+  return clampScore(currentScore - CHANNEL_FAILURE_PENALTY);
 };
 
 export const buildEmptyScoringSnapshot = () => ({
@@ -90,7 +125,10 @@ export const calculateClientScoringSnapshot = (rows = []) => {
     }
 
     const previousScore = toFiniteNumber(channelScores[channel]) ?? 0;
-    channelScores[channel] = roundScore(previousScore * 0.7 + nextChannelScore * 0.3) ?? 0;
+    const weightedScore = roundScore(previousScore * 0.7 + nextChannelScore * 0.3) ?? 0;
+
+    channelScores[channel] =
+      applyAdaptiveChannelAdjustment(weightedScore, row?.tipo_contacto) ?? 0;
   });
 
   const latest = recentRows[0];

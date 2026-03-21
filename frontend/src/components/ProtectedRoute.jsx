@@ -7,8 +7,12 @@ import AppLoader from './AppLoader.jsx';
 
 export default function ProtectedRoute({ permission, children }) {
   const { ready, isAuthenticated } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasAnyPermission, hasPermission } = usePermissions();
   const { navigate } = useNavigation();
+
+  const hasRoutePermission = Array.isArray(permission)
+    ? hasAnyPermission(permission)
+    : hasPermission(permission);
 
   useEffect(() => {
     if (!ready) return;
@@ -18,10 +22,10 @@ export default function ProtectedRoute({ permission, children }) {
       return;
     }
 
-    if (permission && !hasPermission(permission)) {
+    if (permission && !hasRoutePermission) {
       navigate(buildRoutePath('forbidden'), { replace: true });
     }
-  }, [ready, isAuthenticated, permission, hasPermission, navigate]);
+  }, [ready, isAuthenticated, permission, hasRoutePermission, navigate]);
 
   if (!ready) {
     return <AppLoader />;
@@ -31,7 +35,7 @@ export default function ProtectedRoute({ permission, children }) {
     return null;
   }
 
-  if (permission && !hasPermission(permission)) {
+  if (permission && !hasRoutePermission) {
     return null;
   }
 

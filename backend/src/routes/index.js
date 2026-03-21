@@ -17,6 +17,7 @@ import negotiationsRoutes from '../modules/negotiations/negotiations.routes.js';
 import saldoFieldRoutes from '../modules/saldo-fields/saldo-fields.routes.js';
 import meRoutes from '../modules/me/me.routes.js';
 import dictamenRoutes from './dictamenRoutes.js';
+import campaignRoutes from './campaignRoutes.js';
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.use('/jobs', jobRoutes);
 router.use('/audit', auditRoutes);
 router.use('/gestiones', gestionesRoutes);
 router.use('/dictamenes', dictamenRoutes);
+router.use('/campaigns', campaignRoutes);
 router.use('/promesas', promesasRoutes);
 router.use('/negotiations', negotiationsRoutes);
 router.use('/me', meRoutes);

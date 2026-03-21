@@ -9,6 +9,7 @@ test('calcula snapshot incremental por canal y toma flags del dictamen mas recie
       gestion_id: 4,
       fecha_gestion: '2026-03-20T10:00:00.000Z',
       medio_contacto: 'VISITA',
+      tipo_contacto: 'CONTACTADO',
       score_global: '80',
       score_llamada: '85',
       score_whatsapp: '75',
@@ -24,6 +25,7 @@ test('calcula snapshot incremental por canal y toma flags del dictamen mas recie
       gestion_id: 3,
       fecha_gestion: '2026-03-19T10:00:00.000Z',
       medio_contacto: 'SMS',
+      tipo_contacto: 'RECHAZO',
       score_global: '70',
       score_llamada: '65',
       score_whatsapp: '55',
@@ -39,6 +41,7 @@ test('calcula snapshot incremental por canal y toma flags del dictamen mas recie
       gestion_id: 2,
       fecha_gestion: '2026-03-18T10:00:00.000Z',
       medio_contacto: 'WHATSAPP',
+      tipo_contacto: 'NO_CONTACTADO',
       score_global: '50',
       score_llamada: '55',
       score_whatsapp: '45',
@@ -54,6 +57,7 @@ test('calcula snapshot incremental por canal y toma flags del dictamen mas recie
       gestion_id: 1,
       fecha_gestion: '2026-03-17T10:00:00.000Z',
       medio_contacto: 'LLAMADA',
+      tipo_contacto: 'CONTACTADO',
       score_global: '60',
       score_llamada: '55',
       score_whatsapp: '50',
@@ -67,16 +71,59 @@ test('calcula snapshot incremental por canal y toma flags del dictamen mas recie
     }
   ]);
 
-  assert.equal(snapshot.score_global, 15.6);
-  assert.equal(snapshot.score_llamada, 16.5);
-  assert.equal(snapshot.score_whatsapp, 13.5);
-  assert.equal(snapshot.score_sms, 21);
+  assert.equal(snapshot.score_global, 17.6);
+  assert.equal(snapshot.score_llamada, 26.5);
+  assert.equal(snapshot.score_whatsapp, 8.5);
+  assert.equal(snapshot.score_sms, 16);
   assert.equal(snapshot.score_email, 0);
-  assert.equal(snapshot.score_visita, 27);
+  assert.equal(snapshot.score_visita, 37);
   assert.equal(snapshot.scoring_riesgo_nivel, 'ALTO');
   assert.equal(snapshot.scoring_permitir_contacto, true);
   assert.equal(snapshot.scoring_bloquear_cliente, false);
   assert.equal(snapshot.scoring_recomendar_reintento, true);
+});
+
+test('limita el aprendizaje adaptativo entre 0 y 100 por canal', () => {
+  const snapshot = scoringEngine.calculateClientScoringSnapshot([
+    {
+      gestion_id: 5,
+      fecha_gestion: '2026-03-20T10:00:00.000Z',
+      medio_contacto: 'LLAMADA',
+      tipo_contacto: 'CONTACTADO',
+      score_llamada: '100'
+    },
+    {
+      gestion_id: 4,
+      fecha_gestion: '2026-03-19T10:00:00.000Z',
+      medio_contacto: 'LLAMADA',
+      tipo_contacto: 'CONTACTADO',
+      score_llamada: '100'
+    },
+    {
+      gestion_id: 3,
+      fecha_gestion: '2026-03-18T10:00:00.000Z',
+      medio_contacto: 'LLAMADA',
+      tipo_contacto: 'CONTACTADO',
+      score_llamada: '100'
+    },
+    {
+      gestion_id: 2,
+      fecha_gestion: '2026-03-17T10:00:00.000Z',
+      medio_contacto: 'LLAMADA',
+      tipo_contacto: 'CONTACTADO',
+      score_llamada: '100'
+    },
+    {
+      gestion_id: 1,
+      fecha_gestion: '2026-03-16T10:00:00.000Z',
+      medio_contacto: 'SMS',
+      tipo_contacto: 'NO_CONTACTADO',
+      score_sms: '0'
+    }
+  ]);
+
+  assert.equal(snapshot.score_llamada, 100);
+  assert.equal(snapshot.score_sms, 0);
 });
 
 test('devuelve snapshot vacio cuando no existen gestiones con dictamen', () => {

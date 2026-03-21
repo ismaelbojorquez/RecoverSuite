@@ -7,6 +7,16 @@ import { normalizeChannel } from '../dictamenes/dictamenes.constants.js';
 import { rebuildClientScoringSnapshot } from '../dictamenes/scoring.service.js';
 import { invalidateClientDetailCache } from '../../utils/cache.js';
 import pool from '../../config/db.js';
+import {
+  mapDictamenTipoContactoToHistoryResult,
+  registrarIntento
+} from '../../services/contactHistory.service.js';
+import {
+  applyStrategyDecisionToClienteScore,
+  syncClienteScoreSnapshot
+} from '../../services/clienteScore.service.js';
+import { calcularSiguienteAccion } from '../../services/strategyEngine.js';
+import { actualizarColaConDecision } from '../../services/queueService.js';
 
 const parseInteger = (value) => {
   const parsed = Number.parseInt(value, 10);
@@ -121,7 +131,7 @@ export const createGestionHandler = async (req, res, next) => {
       return res.status(400).json({ error: 'El comentario es obligatorio.' });
     }
 
-    await ensureDictamenValido({
+    const dictamen = await ensureDictamenValido({
       dictamenId,
       portafolioId
     });
@@ -149,17 +159,45 @@ export const createGestionHandler = async (req, res, next) => {
       dbClient
     );
 
-    const scoringSnapshot = await rebuildClientScoringSnapshot(
-      {
-        clientInternalId: resolvedClient.internalId,
-        portafolioId
-      },
-      dbClient
-    );
-
     await dbClient.query('COMMIT');
     dbClient.release();
     dbClient = null;
+
+    const decisionClientId = resolvedClient.client?.id || clienteId;
+
+    await registrarIntento(
+      decisionClientId,
+      medioContacto,
+      mapDictamenTipoContactoToHistoryResult(dictamen?.tipo_contacto),
+      dictamenId,
+      {
+        agenteId: usuarioId,
+        fecha: fechaGestion
+      }
+    );
+
+    const scoringSnapshot = await rebuildClientScoringSnapshot({
+      clientInternalId: resolvedClient.internalId,
+      portafolioId
+    });
+
+    await syncClienteScoreSnapshot(decisionClientId, scoringSnapshot);
+
+    const nextAction = await calcularSiguienteAccion(decisionClientId, {
+      now: fechaGestion
+    });
+
+    await applyStrategyDecisionToClienteScore(decisionClientId, nextAction, scoringSnapshot);
+
+    const queueUpdate = await actualizarColaConDecision(decisionClientId, nextAction, {
+      portafolioId,
+      creditoId,
+      metadata: {
+        gestionId: gestion?.id || null,
+        dictamenId,
+        medioContacto
+      }
+    });
 
     const [userPermissions, userGroups] = await Promise.all([
       resolveRequestPermissions(req, usuarioId),
@@ -189,7 +227,12 @@ export const createGestionHandler = async (req, res, next) => {
     res.status(201).json({
       data: {
         gestion: mapGestionRow(gestion),
-        client_scoring: scoringSnapshot
+        client_scoring: scoringSnapshot,
+        next_action: nextAction,
+        queue_update: {
+          queued: Boolean(queueUpdate?.queued),
+          queue_id: queueUpdate?.queueItem?._id ?? null
+        }
       }
     });
   } catch (err) {

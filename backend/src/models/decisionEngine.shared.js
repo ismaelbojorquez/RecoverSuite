@@ -50,6 +50,8 @@ export const DECISION_CONTACT_HISTORY_RESULTS = Object.freeze([
   'SIN_RESPUESTA'
 ]);
 export const DECISION_RISK_LEVELS = Object.freeze([...RISK_LEVELS]);
+export const DECISION_ACTION_TYPES = Object.freeze(['CONTACTAR', 'VISITAR', 'DETENER']);
+export const DECISION_PRIORITY_LEVELS = Object.freeze(['BAJA', 'MEDIA', 'ALTA']);
 
 export const queueStateValues = Object.freeze([
   'PENDIENTE',

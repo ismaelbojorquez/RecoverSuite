@@ -15,6 +15,8 @@ const ROUTE_PATHS = {
   groups: '/groups',
   negotiationSettings: '/negotiations/settings',
   dictamenes: '/dictamenes',
+  campaigns: '/campaigns',
+  campaignDetail: '/campaigns/:id',
   permissions: '/permissions',
   balanceFields: '/balance-fields',
   forbidden: '/403',

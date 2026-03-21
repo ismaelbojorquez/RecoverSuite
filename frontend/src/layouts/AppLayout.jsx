@@ -153,6 +153,16 @@ const routeContextById = Object.freeze({
     title: 'Dictamenes',
     subtitle: 'Scoring, riesgo y reglas operativas por portafolio.'
   },
+  campaigns: {
+    section: 'Administracion',
+    title: 'Campañas',
+    subtitle: 'Generacion de lotes y exportaciones omnicanal.'
+  },
+  campaignDetail: {
+    section: 'Administracion',
+    title: 'Detalle de campaña',
+    subtitle: 'Descargas por canal y resumen del lote generado.'
+  },
   forbidden: {
     section: 'Sistema',
     title: 'Acceso restringido',
@@ -184,7 +194,7 @@ export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
   const { pathname, navigate } = useNavigation();
   const currentPath = pathname.split('?')[0];
-  const { hasPermission } = usePermissions();
+  const { hasAnyPermission, hasPermission } = usePermissions();
   const canSearch = hasPermission('search.read');
 
   const appRoutes = useMemo(
@@ -211,11 +221,15 @@ export default function AppLayout({ children }) {
         .map((section) => ({
           ...section,
           items: section.items.filter(
-            (item) => !item.permission || hasPermission(item.permission)
+            (item) =>
+              !item.permission ||
+              (Array.isArray(item.permission)
+                ? hasAnyPermission(item.permission)
+                : hasPermission(item.permission))
           )
         }))
         .filter((section) => section.items.length > 0),
-    [hasPermission, navStructure]
+    [hasAnyPermission, hasPermission, navStructure]
   );
 
   const unreadNotificationCount = useMemo(

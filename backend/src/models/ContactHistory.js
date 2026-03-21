@@ -14,39 +14,33 @@ const contactHistorySchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Cliente',
       required: true,
-      index: true,
       alias: 'cliente_id'
     },
     canal: {
       ...createStringEnumField(DECISION_CONTACT_CHANNELS, {
-        required: true,
-        index: true
+        required: true
       })
     },
     fecha: {
       type: Date,
       required: true,
-      default: Date.now,
-      index: true
+      default: Date.now
     },
     resultado: {
       ...createStringEnumField(DECISION_CONTACT_HISTORY_RESULTS, {
-        required: true,
-        index: true
+        required: true
       })
     },
     dictamenId: {
       type: Schema.Types.ObjectId,
       ref: 'Dictamen',
       default: undefined,
-      index: true,
       alias: 'dictamen_id'
     },
     agenteId: {
       type: Schema.Types.ObjectId,
       ref: 'Usuario',
       default: undefined,
-      index: true,
       alias: 'agente_id'
     }
   },
@@ -59,9 +53,18 @@ const contactHistorySchema = new Schema(
   }
 );
 
-contactHistorySchema.index({ clienteId: 1, fecha: -1 });
-contactHistorySchema.index({ clienteId: 1, canal: 1, fecha: -1 });
-contactHistorySchema.index({ clienteId: 1, resultado: 1, fecha: -1 });
+contactHistorySchema.index(
+  { clienteId: 1, fecha: -1, canal: 1, resultado: 1, dictamenId: 1 },
+  { name: 'contact_history_recent_strategy_idx' }
+);
+contactHistorySchema.index(
+  { clienteId: 1, canal: 1, fecha: -1, resultado: 1 },
+  { name: 'contact_history_channel_timeline_idx' }
+);
+contactHistorySchema.index(
+  { clienteId: 1, fecha: 1, _id: 1 },
+  { name: 'contact_history_playbook_idx' }
+);
 
 const ContactHistory =
   mongoose.models.ContactHistory || mongoose.model('ContactHistory', contactHistorySchema);

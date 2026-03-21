@@ -6,36 +6,31 @@ const strategyEngine = await import('../src/services/strategyEngine.js');
 const { default: ClienteScore } = await import('../src/models/ClienteScore.js');
 const { default: ContactHistory } = await import('../src/models/ContactHistory.js');
 
-test('prioriza canal digital no explorado con mejor score', () => {
+test('respeta el playbook base en día 1 y prioriza WhatsApp', () => {
   const result = strategyEngine.resolverSiguienteAccion({
     clienteScore: {
       scoreGeneral: 58,
       canales: {
         llamada: 52,
-        whatsapp: 81,
+        whatsapp: 61,
         sms: 60,
-        email: 74,
+        email: 88,
         visita: 30
       }
     },
-    contactHistory: [
-      {
-        canal: 'SMS',
-        resultado: 'SIN_RESPUESTA',
-        fecha: '2026-03-19T10:00:00.000Z'
-      }
-    ]
+    contactHistory: [],
+    now: new Date('2026-03-20T10:00:00.000Z')
   });
 
   assert.deepEqual(result, {
     accion: 'CONTACTAR',
     canal: 'WHATSAPP',
-    razon: 'Canal no explorado',
+    razon: 'Playbook base día 1',
     prioridad: 'ALTA'
   });
 });
 
-test('considera llamada cuando todos los canales digitales fallaron', () => {
+test('usa el playbook para llevar el contacto a llamada en día 3', () => {
   const result = strategyEngine.resolverSiguienteAccion({
     clienteScore: {
       scoreGeneral: 45,
@@ -49,20 +44,20 @@ test('considera llamada cuando todos los canales digitales fallaron', () => {
     },
     contactHistory: [
       { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
-      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-19T10:00:00.000Z' },
-      { canal: 'EMAIL', resultado: 'RECHAZO', fecha: '2026-03-18T10:00:00.000Z' }
-    ]
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-21T10:00:00.000Z' }
+    ],
+    now: new Date('2026-03-22T10:00:00.000Z')
   });
 
   assert.deepEqual(result, {
     accion: 'CONTACTAR',
     canal: 'LLAMADA',
-    razon: 'Canales digitales agotados',
+    razon: 'Playbook base día 3',
     prioridad: 'ALTA'
   });
 });
 
-test('considera visita cuando llamada falló múltiples veces después del agotamiento digital', () => {
+test('evalúa visita en día 10 del playbook cuando cumple elegibilidad', () => {
   const result = strategyEngine.resolverSiguienteAccion({
     clienteScore: {
       scoreGeneral: 46,
@@ -77,22 +72,23 @@ test('considera visita cuando llamada falló múltiples veces después del agota
     },
     contactHistory: [
       { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
-      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-19T10:00:00.000Z' },
-      { canal: 'EMAIL', resultado: 'RECHAZO', fecha: '2026-03-18T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-17T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-16T10:00:00.000Z' }
-    ]
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-21T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-22T10:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-24T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-26T10:00:00.000Z' }
+    ],
+    now: new Date('2026-03-29T10:00:00.000Z')
   });
 
   assert.deepEqual(result, {
     accion: 'VISITAR',
     canal: 'VISITA',
-    razon: 'Visita elegible por score, deuda e intentos fallidos',
+    razon: 'Playbook día 10: visita elegible',
     prioridad: 'ALTA'
   });
 });
 
-test('no permite visita cuando la deuda no supera el umbral aunque llamada haya fallado múltiples veces', () => {
+test('no permite visita en día 10 del playbook cuando la deuda no supera el umbral', () => {
   const result = strategyEngine.resolverSiguienteAccion({
     clienteScore: {
       scoreGeneral: 58,
@@ -107,11 +103,12 @@ test('no permite visita cuando la deuda no supera el umbral aunque llamada haya 
     },
     contactHistory: [
       { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
-      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-19T10:00:00.000Z' },
-      { canal: 'EMAIL', resultado: 'RECHAZO', fecha: '2026-03-18T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-17T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-16T10:00:00.000Z' }
-    ]
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-21T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-22T10:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-24T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-26T10:00:00.000Z' }
+    ],
+    now: new Date('2026-03-29T10:00:00.000Z')
   });
 
   assert.deepEqual(result, {
@@ -122,34 +119,122 @@ test('no permite visita cuando la deuda no supera el umbral aunque llamada haya 
   });
 });
 
-test('detiene cuando la frecuencia es alta y no hay efectividad', () => {
+test('detiene cuando todos los canales elegibles están en cooldown operativo', () => {
   const result = strategyEngine.resolverSiguienteAccion({
     clienteScore: {
-      scoreGeneral: 20,
+      scoreGeneral: 61,
       canales: {
-        llamada: 10,
-        whatsapp: 8,
-        sms: 12,
-        email: 7,
-        visita: 5
+        llamada: 68,
+        whatsapp: 72,
+        sms: 66,
+        email: 64,
+        visita: 45
       }
     },
     contactHistory: [
-      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
-      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T09:00:00.000Z' },
-      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-19T10:00:00.000Z' },
-      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-19T09:00:00.000Z' },
-      { canal: 'EMAIL', resultado: 'RECHAZO', fecha: '2026-03-18T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-17T10:00:00.000Z' },
-      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-16T10:00:00.000Z' },
-      { canal: 'VISITA', resultado: 'NO_CONTACTADO', fecha: '2026-03-15T10:00:00.000Z' }
-    ]
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T11:50:00.000Z' },
+      { canal: 'SMS', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T11:40:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T11:30:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T11:20:00.000Z' }
+    ],
+    now: new Date('2026-03-20T12:00:00.000Z')
   });
 
   assert.deepEqual(result, {
     accion: 'DETENER',
     canal: null,
-    razon: 'Frecuencia alta sin respuesta efectiva',
+    razon: 'Ventana de reintento activa',
+    prioridad: 'BAJA'
+  });
+});
+
+test('detiene cuando la frecuencia es alta y no hay efectividad', () => {
+  const result = strategyEngine.resolverSiguienteAccion({
+    clienteScore: {
+      scoreGeneral: 41,
+      canales: {
+        llamada: 42,
+        whatsapp: 38,
+        sms: 36,
+        email: 34,
+        visita: 33
+      }
+    },
+    contactHistory: [
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-21T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-22T10:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'NO_CONTACTADO', fecha: '2026-03-24T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-26T10:00:00.000Z' },
+      { canal: 'VISITA', resultado: 'NO_CONTACTADO', fecha: '2026-03-29T10:00:00.000Z' },
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-30T10:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-30T11:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-30T11:10:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'NO_CONTACTADO', fecha: '2026-03-30T11:20:00.000Z' },
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-30T11:30:00.000Z' }
+    ],
+    now: new Date('2026-03-30T12:00:00.000Z')
+  });
+
+  assert.deepEqual(result, {
+    accion: 'DETENER',
+    canal: null,
+    razon: 'Detener contacto: intentos totales mayores a 10 en 7 días',
+    prioridad: 'BAJA'
+  });
+});
+
+test('detiene cuando todos los canales tienen score menor a 30', () => {
+  const result = strategyEngine.resolverSiguienteAccion({
+    clienteScore: {
+      scoreGeneral: 24,
+      canales: {
+        llamada: 28,
+        whatsapp: 25,
+        sms: 22,
+        email: 21,
+        visita: 18
+      }
+    },
+    contactHistory: [],
+    now: new Date('2026-03-20T10:00:00.000Z')
+  });
+
+  assert.deepEqual(result, {
+    accion: 'DETENER',
+    canal: null,
+    razon: 'Detener contacto: todos los canales tienen score menor a 30',
+    prioridad: 'BAJA'
+  });
+});
+
+test('detiene cuando dictámenes recientes indican rechazo', () => {
+  const result = strategyEngine.resolverSiguienteAccion({
+    clienteScore: {
+      scoreGeneral: 52,
+      canales: {
+        llamada: 50,
+        whatsapp: 63,
+        sms: 58,
+        email: 55,
+        visita: 45
+      }
+    },
+    contactHistory: [
+      {
+        canal: 'WHATSAPP',
+        resultado: 'NO_CONTACTADO',
+        dictamen_tipo_contacto: 'RECHAZO',
+        fecha: '2026-03-20T10:00:00.000Z'
+      }
+    ],
+    now: new Date('2026-03-20T12:00:00.000Z')
+  });
+
+  assert.deepEqual(result, {
+    accion: 'DETENER',
+    canal: null,
+    razon: 'Detener contacto: dictámenes recientes indican rechazo',
     prioridad: 'BAJA'
   });
 });
@@ -159,27 +244,39 @@ test('calcularSiguienteAccion consulta ClienteScore y ContactHistory de los ulti
   const originalFind = ContactHistory.find;
 
   ClienteScore.findOne = () => ({
-    lean: async () => ({
-      scoreGeneral: 61,
-      canales: {
-        llamada: 48,
-        whatsapp: 72,
-        sms: 55,
-        email: 65,
-        visita: 40
-      }
-    })
+    select() {
+      return {
+        lean: async () => ({
+          scoreGeneral: 61,
+          canales: {
+            llamada: 48,
+            whatsapp: 72,
+            sms: 55,
+            email: 65,
+            visita: 40
+          }
+        })
+      };
+    }
   });
 
   let receivedFilter = null;
   ContactHistory.find = (filter) => {
     receivedFilter = filter;
     return {
-      sort() {
+      select() {
         return {
-          lean: async () => [
-            { canal: 'SMS', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' }
-          ]
+          sort() {
+            return {
+              limit() {
+                return {
+                  lean: async () => [
+                    { canal: 'SMS', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' }
+                  ]
+                };
+              }
+            };
+          }
         };
       }
     };
@@ -187,14 +284,16 @@ test('calcularSiguienteAccion consulta ClienteScore y ContactHistory de los ulti
 
   try {
     const clienteId = new mongoose.Types.ObjectId();
-    const result = await strategyEngine.calcularSiguienteAccion(clienteId);
+    const result = await strategyEngine.calcularSiguienteAccion(clienteId, {
+      now: new Date('2026-03-20T10:00:00.000Z')
+    });
 
     assert.equal(String(receivedFilter.clienteId), String(clienteId));
     assert.equal(receivedFilter.fecha.$gte instanceof Date, true);
     assert.deepEqual(result, {
       accion: 'CONTACTAR',
       canal: 'WHATSAPP',
-      razon: 'Canal no explorado',
+      razon: 'Playbook base día 1',
       prioridad: 'ALTA'
     });
   } finally {
@@ -207,7 +306,14 @@ test('validateVisitEligibility expone motivos claros cuando visita no cumple reg
   const validation = strategyEngine.validateVisitEligibility({
     clienteScore: {
       scoreGeneral: 35,
-      montoDeuda: 1500
+      montoDeuda: 1500,
+      estrategia: {
+        contactPlan: {
+          availabilityByChannel: {
+            VISITA: false
+          }
+        }
+      }
     },
     historyAnalysis: strategyEngine.analyzeContactHistory([
       { canal: 'WHATSAPP', resultado: 'CONTACTADO', fecha: '2026-03-20T10:00:00.000Z' },
@@ -217,10 +323,74 @@ test('validateVisitEligibility expone motivos claros cuando visita no cumple reg
 
   assert.equal(validation.allowed, false);
   assert.deepEqual(validation.reasons, [
+    'canal VISITA no está disponible',
     'scoreGeneral menor a 40',
     'montoDeuda menor o igual al umbral 5000',
     'menos de 3 canales distintos intentados',
     'menos de 5 intentos totales',
     'los últimos intentos no fueron fallidos'
+  ]);
+});
+
+test('validateVisitEligibility bloquea una nueva visita cuando ya existe visita reciente', () => {
+  const validation = strategyEngine.validateVisitEligibility({
+    clienteScore: {
+      scoreGeneral: 55,
+      montoDeuda: 12000,
+      estrategia: {
+        contactPlan: {
+          availabilityByChannel: {
+            VISITA: true
+          }
+        }
+      }
+    },
+    historyAnalysis: strategyEngine.analyzeContactHistory([
+      { canal: 'VISITA', resultado: 'NO_CONTACTADO', fecha: '2026-03-20T08:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-19T10:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-18T10:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-17T10:00:00.000Z' },
+      { canal: 'WHATSAPP', resultado: 'NO_CONTACTADO', fecha: '2026-03-16T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-15T10:00:00.000Z' }
+    ]),
+    now: new Date('2026-03-20T12:00:00.000Z')
+  });
+
+  assert.equal(validation.allowed, false);
+  assert.deepEqual(validation.reasons, ['ya existe una visita reciente']);
+});
+
+test('validateStopContact acumula razones de baja calidad, sobrecontacto y rechazo reciente', () => {
+  const validation = strategyEngine.validateStopContact({
+    clienteScore: {
+      scoreGeneral: 15,
+      canales: {
+        llamada: 20,
+        whatsapp: 18,
+        sms: 17,
+        email: 16,
+        visita: 14
+      }
+    },
+    historyAnalysis: strategyEngine.analyzeContactHistory([
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-20T10:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-20T09:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'NO_CONTACTADO', dictamen_tipo_contacto: 'RECHAZO', fecha: '2026-03-20T08:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-19T10:00:00.000Z' },
+      { canal: 'LLAMADA', resultado: 'SIN_RESPUESTA', fecha: '2026-03-19T09:00:00.000Z' },
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-18T10:00:00.000Z' },
+      { canal: 'WHATSAPP', resultado: 'SIN_RESPUESTA', fecha: '2026-03-18T09:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-17T10:00:00.000Z' },
+      { canal: 'SMS', resultado: 'NO_CONTACTADO', fecha: '2026-03-17T09:00:00.000Z' },
+      { canal: 'EMAIL', resultado: 'SIN_RESPUESTA', fecha: '2026-03-16T10:00:00.000Z' },
+      { canal: 'VISITA', resultado: 'NO_CONTACTADO', fecha: '2026-03-16T09:00:00.000Z' }
+    ])
+  });
+
+  assert.equal(validation.shouldStop, true);
+  assert.deepEqual(validation.reasons, [
+    'todos los canales tienen score menor a 30',
+    'intentos totales mayores a 10 en 7 días',
+    'dictámenes recientes indican rechazo'
   ]);
 });

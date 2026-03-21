@@ -60,9 +60,13 @@ test('los modelos del motor de decisiones soportan EMAIL y mantienen enums consi
 
   const queue = new Queue({
     clienteId: objectId,
+    accion: 'CONTACTAR',
+    canal: 'EMAIL',
     canalActual: 'EMAIL',
     siguienteCanal: 'VISITA',
     canalesHabilitados: ['SMS', 'EMAIL', 'VISITA'],
+    prioridadEtiqueta: 'ALTA',
+    razon: 'Canal no explorado',
     estrategia: {
       recommendedChannel: 'EMAIL',
       nextBestAction: 'CONTACTAR_EMAIL'
@@ -77,5 +81,7 @@ test('los modelos del motor de decisiones soportan EMAIL y mantienen enums consi
   ]);
 
   assert.deepEqual(queue.canalesHabilitados, ['SMS', 'EMAIL', 'VISITA']);
+  assert.equal(queue.canal, 'EMAIL');
+  assert.equal(queue.prioridadEtiqueta, 'ALTA');
   assert.equal(clienteScore.scoreGeneral, 58.6);
 });
