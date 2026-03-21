@@ -34,7 +34,6 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
   currency: 'MXN'
 });
-const integerFormatter = new Intl.NumberFormat('es-MX');
 
 const DETAIL_TAB_VALUES = {
   gestiones: 'gestiones',
@@ -257,156 +256,12 @@ const inferClientStatus = ({ client, credits, totalDebt }) => {
   return 'active';
 };
 
-const resolveRiskLevel = ({ status, totalDebt, totalOverdue }) => {
-  if (status === 'legal') {
-    return { label: 'Alta morosidad', color: 'error' };
-  }
-
-  if (totalDebt <= 0 || totalOverdue <= 0) {
-    return { label: 'Al corriente', color: 'success' };
-  }
-
-  const ratio = totalDebt > 0 ? totalOverdue / totalDebt : 0;
-  if (ratio >= 0.35) {
-    return { label: 'Alta morosidad', color: 'error' };
-  }
-
-  return { label: 'Riesgo', color: 'warning' };
-};
-
 const normalizeComparableText = (value) =>
   String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
-
-const resolveOverdueDaysColumns = (balanceColumns) =>
-  (Array.isArray(balanceColumns) ? balanceColumns : []).filter((column) => {
-    const text = normalizeComparableText(
-      `${column?.label || ''} ${column?.nombre_campo || ''}`
-    );
-
-    const mentionsDays = text.includes('dia') || text.includes('days');
-    const mentionsDelinquency =
-      text.includes('atras') ||
-      text.includes('mora') ||
-      text.includes('venc') ||
-      text.includes('overdue') ||
-      text.includes('delinq');
-
-    return mentionsDays && mentionsDelinquency;
-  });
-
-const resolveMaxBalanceMetric = (credits, balanceColumns, balancesByCredit) => {
-  let maxValue = null;
-
-  (credits || []).forEach((credit) => {
-    (balanceColumns || []).forEach((column) => {
-      const balance = resolveCreditBalance(balancesByCredit, credit.id, column);
-      const numeric = toNumber(balance?.valor);
-
-      if (numeric === null) {
-        return;
-      }
-
-      maxValue = maxValue === null ? numeric : Math.max(maxValue, numeric);
-    });
-  });
-
-  return maxValue;
-};
-
-const resolveDaysOverdue = ({
-  credits,
-  balanceColumns,
-  balancesByCredit,
-  lastPaymentDate,
-  totalOverdue
-}) => {
-  const explicitDays = resolveMaxBalanceMetric(
-    credits,
-    resolveOverdueDaysColumns(balanceColumns),
-    balancesByCredit
-  );
-
-  if (explicitDays !== null) {
-    return Math.max(0, Math.round(explicitDays));
-  }
-
-  if (totalOverdue <= 0) {
-    return 0;
-  }
-
-  const lastPayment = parseDateValue(lastPaymentDate);
-  if (!lastPayment) {
-    return null;
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  lastPayment.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round((today.getTime() - lastPayment.getTime()) / 86400000);
-  return Math.max(diffDays, 0);
-};
-
-const resolveContactability = (contacts) => {
-  const phones = (Array.isArray(contacts?.phones) ? contacts.phones : []).filter((item) =>
-    Boolean(String(item?.telefono || '').trim())
-  ).length;
-  const emails = (Array.isArray(contacts?.emails) ? contacts.emails : []).filter((item) =>
-    Boolean(String(item?.email || '').trim())
-  ).length;
-  const addresses = (Array.isArray(contacts?.addresses) ? contacts.addresses : []).filter(
-    (item) => Boolean(formatAddressValue(item))
-  ).length;
-
-  const score = Math.min(
-    100,
-    phones * 40 + emails * 25 + addresses * 20 + (phones > 0 && emails > 0 ? 15 : 0)
-  );
-
-  if (score >= 80) {
-    return { label: 'Contacto Alto', tone: 'success', score };
-  }
-
-  if (score >= 45) {
-    return { label: 'Contacto Medio', tone: 'warning', score };
-  }
-
-  return {
-    label: score > 0 ? 'Contacto Bajo' : 'Sin contacto',
-    tone: 'danger',
-    score
-  };
-};
-
-const resolveCollectionScore = ({ status, totalDebt, totalOverdue, contactability, daysOverdue }) => {
-  if (totalDebt <= 0 || totalOverdue <= 0) {
-    return { label: 'Riesgo Bajo', tone: 'success' };
-  }
-
-  const ratio = totalDebt > 0 ? totalOverdue / totalDebt : 0;
-
-  if (
-    status === 'legal' ||
-    ratio >= 0.35 ||
-    (Number.isFinite(daysOverdue) && daysOverdue >= 90)
-  ) {
-    return { label: 'Riesgo Alto', tone: 'danger' };
-  }
-
-  if (
-    ratio >= 0.12 ||
-    (Number.isFinite(daysOverdue) && daysOverdue >= 30) ||
-    contactability.score < 45
-  ) {
-    return { label: 'Riesgo Medio', tone: 'warning' };
-  }
-
-  return { label: 'Riesgo Bajo', tone: 'success' };
-};
 
 const normalizePhoneForAction = (value) => String(value || '').replace(/\D/g, '');
 
@@ -458,11 +313,6 @@ function ClientHeader({
     0
   );
   const totalCredits = credits.length;
-  const overdueBalanceColumns = useMemo(
-    () => resolveOverdueBalanceColumns(balanceColumns),
-    [balanceColumns]
-  );
-
   const totalDebt = useMemo(() => {
     if (!primaryBalanceColumn) {
       return 0;
@@ -471,25 +321,27 @@ function ClientHeader({
     return sumCreditBalances(credits, [primaryBalanceColumn], balancesByCredit);
   }, [balancesByCredit, credits, primaryBalanceColumn]);
 
-  const totalOverdue = useMemo(
-    () => sumCreditBalances(credits, overdueBalanceColumns, balancesByCredit),
-    [balancesByCredit, credits, overdueBalanceColumns]
-  );
+  const totalOverdue = useMemo(() => {
+    const overdueColumns = (Array.isArray(balanceColumns) ? balanceColumns : []).filter((column) => {
+      const label = normalizeComparableText(
+        `${column?.label || ''} ${column?.nombre_campo || ''}`
+      );
+
+      return (
+        label.includes('venc') ||
+        label.includes('atras') ||
+        label.includes('mora') ||
+        label.includes('overdue') ||
+        label.includes('delinq')
+      );
+    });
+
+    return sumCreditBalances(credits, overdueColumns, balancesByCredit);
+  }, [balanceColumns, balancesByCredit, credits]);
 
   const lastPaymentDate = useMemo(
     () => resolveLastPaymentDate(client, credits),
     [client, credits]
-  );
-  const daysOverdue = useMemo(
-    () =>
-      resolveDaysOverdue({
-        credits,
-        balanceColumns,
-        balancesByCredit,
-        lastPaymentDate,
-        totalOverdue
-      }),
-    [balanceColumns, balancesByCredit, credits, lastPaymentDate, totalOverdue]
   );
 
   const status = useMemo(
@@ -497,20 +349,6 @@ function ClientHeader({
     [client, credits, totalDebt]
   );
   const statusPresentation = resolveStatusPresentation(status);
-  const contactability = useMemo(() => resolveContactability(contacts), [contacts]);
-  const collectionScore = useMemo(
-    () =>
-      resolveCollectionScore({
-        status,
-        totalDebt,
-        totalOverdue,
-        contactability,
-        daysOverdue
-      }),
-    [contactability, daysOverdue, status, totalDebt, totalOverdue]
-  );
-  const daysOverdueDisplay =
-    daysOverdue === null ? 'N/D' : `${integerFormatter.format(daysOverdue)} días`;
 
   if (loading && !isReady) {
     return (
@@ -816,9 +654,6 @@ function ClientHeader({
             <Typography variant="subtitle1" className="crm-client-detail__header-section-title">
               Resumen crediticio
             </Typography>
-            <Typography variant="body2" className="crm-client-detail__header-section-subtitle">
-              Vista rápida de cobranza para decisiones operativas.
-            </Typography>
           </Stack>
 
           <Box className="crm-client-detail__header-card-body">
@@ -857,55 +692,6 @@ function ClientHeader({
               </Box>
             </Box>
 
-            <Box className="crm-client-detail__indicator-grid">
-              <Box
-                className={[
-                  'crm-client-detail__indicator-card',
-                  `crm-client-detail__indicator-card--${
-                    daysOverdue !== null && daysOverdue >= 90
-                      ? 'danger'
-                      : daysOverdue !== null && daysOverdue >= 30
-                        ? 'warning'
-                        : 'success'
-                  }`
-                ].join(' ')}
-              >
-                <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Días de atraso
-                </Typography>
-                <Typography variant="body2" className="crm-client-detail__indicator-value">
-                  {daysOverdueDisplay}
-                </Typography>
-              </Box>
-
-              <Box
-                className={[
-                  'crm-client-detail__indicator-card',
-                  `crm-client-detail__indicator-card--${collectionScore.tone}`
-                ].join(' ')}
-              >
-                <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Score de cobranza
-                </Typography>
-                <Typography variant="body2" className="crm-client-detail__indicator-value">
-                  {collectionScore.label}
-                </Typography>
-              </Box>
-
-              <Box
-                className={[
-                  'crm-client-detail__indicator-card',
-                  `crm-client-detail__indicator-card--${contactability.tone}`
-                ].join(' ')}
-              >
-                <Typography variant="caption" className="crm-client-detail__indicator-label">
-                  Contactabilidad
-                </Typography>
-                <Typography variant="body2" className="crm-client-detail__indicator-value">
-                  {contactability.label}
-                </Typography>
-              </Box>
-            </Box>
           </Box>
         </Paper>
       </Box>
@@ -924,10 +710,6 @@ function ClientDocumentsPanel() {
             </Typography>
             <Typography variant="subtitle1" className="crm-surface-card__title">
               Documentos
-            </Typography>
-            <Typography variant="body2" className="crm-surface-card__subtitle">
-              Esta vista conserva el espacio operativo para documentos cuando el expediente los
-              tenga disponibles.
             </Typography>
           </Stack>
         </Stack>

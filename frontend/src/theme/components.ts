@@ -2748,17 +2748,15 @@ export const getComponents = (mode = 'light') => {
             minWidth: 0,
             fontWeight: 600,
             fontSize: '0.78rem',
-            lineHeight: 1.2,
+            lineHeight: 1.3,
             color: theme.palette.text.primary,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            whiteSpace: 'normal',
+            overflow: 'visible',
+            textOverflow: 'clip',
+            wordBreak: 'break-word'
           },
           '.MuiTypography-root.crm-client-detail__contact-card-value--multiline': {
-            whiteSpace: 'normal',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical'
+            display: 'block'
           },
           '.MuiStack-root.crm-client-detail__contact-card-actions': {
             flexShrink: 0,

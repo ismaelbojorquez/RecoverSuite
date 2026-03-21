@@ -856,10 +856,6 @@ function NegotiationsWidget({
                 <Typography variant="subtitle1" className="crm-surface-card__title">
                   {activeNegotiation ? 'Acuerdo activo' : 'Nuevo acuerdo'}
                 </Typography>
-                <Typography variant="caption" className="crm-surface-card__subtitle">
-                  El flujo muestra primero los créditos, el mínimo permitido y un calendario de
-                  pagos editable para que el asesor entienda rápido qué está acordando.
-                </Typography>
               </Stack>
               <Stack direction="row" className="crm-surface-card__actions">
                 <Button

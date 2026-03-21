@@ -250,11 +250,6 @@ function CreditsWidget({
             <Typography variant="subtitle1" className="crm-surface-card__title">
               {title}
             </Typography>
-            <Typography variant="body2" className="crm-surface-card__subtitle">
-              {creditsEmpty
-                ? 'No hay créditos vinculados para mostrar en esta vista.'
-                : `${safeCredits.length} registro${safeCredits.length === 1 ? '' : 's'} con saldos integrados en una sola tabla.`}
-            </Typography>
           </Stack>
         </Stack>
       }
