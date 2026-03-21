@@ -18,8 +18,30 @@ global.__POOL_MOCK__ = poolStub;
 const portfoliosService = await import('../src/modules/portfolios/portfolios.service.js');
 
 test('permite activar o desactivar portafolio', async (t) => {
+  let currentIsActive = true;
+
   poolStub.query = async (sql, params) => {
+    if (sql.includes('FROM portfolios p') && sql.includes('WHERE p.id = $1')) {
+      return {
+        rows: [
+          {
+            id: params[0],
+            client_id: null,
+            name: 'Portafolio A',
+            description: null,
+            is_active: currentIsActive,
+            debt_total_saldo_field_id: null,
+            debt_total_saldo_field_key: null,
+            debt_total_saldo_field_label: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]
+      };
+    }
+
     if (sql.startsWith('UPDATE portfolios')) {
+      currentIsActive = Boolean(params[0]);
       return {
         rows: [
           {
@@ -27,7 +49,7 @@ test('permite activar o desactivar portafolio', async (t) => {
             client_id: null,
             name: 'Portafolio A',
             description: null,
-            is_active: false,
+            is_active: currentIsActive,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }

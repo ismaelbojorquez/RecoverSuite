@@ -3,6 +3,7 @@ import {
   History,
   LayoutDashboard,
   Percent,
+  ShieldCheck,
   ShieldUser,
   Users
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import CreditImport from '../pages/CreditImport.jsx';
 import UsersPage from '../pages/Users.jsx';
 import Groups from '../pages/Groups.jsx';
 import NegotiationSettings from '../pages/NegotiationSettings.jsx';
+import Dictamenes from '../pages/Dictamenes.jsx';
 import Profile from '../pages/Profile.jsx';
 import Forbidden from '../pages/Forbidden.jsx';
 import NotFound from '../pages/NotFound.jsx';
@@ -137,6 +139,18 @@ export const privateRoutes = [
       label: 'Negociaciones',
       icon: Percent,
       order: 2
+    }
+  },
+  {
+    id: 'dictamenes',
+    path: ROUTE_PATHS.dictamenes,
+    component: Dictamenes,
+    permission: 'dictamenes.read',
+    nav: {
+      section: 'configuracion',
+      label: 'Dictamenes',
+      icon: ShieldCheck,
+      order: 3
     }
   },
   {

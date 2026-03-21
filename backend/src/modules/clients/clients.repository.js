@@ -1,10 +1,54 @@
 import pool from '../../config/db.js';
 
-const selectFieldsPublic =
-  'public_id AS id, portafolio_id, nombre, apellido_paterno, apellido_materno, numero_cliente, rfc, curp, created_at';
+const scoringSelectFields = `
+  scoring_global,
+  scoring_llamada,
+  scoring_whatsapp,
+  scoring_sms,
+  scoring_email,
+  scoring_visita,
+  scoring_riesgo_nivel,
+  scoring_permitir_contacto,
+  scoring_bloquear_cliente,
+  scoring_recomendar_reintento,
+  scoring_actualizado_at,
+  strategy_next_best_action,
+  strategy_recommended_channel,
+  strategy_should_stop_contact,
+  strategy_should_escalate_visit,
+  strategy_visit_eligible,
+  strategy_sequence_step,
+  strategy_reason_codes,
+  strategy_contact_plan,
+  strategy_actualizado_at
+`;
 
-const selectFieldsInternal =
-  'id AS internal_id, public_id AS id, portafolio_id, nombre, apellido_paterno, apellido_materno, numero_cliente, rfc, curp, created_at';
+const selectFieldsPublic = `
+  public_id AS id,
+  portafolio_id,
+  nombre,
+  apellido_paterno,
+  apellido_materno,
+  numero_cliente,
+  rfc,
+  curp,
+  ${scoringSelectFields},
+  created_at
+`;
+
+const selectFieldsInternal = `
+  id AS internal_id,
+  public_id AS id,
+  portafolio_id,
+  nombre,
+  apellido_paterno,
+  apellido_materno,
+  numero_cliente,
+  rfc,
+  curp,
+  ${scoringSelectFields},
+  created_at
+`;
 
 export const listClients = async ({ portafolioId, nameLike, limit, offset }) => {
   if (nameLike) {
@@ -192,3 +236,59 @@ export const deleteClient = async (publicId) => {
   const result = await pool.query('DELETE FROM clients WHERE public_id = $1', [publicId]);
   return result.rowCount > 0;
 };
+
+export const updateClientDecisionSnapshot = async (clientInternalId, snapshot, db = pool) => {
+  const result = await db.query(
+    `UPDATE clients
+     SET
+       scoring_global = $2,
+       scoring_llamada = $3,
+       scoring_whatsapp = $4,
+       scoring_sms = $5,
+       scoring_email = $6,
+       scoring_visita = $7,
+       scoring_riesgo_nivel = $8,
+       scoring_permitir_contacto = $9,
+       scoring_bloquear_cliente = $10,
+       scoring_recomendar_reintento = $11,
+       scoring_actualizado_at = $12,
+       strategy_next_best_action = $13,
+       strategy_recommended_channel = $14,
+       strategy_should_stop_contact = $15,
+       strategy_should_escalate_visit = $16,
+       strategy_visit_eligible = $17,
+       strategy_sequence_step = $18,
+       strategy_reason_codes = $19,
+       strategy_contact_plan = $20,
+       strategy_actualizado_at = $21
+     WHERE id = $1
+     RETURNING ${selectFieldsInternal}`,
+    [
+      clientInternalId,
+      snapshot?.score_global ?? null,
+      snapshot?.score_llamada ?? null,
+      snapshot?.score_whatsapp ?? null,
+      snapshot?.score_sms ?? null,
+      snapshot?.score_email ?? null,
+      snapshot?.score_visita ?? null,
+      snapshot?.scoring_riesgo_nivel ?? null,
+      snapshot?.scoring_permitir_contacto ?? null,
+      snapshot?.scoring_bloquear_cliente ?? null,
+      snapshot?.scoring_recomendar_reintento ?? null,
+      snapshot?.scoring_actualizado_at ?? new Date(),
+      snapshot?.strategy_next_best_action ?? null,
+      snapshot?.strategy_recommended_channel ?? null,
+      snapshot?.strategy_should_stop_contact ?? false,
+      snapshot?.strategy_should_escalate_visit ?? false,
+      snapshot?.strategy_visit_eligible ?? false,
+      snapshot?.strategy_sequence_step ?? 1,
+      snapshot?.strategy_reason_codes ?? [],
+      snapshot?.strategy_contact_plan ?? null,
+      snapshot?.strategy_actualizado_at ?? new Date()
+    ]
+  );
+
+  return result.rows[0] || null;
+};
+
+export const updateClientScoringSnapshot = updateClientDecisionSnapshot;

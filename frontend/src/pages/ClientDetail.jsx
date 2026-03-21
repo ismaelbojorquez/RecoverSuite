@@ -1,8 +1,13 @@
 import {
   ArrowBack,
+  Call,
   EmailOutlined,
+  InsightsOutlined,
   PlaceOutlined,
   PhoneOutlined,
+  Sms,
+  WhatsApp,
+  DirectionsWalk
 } from '@mui/icons-material';
 import {
   Alert,
@@ -16,6 +21,7 @@ import {
   Tabs,
   Typography
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import EmptyState from '../components/EmptyState.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
@@ -23,7 +29,7 @@ import usePermissions from '../hooks/usePermissions.js';
 import useNotify from '../hooks/useNotify.jsx';
 import useNavigation from '../hooks/useNavigation.js';
 import { getClientDetail } from '../services/clients.js';
-import { createGestion, listHistorialGestiones, listResultadosGestion } from '../services/gestiones.js';
+import { createGestion, listHistorialGestiones } from '../services/gestiones.js';
 import { buildRoutePath, getRouteParams } from '../routes/paths.js';
 import CreditsWidget from '../modules/clientDetail/widgets/CreditsWidget.jsx';
 import GestionesWidget from '../modules/clientDetail/widgets/GestionesWidget.jsx';
@@ -219,6 +225,114 @@ const formatDateShort = (value) => {
   return new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium' }).format(date);
 };
 
+const formatScoreValue = (value) => {
+  const parsed = toNumber(value);
+  return parsed === null ? '-' : parsed.toFixed(0);
+};
+
+const resolveScoreSignal = (value) => {
+  const parsed = toNumber(value);
+
+  if (parsed === null) {
+    return {
+      palette: 'default',
+      label: 'Sin score',
+      tone: 'Sin dato'
+    };
+  }
+
+  if (parsed >= 70) {
+    return {
+      palette: 'success',
+      label: 'Verde',
+      tone: 'Óptimo'
+    };
+  }
+
+  if (parsed >= 40) {
+    return {
+      palette: 'warning',
+      label: 'Amarillo',
+      tone: 'Atención'
+    };
+  }
+
+  return {
+    palette: 'error',
+    label: 'Rojo',
+    tone: 'Crítico'
+  };
+};
+
+const resolveRiskColor = (value) => {
+  switch (String(value || '').toUpperCase()) {
+    case 'BAJO':
+      return 'success';
+    case 'MEDIO':
+      return 'warning';
+    case 'ALTO':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
+
+const resolveClientScoringSnapshot = (client) => ({
+  score_global: client?.scoring_global ?? null,
+  score_llamada: client?.scoring_llamada ?? null,
+  score_whatsapp: client?.scoring_whatsapp ?? null,
+  score_sms: client?.scoring_sms ?? null,
+  score_email: client?.scoring_email ?? null,
+  score_visita: client?.scoring_visita ?? null,
+  scoring_riesgo_nivel: client?.scoring_riesgo_nivel ?? null,
+  scoring_permitir_contacto: client?.scoring_permitir_contacto ?? null,
+  scoring_bloquear_cliente: client?.scoring_bloquear_cliente ?? null,
+  scoring_recomendar_reintento: client?.scoring_recomendar_reintento ?? null,
+  scoring_actualizado_at: client?.scoring_actualizado_at ?? null,
+  strategy_next_best_action: client?.strategy_next_best_action ?? null,
+  strategy_recommended_channel: client?.strategy_recommended_channel ?? null,
+  strategy_should_stop_contact: client?.strategy_should_stop_contact ?? false,
+  strategy_should_escalate_visit: client?.strategy_should_escalate_visit ?? false,
+  strategy_visit_eligible: client?.strategy_visit_eligible ?? false,
+  strategy_sequence_step: client?.strategy_sequence_step ?? 1,
+  strategy_reason_codes: client?.strategy_reason_codes ?? [],
+  strategy_contact_plan: client?.strategy_contact_plan ?? null,
+  strategy_actualizado_at: client?.strategy_actualizado_at ?? null
+});
+
+const mergeClientScoringIntoDetail = (previousDetail, scoringSnapshot) => {
+  if (!previousDetail?.client || !scoringSnapshot) {
+    return previousDetail;
+  }
+
+  return {
+    ...previousDetail,
+    client: {
+      ...previousDetail.client,
+      scoring_global: scoringSnapshot.score_global ?? null,
+      scoring_llamada: scoringSnapshot.score_llamada ?? null,
+      scoring_whatsapp: scoringSnapshot.score_whatsapp ?? null,
+      scoring_sms: scoringSnapshot.score_sms ?? null,
+      scoring_email: scoringSnapshot.score_email ?? null,
+      scoring_visita: scoringSnapshot.score_visita ?? null,
+      scoring_riesgo_nivel: scoringSnapshot.scoring_riesgo_nivel ?? null,
+      scoring_permitir_contacto: scoringSnapshot.scoring_permitir_contacto ?? null,
+      scoring_bloquear_cliente: scoringSnapshot.scoring_bloquear_cliente ?? null,
+      scoring_recomendar_reintento: scoringSnapshot.scoring_recomendar_reintento ?? null,
+      scoring_actualizado_at: scoringSnapshot.scoring_actualizado_at ?? null,
+      strategy_next_best_action: scoringSnapshot.strategy_next_best_action ?? null,
+      strategy_recommended_channel: scoringSnapshot.strategy_recommended_channel ?? null,
+      strategy_should_stop_contact: scoringSnapshot.strategy_should_stop_contact ?? false,
+      strategy_should_escalate_visit: scoringSnapshot.strategy_should_escalate_visit ?? false,
+      strategy_visit_eligible: scoringSnapshot.strategy_visit_eligible ?? false,
+      strategy_sequence_step: scoringSnapshot.strategy_sequence_step ?? 1,
+      strategy_reason_codes: scoringSnapshot.strategy_reason_codes ?? [],
+      strategy_contact_plan: scoringSnapshot.strategy_contact_plan ?? null,
+      strategy_actualizado_at: scoringSnapshot.strategy_actualizado_at ?? null
+    }
+  };
+};
+
 const parseDateValue = (value) => {
   if (!value) {
     return null;
@@ -264,20 +378,6 @@ const normalizeComparableText = (value) =>
     .trim();
 
 const normalizePhoneForAction = (value) => String(value || '').replace(/\D/g, '');
-
-const isEditableTarget = (target) => {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  if (target.isContentEditable) {
-    return true;
-  }
-
-  return Boolean(
-    target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')
-  );
-};
 
 function ClientHeader({
   loading,
@@ -725,6 +825,312 @@ function ClientDocumentsPanel() {
   );
 }
 
+function ScoreChannelCard({ label, value, icon }) {
+  const signal = resolveScoreSignal(value);
+  const displayValue = formatScoreValue(value);
+  const paletteKey = signal.palette === 'default' ? 'grey' : signal.palette;
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={(theme) => ({
+        borderRadius: 3,
+        p: 2,
+        minHeight: 132,
+        borderColor:
+          signal.palette === 'default'
+            ? theme.palette.divider
+            : alpha(theme.palette[paletteKey].main, 0.32),
+        background:
+          signal.palette === 'default'
+            ? theme.palette.background.paper
+            : `linear-gradient(180deg, ${alpha(theme.palette[paletteKey].main, 0.12)}, ${alpha(
+                theme.palette[paletteKey].main,
+                0.03
+              )})`
+      })}
+    >
+      <Stack spacing={1.2} sx={{ height: '100%' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box
+              sx={(theme) => ({
+                width: 38,
+                height: 38,
+                borderRadius: 2,
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor:
+                  signal.palette === 'default'
+                    ? theme.palette.action.hover
+                    : alpha(theme.palette[paletteKey].main, 0.14),
+                color:
+                  signal.palette === 'default'
+                    ? theme.palette.text.secondary
+                    : theme.palette[paletteKey].main
+              })}
+            >
+              {icon}
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              {label}
+            </Typography>
+          </Stack>
+
+          <Box
+            sx={(theme) => ({
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              bgcolor:
+                signal.palette === 'default'
+                  ? theme.palette.action.disabled
+                  : theme.palette[paletteKey].main,
+              boxShadow:
+                signal.palette === 'default'
+                  ? 'none'
+                  : `0 0 0 4px ${alpha(theme.palette[paletteKey].main, 0.12)}`
+            })}
+          />
+        </Stack>
+
+        <Typography variant="h4">{displayValue}</Typography>
+
+        <Stack direction="row" spacing={0.75} alignItems="center">
+          <Chip size="small" color={signal.palette} label={signal.label} />
+          <Typography variant="caption" color="text.secondary">
+            {signal.tone}
+          </Typography>
+        </Stack>
+      </Stack>
+    </Paper>
+  );
+}
+
+function ClientScorePanel({ scoring, loading = false }) {
+  const scoreItems = [
+    {
+      key: 'llamada',
+      label: 'Llamada',
+      value: scoring?.score_llamada,
+      icon: <Call fontSize="small" />
+    },
+    {
+      key: 'whatsapp',
+      label: 'WhatsApp',
+      value: scoring?.score_whatsapp,
+      icon: <WhatsApp fontSize="small" />
+    },
+    {
+      key: 'sms',
+      label: 'SMS',
+      value: scoring?.score_sms,
+      icon: <Sms fontSize="small" />
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      value: scoring?.score_email,
+      icon: <EmailOutlined fontSize="small" />
+    },
+    {
+      key: 'visita',
+      label: 'Visita',
+      value: scoring?.score_visita,
+      icon: <DirectionsWalk fontSize="small" />
+    }
+  ];
+
+  const globalSignal = resolveScoreSignal(scoring?.score_global);
+  const globalPaletteKey = globalSignal.palette === 'default' ? 'grey' : globalSignal.palette;
+
+  if (loading) {
+    return (
+      <Paper variant="panel">
+        <Stack spacing={2}>
+          <Skeleton variant="text" width="18%" />
+          <Skeleton variant="text" width="32%" height={34} />
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(0, 1.9fr)' },
+              gap: 2
+            }}
+          >
+            <Skeleton variant="rounded" height={220} />
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                gap: 2
+              }}
+            >
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} variant="rounded" height={132} />
+              ))}
+            </Box>
+          </Box>
+        </Stack>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper
+      variant="panel"
+      sx={(theme) => ({
+        overflow: 'hidden',
+        background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.05)}, transparent 42%)`
+      })}
+    >
+      <Stack spacing={2.2}>
+        <Stack className="crm-surface-card__header">
+          <Stack className="crm-surface-card__header-main">
+            <Typography variant="overline" className="crm-surface-card__eyebrow">
+              Decision Engine
+            </Typography>
+            <Typography variant="h6" className="crm-surface-card__title">
+              Score del Cliente
+            </Typography>
+            <Typography variant="body2" className="crm-surface-card__subtitle">
+              Vista consolidada del score general, canales y nivel de riesgo actual.
+            </Typography>
+          </Stack>
+        </Stack>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1.05fr) minmax(0, 1.95fr)' },
+            gap: 2
+          }}
+        >
+          <Paper
+            variant="outlined"
+            sx={(theme) => ({
+              borderRadius: 3,
+              p: 2.5,
+              minHeight: 220,
+              borderColor:
+                globalSignal.palette === 'default'
+                  ? theme.palette.divider
+                  : alpha(theme.palette[globalPaletteKey].main, 0.34),
+              background:
+                globalSignal.palette === 'default'
+                  ? theme.palette.background.paper
+                  : `linear-gradient(165deg, ${alpha(
+                      theme.palette[globalPaletteKey].main,
+                      0.16
+                    )}, ${alpha(theme.palette[globalPaletteKey].main, 0.04)})`
+            })}
+          >
+            <Stack spacing={2} sx={{ height: '100%' }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" spacing={1.2} alignItems="center">
+                  <Box
+                    sx={(theme) => ({
+                      width: 46,
+                      height: 46,
+                      borderRadius: 2.5,
+                      display: 'grid',
+                      placeItems: 'center',
+                      bgcolor:
+                        globalSignal.palette === 'default'
+                          ? theme.palette.action.hover
+                          : alpha(theme.palette[globalPaletteKey].main, 0.14),
+                      color:
+                        globalSignal.palette === 'default'
+                          ? theme.palette.text.secondary
+                          : theme.palette[globalPaletteKey].main
+                    })}
+                  >
+                    <InsightsOutlined />
+                  </Box>
+                  <Stack spacing={0.25}>
+                    <Typography variant="body2" color="text.secondary">
+                      Score general
+                    </Typography>
+                    <Typography variant="h3">{formatScoreValue(scoring?.score_global)}</Typography>
+                  </Stack>
+                </Stack>
+
+                <Chip
+                  size="small"
+                  color={resolveRiskColor(scoring?.scoring_riesgo_nivel)}
+                  label={scoring?.scoring_riesgo_nivel || 'Sin riesgo'}
+                />
+              </Stack>
+
+              <Typography variant="body2" color="text.secondary">
+                Riesgo actual del cliente: <strong>{scoring?.scoring_riesgo_nivel || 'Sin clasificar'}</strong>
+              </Typography>
+
+              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                <Chip size="small" color={globalSignal.palette} label={globalSignal.label} />
+                <Chip size="small" variant="outlined" label={globalSignal.tone} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Actualizado ${formatDateShort(scoring?.scoring_actualizado_at)}`}
+                />
+              </Stack>
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: 1.25,
+                  mt: 'auto'
+                }}
+              >
+                {[
+                  { label: 'Verde', note: '>= 70', palette: 'success' },
+                  { label: 'Amarillo', note: '>= 40', palette: 'warning' },
+                  { label: 'Rojo', note: '< 40', palette: 'error' }
+                ].map((item) => (
+                  <Box
+                    key={item.label}
+                    sx={(theme) => ({
+                      borderRadius: 2,
+                      px: 1.2,
+                      py: 1,
+                      bgcolor: alpha(theme.palette[item.palette].main, 0.1)
+                    })}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {item.label}
+                    </Typography>
+                    <Typography variant="body2" className="crm-text-strong">
+                      {item.note}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Stack>
+          </Paper>
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+              gap: 2
+            }}
+          >
+            {scoreItems.map((item) => (
+              <ScoreChannelCard
+                key={item.key}
+                label={item.label}
+                value={item.value}
+                icon={item.icon}
+              />
+            ))}
+          </Box>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
 function ClientOperationsTabs({ activeTab, onTabChange, error, onErrorClear, tabs = [] }) {
   return (
     <Paper variant="panel" className="crm-client-detail__operations-shell">
@@ -765,6 +1171,7 @@ export default function ClientDetail({ routeParams }) {
     hasPermission('gestiones.view_all') ||
     hasPermission('gestiones.view_portfolio') ||
     hasPermission('gestiones.view_own');
+  const canConfigureDictamenes = hasPermission('dictamenes.read');
   const canReadNegotiations = hasPermission('negotiations.read');
   const canWriteNegotiations = hasPermission('negotiations.write');
   const { navigate } = useNavigation();
@@ -783,13 +1190,10 @@ export default function ClientDetail({ routeParams }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [resultados, setResultados] = useState([]);
-  const [resultadosLoading, setResultadosLoading] = useState(false);
   const [form, setForm] = useState({
-    resultado_id: '',
-    comentario: '',
-    promesa_monto: '',
-    promesa_fecha: ''
+    medio_contacto: '',
+    dictamen_id: '',
+    comentario: ''
   });
   const [savingGestion, setSavingGestion] = useState(false);
   const [formError, setFormError] = useState('');
@@ -802,8 +1206,39 @@ export default function ClientDetail({ routeParams }) {
   const gestionesRowsPerPage = 20;
 
   const [activeTab, setActiveTab] = useState(DETAIL_TAB_VALUES.creditos);
-  const [gestionesQuickAction, setGestionesQuickAction] = useState(null);
-  const [gestionesFocusReturnToken, setGestionesFocusReturnToken] = useState(null);
+
+  const loadClientDetail = useCallback(
+    async (signal) => {
+      if (!canRead || !clientId) {
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const data = await getClientDetail({
+          id: clientId,
+          signal
+        });
+
+        if (data?.client?.portafolio_id) {
+          setPortafolioId(data.client.portafolio_id);
+        }
+
+        setDetail(data);
+      } catch (err) {
+        if (!signal?.aborted) {
+          setError(err.message || 'No fue posible cargar el cliente.');
+        }
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [canRead, clientId]
+  );
 
   useEffect(() => {
     if (!canRead) {
@@ -816,37 +1251,9 @@ export default function ClientDetail({ routeParams }) {
     }
 
     const controller = new AbortController();
-
-    const fetchDetail = async () => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const data = await getClientDetail({
-          id: clientId,
-          signal: controller.signal
-        });
-
-        if (data?.client?.portafolio_id) {
-          setPortafolioId(data.client.portafolio_id);
-        }
-
-        setDetail(data);
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(err.message || 'No fue posible cargar el cliente.');
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchDetail();
-
+    loadClientDetail(controller.signal);
     return () => controller.abort();
-  }, [canRead, clientId]);
+  }, [canRead, clientId, loadClientDetail]);
 
   useEffect(() => {
     if (!canRead && activeTab !== DETAIL_TAB_VALUES.creditos) {
@@ -874,11 +1281,25 @@ export default function ClientDetail({ routeParams }) {
           offset
         });
 
-        setGestiones(data);
+        setGestiones((prev) => {
+          if (page === 0) {
+            return data;
+          }
+
+          const next = [...prev];
+          data.forEach((row) => {
+            if (!next.some((item) => String(item.id) === String(row.id))) {
+              next.push(row);
+            }
+          });
+          return next;
+        });
         setGestionesHasNext(data.length === gestionesRowsPerPage);
       } catch (err) {
         setGestionesError(err.message || 'No fue posible cargar el historial de gestiones.');
-        setGestiones([]);
+        if (page === 0) {
+          setGestiones([]);
+        }
         setGestionesHasNext(false);
       } finally {
         setGestionesLoading(false);
@@ -886,20 +1307,6 @@ export default function ClientDetail({ routeParams }) {
     },
     [canRead, clientId, gestionesRowsPerPage, portafolioId]
   );
-
-  useEffect(() => {
-    if (!canLog || !portafolioId) {
-      return;
-    }
-
-    setResultadosLoading(true);
-    listResultadosGestion({ portafolioId })
-      .then((data) => setResultados(data))
-      .catch(() => {
-        notify('No se pudieron cargar los resultados de gestion', { severity: 'error' });
-      })
-      .finally(() => setResultadosLoading(false));
-  }, [canLog, notify, portafolioId]);
 
   useEffect(() => {
     if (!canRead || !canViewGestiones || !clientId || !portafolioId) {
@@ -924,15 +1331,7 @@ export default function ClientDetail({ routeParams }) {
   );
   const isReady = Boolean(detail);
   const clientFullName = resolveClientFullName(client);
-  const primaryContactPhone = useMemo(
-    () => String(contacts?.phones?.[0]?.telefono || '').trim(),
-    [contacts]
-  );
-
-  const selectedResultado = resultados.find(
-    (item) => String(item.id) === String(form.resultado_id)
-  );
-  const requierePromesa = Boolean(selectedResultado?.requiere_promesa);
+  const clientScoring = useMemo(() => resolveClientScoringSnapshot(client), [client]);
 
   const balanceColumns = useMemo(() => {
     const columnMap = new Map();
@@ -996,11 +1395,17 @@ export default function ClientDetail({ routeParams }) {
   const handleRegisterGestion = useCallback(async () => {
     setFormError('');
 
-    const resultadoId = form.resultado_id;
+    const medioContacto = String(form.medio_contacto || '').trim();
+    const dictamenId = form.dictamen_id;
     const comentario = (form.comentario || '').trim();
 
-    if (!resultadoId) {
-      setFormError('Selecciona un resultado.');
+    if (!medioContacto) {
+      setFormError('Selecciona un medio de contacto.');
+      return;
+    }
+
+    if (!dictamenId) {
+      setFormError('Selecciona un dictamen.');
       return;
     }
 
@@ -1017,33 +1422,21 @@ export default function ClientDetail({ routeParams }) {
     const payload = {
       portafolio_id: portafolioId,
       cliente_id: clientId,
-      credito_id: credits[0]?.id || null,
-      resultado_id: resultadoId,
+      medio_contacto: medioContacto,
+      dictamen_id: dictamenId,
       comentario,
       fecha_gestion: new Date().toISOString()
     };
 
-    if (requierePromesa) {
-      if (!form.promesa_monto || Number.parseFloat(form.promesa_monto) <= 0) {
-        setFormError('Ingresa un monto de promesa valido.');
-        return;
-      }
-
-      if (!form.promesa_fecha) {
-        setFormError('Ingresa la fecha de promesa.');
-        return;
-      }
-
-      payload.promesa_monto = Number.parseFloat(form.promesa_monto);
-      payload.promesa_fecha = new Date(form.promesa_fecha).toISOString();
-    }
-
     try {
       setSavingGestion(true);
-      await createGestion(payload);
+      const result = await createGestion(payload);
       notify('Gestion registrada', { severity: 'success' });
       setActiveTab(DETAIL_TAB_VALUES.gestiones);
-      setGestionesFocusReturnToken(Date.now());
+
+      if (result?.client_scoring) {
+        setDetail((prev) => mergeClientScoringIntoDetail(prev, result.client_scoring));
+      }
 
       if (canViewGestiones) {
         setGestionesPage(0);
@@ -1051,10 +1444,9 @@ export default function ClientDetail({ routeParams }) {
       }
 
       setForm({
-        resultado_id: '',
-        comentario: '',
-        promesa_monto: '',
-        promesa_fecha: ''
+        medio_contacto: '',
+        dictamen_id: '',
+        comentario: ''
       });
     } catch (err) {
       setFormError(err.message || 'No fue posible registrar la gestion.');
@@ -1064,12 +1456,10 @@ export default function ClientDetail({ routeParams }) {
   }, [
     canViewGestiones,
     clientId,
-    credits,
     form,
     loadGestiones,
     notify,
-    portafolioId,
-    requierePromesa
+    portafolioId
   ]);
 
   const handleLoadMoreGestiones = useCallback(() => {
@@ -1089,30 +1479,6 @@ export default function ClientDetail({ routeParams }) {
   const handleTabChange = useCallback((_, nextTab) => {
     setActiveTab(nextTab);
   }, []);
-
-  const handleQuickNewGestion = useCallback(() => {
-    if (!canLog) {
-      setActiveTab(DETAIL_TAB_VALUES.gestiones);
-      setGestionesFocusReturnToken(Date.now());
-      return;
-    }
-
-    const token = Date.now();
-    setActiveTab(DETAIL_TAB_VALUES.gestiones);
-    setGestionesQuickAction({ mode: 'gestion', token });
-  }, [canLog]);
-
-  const handleQuickRegisterPayment = useCallback(() => {
-    if (!canLog) {
-      setActiveTab(DETAIL_TAB_VALUES.gestiones);
-      setGestionesFocusReturnToken(Date.now());
-      return;
-    }
-
-    const token = Date.now();
-    setActiveTab(DETAIL_TAB_VALUES.gestiones);
-    setGestionesQuickAction({ mode: 'pago', token });
-  }, [canLog]);
 
   const handleBackToClients = useCallback(() => {
     navigate(
@@ -1150,64 +1516,11 @@ export default function ClientDetail({ routeParams }) {
     [notify]
   );
 
-  const handleQuickWhatsapp = useCallback(() => {
-    const phone = normalizePhoneForAction(primaryContactPhone);
-
-    if (!phone || typeof window === 'undefined') {
-      notify('No hay un telefono disponible para WhatsApp.', { severity: 'warning' });
-      return;
-    }
-
-    setActiveTab(DETAIL_TAB_VALUES.gestiones);
-    setGestionesFocusReturnToken(Date.now());
-    window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
-  }, [notify, primaryContactPhone]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !canRead) {
-      return undefined;
-    }
-
-    const handleKeydown = (event) => {
-      if (
-        event.defaultPrevented ||
-        event.repeat ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey
-      ) {
-        return;
-      }
-
-      if (isEditableTarget(event.target)) {
-        return;
-      }
-
-      const key = String(event.key || '').toLowerCase();
-
-      if (key === 'g') {
-        event.preventDefault();
-        handleQuickNewGestion();
-        return;
-      }
-
-      if (key === 'p') {
-        event.preventDefault();
-        handleQuickRegisterPayment();
-        return;
-      }
-
-      if (key === 'w') {
-        event.preventDefault();
-        handleQuickWhatsapp();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeydown);
-
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [canRead, handleQuickNewGestion, handleQuickRegisterPayment, handleQuickWhatsapp]);
+  const handleOpenDictamenes = useCallback(() => {
+    navigate(
+      buildRoutePath('dictamenes', {}, { portafolio_id: portafolioId || undefined })
+    );
+  }, [navigate, portafolioId]);
 
   if (!canRead) {
     return (
@@ -1256,6 +1569,10 @@ export default function ClientDetail({ routeParams }) {
               />
             </Box>
 
+            <Box className="crm-client-detail__score-zone">
+              <ClientScorePanel scoring={clientScoring} loading={loading && !isReady} />
+            </Box>
+
             <Box className="crm-client-detail__operations-zone">
               <ClientOperationsTabs
                 activeTab={activeTab}
@@ -1286,15 +1603,14 @@ export default function ClientDetail({ routeParams }) {
                       <Box className="crm-client-detail__tab-panel">
                         <GestionesWidget
                           title="Gestiones"
+                          portafolioId={portafolioId}
                           canLog={canLog}
                           canViewGestiones={canViewGestiones}
+                          canConfigureDictamenes={canConfigureDictamenes}
                           form={form}
                           setForm={setForm}
                           formError={formError}
                           onFormErrorClear={handleClearFormError}
-                          resultados={resultados}
-                          resultadosLoading={resultadosLoading}
-                          requierePromesa={requierePromesa}
                           savingGestion={savingGestion}
                           onSubmit={handleRegisterGestion}
                           gestiones={gestiones}
@@ -1303,9 +1619,8 @@ export default function ClientDetail({ routeParams }) {
                           onGestionesErrorClear={handleClearGestionesError}
                           gestionesHasNext={gestionesHasNext}
                           onLoadMore={handleLoadMoreGestiones}
-                          onQuickWhatsapp={primaryContactPhone ? handleQuickWhatsapp : undefined}
-                          quickActionRequest={gestionesQuickAction}
-                          focusReturnToken={gestionesFocusReturnToken}
+                          onOpenDictamenes={handleOpenDictamenes}
+                          clientScoring={clientScoring}
                           showForm={canLog}
                           showHistory
                         />

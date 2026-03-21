@@ -170,6 +170,13 @@ const quickActions = [
     icon: Percent,
     routeId: 'negotiationSettings',
     permission: 'negotiations.config.read'
+  },
+  {
+    label: 'Dictámenes',
+    description: 'Controla scoring, riesgo y flags por cartera.',
+    icon: ShieldCheck,
+    routeId: 'dictamenes',
+    permission: 'dictamenes.read'
   }
 ];
 

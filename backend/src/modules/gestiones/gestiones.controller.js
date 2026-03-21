@@ -1,8 +1,12 @@
 import { createGestion, listGestiones, listGestionesByCliente } from './gestiones.repository.js';
-import { ensureEntitiesConsistency, ensureResultadoValido } from './gestiones.validators.js';
+import { ensureDictamenValido, ensureEntitiesConsistency } from './gestiones.validators.js';
 import { createAuditLog } from '../audit/audit.repository.js';
 import { getUserPermissions, getUserGroups } from '../permissions/permissions.repository.js';
 import { ensureUuid, resolveClientInternalId } from '../clients/client-id.utils.js';
+import { normalizeChannel } from '../dictamenes/dictamenes.constants.js';
+import { rebuildClientScoringSnapshot } from '../dictamenes/scoring.service.js';
+import { invalidateClientDetailCache } from '../../utils/cache.js';
+import pool from '../../config/db.js';
 
 const parseInteger = (value) => {
   const parsed = Number.parseInt(value, 10);
@@ -87,31 +91,28 @@ const resolveGestionesVisibility = ({ roles, permissions }) => {
 };
 
 export const createGestionHandler = async (req, res, next) => {
+  let dbClient;
+
   try {
     const {
       portafolio_id,
       cliente_id,
       credito_id,
-      resultado_id,
+      dictamen_id,
+      medio_contacto,
       comentario,
-      fecha_gestion,
-      promesa_monto,
-      promesa_fecha
+      fecha_gestion
     } = req.body || {};
     const usuarioId = parseInteger(req.user?.id || req.user?.user_id || req.user?.sub);
 
     const portafolioId = parseInteger(portafolio_id);
     const clienteId = cliente_id ? ensureUuid(cliente_id, 'cliente_id') : null;
     const creditoId = credito_id === undefined ? null : parseInteger(credito_id);
-    const resultadoId = resultado_id === undefined ? null : parseInteger(resultado_id);
+    const dictamenId = parseInteger(dictamen_id);
+    const medioContacto = normalizeChannel(medio_contacto);
     const fechaGestion = parseDate(fecha_gestion);
-    const promesaMonto =
-      promesa_monto === undefined || promesa_monto === null
-        ? null
-        : Number.parseFloat(promesa_monto);
-    const promesaFecha = parseDate(promesa_fecha);
 
-    if (!portafolioId || !clienteId || !usuarioId || !fechaGestion) {
+    if (!portafolioId || !clienteId || !usuarioId || !fechaGestion || !dictamenId || !medioContacto) {
       return res.status(400).json({ error: 'Datos de gestion incompletos.' });
     }
 
@@ -120,23 +121,10 @@ export const createGestionHandler = async (req, res, next) => {
       return res.status(400).json({ error: 'El comentario es obligatorio.' });
     }
 
-    const resultado = await ensureResultadoValido({
-      resultadoId,
+    await ensureDictamenValido({
+      dictamenId,
       portafolioId
     });
-
-    if (resultado?.requiere_promesa) {
-      if (promesaMonto === null || Number.isNaN(promesaMonto) || promesaMonto <= 0) {
-        return res
-          .status(400)
-          .json({ error: 'El resultado requiere un monto de promesa valido.' });
-      }
-      if (!promesaFecha) {
-        return res
-          .status(400)
-          .json({ error: 'El resultado requiere una fecha de promesa valida.' });
-      }
-    }
 
     const resolvedClient = await ensureEntitiesConsistency({
       portafolioId,
@@ -144,22 +132,44 @@ export const createGestionHandler = async (req, res, next) => {
       creditoId
     });
 
-    const gestion = await createGestion({
-      portafolioId,
-      clienteId: resolvedClient.internalId,
-      creditoId,
-      usuarioId,
-      resultadoId,
-      comentario: comentarioNormalizado,
-      promesaMonto: promesaMonto ?? null,
-      promesaFecha: promesaFecha ?? null,
-      fechaGestion
-    });
+    dbClient = await pool.connect();
+    await dbClient.query('BEGIN');
+
+    const gestion = await createGestion(
+      {
+        portafolioId,
+        clienteId: resolvedClient.internalId,
+        creditoId,
+        usuarioId,
+        dictamenId,
+        medioContacto,
+        comentario: comentarioNormalizado,
+        fechaGestion
+      },
+      dbClient
+    );
+
+    const scoringSnapshot = await rebuildClientScoringSnapshot(
+      {
+        clientInternalId: resolvedClient.internalId,
+        portafolioId
+      },
+      dbClient
+    );
+
+    await dbClient.query('COMMIT');
+    dbClient.release();
+    dbClient = null;
 
     const [userPermissions, userGroups] = await Promise.all([
       resolveRequestPermissions(req, usuarioId),
       resolveRequestGroups(req, usuarioId)
     ]);
+
+    await invalidateClientDetailCache({
+      portafolioId,
+      clientId: resolvedClient.client?.id || clienteId
+    });
 
     setImmediate(() => {
       createAuditLog({
@@ -176,8 +186,21 @@ export const createGestionHandler = async (req, res, next) => {
       });
     });
 
-    res.status(201).json({ data: mapGestionRow(gestion) });
+    res.status(201).json({
+      data: {
+        gestion: mapGestionRow(gestion),
+        client_scoring: scoringSnapshot
+      }
+    });
   } catch (err) {
+    if (dbClient) {
+      try {
+        await dbClient.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Gestion transaction rollback failed', rollbackError);
+      }
+      dbClient.release();
+    }
     next(err);
   }
 };

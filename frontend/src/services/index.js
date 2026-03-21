@@ -7,3 +7,4 @@ export * from './groups.js';
 export * from './permissions.js';
 export * from './saldoFields.js';
 export * from './negotiations.js';
+export * from './dictamenes.js';

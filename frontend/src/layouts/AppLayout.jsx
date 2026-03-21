@@ -148,6 +148,11 @@ const routeContextById = Object.freeze({
     title: 'Campos de saldo',
     subtitle: 'Estructura operativa y mapeo.'
   },
+  dictamenes: {
+    section: 'Configuracion',
+    title: 'Dictamenes',
+    subtitle: 'Scoring, riesgo y reglas operativas por portafolio.'
+  },
   forbidden: {
     section: 'Sistema',
     title: 'Acceso restringido',

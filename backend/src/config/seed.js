@@ -48,6 +48,8 @@ const basePermissions = [
   { key: 'gestiones.view_all', label: 'Gestiones - Ver todo' },
   { key: 'gestiones.view_portfolio', label: 'Gestiones - Ver por portafolio' },
   { key: 'gestiones.view_own', label: 'Gestiones - Ver propias' },
+  { key: 'dictamenes.read', label: 'Dictamenes - Ver catalogo' },
+  { key: 'dictamenes.write', label: 'Dictamenes - Gestionar catalogo' },
 
   { key: 'promesas.read', label: 'Promesas - Ver' },
   { key: 'promesas.write', label: 'Promesas - Gestionar' },

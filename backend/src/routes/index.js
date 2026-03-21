@@ -12,11 +12,11 @@ import bulkImportRoutes from '../modules/bulk-imports/bulk-imports.routes.js';
 import jobRoutes from '../modules/jobs/jobs.routes.js';
 import auditRoutes from '../modules/audit/audit.routes.js';
 import gestionesRoutes from '../modules/gestiones/gestiones.routes.js';
-import resultadosGestionRoutes from '../modules/gestiones/resultados.routes.js';
 import promesasRoutes from '../modules/promesas/promesas.routes.js';
 import negotiationsRoutes from '../modules/negotiations/negotiations.routes.js';
 import saldoFieldRoutes from '../modules/saldo-fields/saldo-fields.routes.js';
 import meRoutes from '../modules/me/me.routes.js';
+import dictamenRoutes from './dictamenRoutes.js';
 
 const router = Router();
 
@@ -34,7 +34,7 @@ router.use('/imports', bulkImportRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/audit', auditRoutes);
 router.use('/gestiones', gestionesRoutes);
-router.use('/gestiones/resultados', resultadosGestionRoutes);
+router.use('/dictamenes', dictamenRoutes);
 router.use('/promesas', promesasRoutes);
 router.use('/negotiations', negotiationsRoutes);
 router.use('/me', meRoutes);

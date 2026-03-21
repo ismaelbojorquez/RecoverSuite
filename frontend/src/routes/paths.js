@@ -14,6 +14,7 @@ const ROUTE_PATHS = {
   audit: '/audit',
   groups: '/groups',
   negotiationSettings: '/negotiations/settings',
+  dictamenes: '/dictamenes',
   permissions: '/permissions',
   balanceFields: '/balance-fields',
   forbidden: '/403',

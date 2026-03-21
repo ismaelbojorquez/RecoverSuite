@@ -1,9 +1,29 @@
 import pool from '../../config/db.js';
 
 const selectFields = `
-  g.id, g.portafolio_id, g.cliente_id, g.credito_id, g.usuario_id, g.resultado_id,
-  g.comentario, g.promesa_monto, g.promesa_fecha, g.fecha_gestion, g.created_at,
-  cl.public_id AS cliente_public_id
+  g.id,
+  g.portafolio_id,
+  g.cliente_id,
+  g.credito_id,
+  g.usuario_id,
+  g.dictamen_id,
+  g.medio_contacto,
+  g.comentario,
+  g.fecha_gestion,
+  g.created_at,
+  cl.public_id AS cliente_public_id,
+  d.nombre AS dictamen_nombre,
+  d.tipo_contacto AS dictamen_tipo_contacto,
+  d.nivel_riesgo AS dictamen_nivel_riesgo,
+  d.score_global AS dictamen_score_global,
+  d.score_llamada AS dictamen_score_llamada,
+  d.score_whatsapp AS dictamen_score_whatsapp,
+  d.score_sms AS dictamen_score_sms,
+  d.score_email AS dictamen_score_email,
+  d.score_visita AS dictamen_score_visita,
+  d.permitir_contacto AS dictamen_permitir_contacto,
+  d.bloquear_cliente AS dictamen_bloquear_cliente,
+  d.recomendar_reintento AS dictamen_recomendar_reintento
 `;
 
 export const createGestion = async ({
@@ -11,31 +31,30 @@ export const createGestion = async ({
   clienteId,
   creditoId,
   usuarioId,
-  resultadoId,
+  dictamenId,
+  medioContacto,
   comentario,
-  promesaMonto,
-  promesaFecha,
   fechaGestion
-}) => {
-  const result = await pool.query(
+}, db = pool) => {
+  const result = await db.query(
     `WITH inserted AS (
        INSERT INTO gestiones
-         (portafolio_id, cliente_id, credito_id, usuario_id, resultado_id, comentario, promesa_monto, promesa_fecha, fecha_gestion)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (portafolio_id, cliente_id, credito_id, usuario_id, dictamen_id, medio_contacto, comentario, fecha_gestion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *
      )
      SELECT ${selectFields}
      FROM inserted g
-     JOIN clients cl ON cl.id = g.cliente_id`,
+     JOIN clients cl ON cl.id = g.cliente_id
+     LEFT JOIN dictamenes d ON d.id = g.dictamen_id`,
     [
       portafolioId,
       clienteId,
       creditoId ?? null,
       usuarioId,
-      resultadoId ?? null,
+      dictamenId,
+      medioContacto,
       comentario || null,
-      promesaMonto ?? null,
-      promesaFecha ?? null,
       fechaGestion
     ]
   );
@@ -84,6 +103,7 @@ export const listGestiones = async ({
     `SELECT ${selectFields}
      FROM gestiones g
      JOIN clients cl ON cl.id = g.cliente_id
+     LEFT JOIN dictamenes d ON d.id = g.dictamen_id
      ${whereClause}
      ORDER BY g.fecha_gestion DESC, g.id DESC
      LIMIT $${values.length - 1} OFFSET $${values.length}`,
@@ -111,26 +131,30 @@ export const listGestionesByCliente = async ({
         g.cliente_id,
         g.credito_id,
         g.usuario_id,
-        g.resultado_id,
+        g.dictamen_id,
+        g.medio_contacto,
         g.comentario,
-        g.promesa_monto,
-        g.promesa_fecha,
         g.fecha_gestion,
         g.created_at,
         cl.public_id AS cliente_public_id,
         u.username AS agente_email,
         u.nombre AS agente_nombre,
-        r.nombre AS resultado_nombre,
-        r.tipo AS resultado_tipo,
-        r.requiere_promesa AS resultado_requiere_promesa,
-        p.monto AS promesa_monto_detalle,
-        p.fecha_promesa AS promesa_fecha_detalle,
-        p.estado AS promesa_estado
+        d.nombre AS dictamen_nombre,
+        d.tipo_contacto AS dictamen_tipo_contacto,
+        d.nivel_riesgo AS dictamen_nivel_riesgo,
+        d.score_global AS dictamen_score_global,
+        d.score_llamada AS dictamen_score_llamada,
+        d.score_whatsapp AS dictamen_score_whatsapp,
+        d.score_sms AS dictamen_score_sms,
+        d.score_email AS dictamen_score_email,
+        d.score_visita AS dictamen_score_visita,
+        d.permitir_contacto AS dictamen_permitir_contacto,
+        d.bloquear_cliente AS dictamen_bloquear_cliente,
+        d.recomendar_reintento AS dictamen_recomendar_reintento
      FROM gestiones g
      JOIN clients cl ON cl.id = g.cliente_id
      JOIN users u ON u.id = g.usuario_id
-     LEFT JOIN resultados_gestion r ON r.id = g.resultado_id
-     LEFT JOIN promesas_pago p ON p.gestion_id = g.id
+     LEFT JOIN dictamenes d ON d.id = g.dictamen_id
      WHERE g.portafolio_id = $1 AND g.cliente_id = $2
      ${usuarioId ? `AND g.usuario_id = $3` : ''}
      ORDER BY g.fecha_gestion DESC, g.id DESC

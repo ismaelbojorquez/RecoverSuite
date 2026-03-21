@@ -1,17 +1,5 @@
 import { apiFetch } from '../utils/api.js';
 
-export const listResultadosGestion = async ({ portafolioId, activo = true }) => {
-  const params = new URLSearchParams();
-  if (portafolioId) params.set('portafolio_id', String(portafolioId));
-  if (activo !== undefined) params.set('activo', activo ? 'true' : 'false');
-
-  const payload = await apiFetch(`/api/gestiones/resultados?${params.toString()}`, {
-    method: 'GET'
-  });
-
-  return Array.isArray(payload?.data) ? payload.data : [];
-};
-
 export const createGestion = async (body) => {
   const payload = await apiFetch('/api/gestiones', {
     method: 'POST',

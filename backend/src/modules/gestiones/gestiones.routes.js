@@ -5,7 +5,7 @@ import {
   createGestionHandler,
   listGestionesHandler,
   listHistorialClienteHandler
-} from './gestiones.controller.js';
+} from '../../controllers/gestionController.js';
 
 const router = Router();
 

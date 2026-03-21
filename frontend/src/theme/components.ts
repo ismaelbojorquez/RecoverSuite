@@ -2494,11 +2494,13 @@ export const getComponents = (mode = 'light') => {
             minHeight: 0,
             maxHeight: 'var(--crm-client-detail-header-height)'
           },
+          '.MuiBox-root.crm-client-detail__score-zone': {
+            flex: '0 0 auto',
+            minHeight: 0
+          },
           '.MuiBox-root.crm-client-detail__operations-zone': {
-            flex: '1 1 auto',
-            minHeight: 0,
-            height:
-              'calc(100% - var(--crm-client-detail-header-height) - var(--crm-client-detail-shell-gap))'
+            flex: '1 1 0%',
+            minHeight: 0
           },
           '.MuiPaper-root.crm-client-detail__hero, .MuiPaper-root.crm-client-detail__tabs-shell, .MuiPaper-root.crm-layout-admin-panel, .MuiPaper-root.crm-layout-admin-panel__widget, .MuiPaper-root.crm-saldo-fields__syntax-help, .MuiPaper-root.crm-credit-import__empty-notice, .MuiCard-root.crm-credit-import__upload-card, .MuiPaper-root.crm-groups__permissions-panel, .MuiPaper-root.crm-card-outline': {
             ...getCardSurface(theme, { soft: true })
