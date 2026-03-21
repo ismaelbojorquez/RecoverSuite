@@ -2,11 +2,7 @@ import {
   Add,
   DeleteOutline,
   Edit,
-  InsightsOutlined,
-  PublishedWithChanges,
-  Refresh,
-  ReportProblemOutlined,
-  RuleFolderOutlined
+  Refresh
 } from '@mui/icons-material';
 import {
   Alert,
@@ -149,37 +145,6 @@ const buildFormFromRow = (row) => ({
   activo: Boolean(row?.activo)
 });
 
-function MetricCard({ icon, label, value, note }) {
-  return (
-    <Paper variant="panel-sm" sx={{ minHeight: 132 }}>
-      <Stack spacing={1.5} sx={{ height: '100%' }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: 2,
-              display: 'grid',
-              placeItems: 'center',
-              bgcolor: 'action.hover',
-              color: 'primary.main'
-            }}
-          >
-            {icon}
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            {label}
-          </Typography>
-        </Stack>
-        <Typography variant="h4">{value}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {note}
-        </Typography>
-      </Stack>
-    </Paper>
-  );
-}
-
 export default function Dictamenes() {
   const { hasPermission } = usePermissions();
   const { pathname, navigate } = useNavigation();
@@ -315,21 +280,6 @@ export default function Dictamenes() {
       portfolioOptions.find((portfolio) => Number(portfolio?.id) === Number(portafolioId)) || null,
     [portafolioId, portfolioOptions]
   );
-
-  const metrics = useMemo(() => {
-    const total = rows.length;
-    const activos = rows.filter((row) => row.activo).length;
-    const riesgoAlto = rows.filter((row) => String(row.riesgo || '').toUpperCase() === 'ALTO').length;
-    const scores = rows
-      .map((row) => normalizeNumber(row.score))
-      .filter((value) => value !== null);
-    const scorePromedio =
-      scores.length > 0
-        ? (scores.reduce((sum, value) => sum + value, 0) / scores.length).toFixed(1)
-        : '-';
-
-    return { total, activos, riesgoAlto, scorePromedio };
-  }, [rows]);
 
   const openCreateDialog = () => {
     setDialogMode('create');
@@ -636,43 +586,6 @@ export default function Dictamenes() {
               {portfolioError}
             </Alert>
           ) : null}
-
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                xl: 'repeat(4, minmax(0, 1fr))'
-              },
-              gap: 2
-            }}
-          >
-            <MetricCard
-              icon={<RuleFolderOutlined />}
-              label="Dictámenes"
-              value={metrics.total}
-              note="Reglas visibles dentro del catálogo"
-            />
-            <MetricCard
-              icon={<PublishedWithChanges />}
-              label="Activos"
-              value={metrics.activos}
-              note="Disponibles para operación"
-            />
-            <MetricCard
-              icon={<InsightsOutlined />}
-              label="Score promedio"
-              value={metrics.scorePromedio}
-              note="Promedio de scoring configurado"
-            />
-            <MetricCard
-              icon={<ReportProblemOutlined />}
-              label="Riesgo alto"
-              value={metrics.riesgoAlto}
-              note="Dictámenes marcados como ALTO"
-            />
-          </Box>
 
           <Paper variant="panel-sm">
             <Stack

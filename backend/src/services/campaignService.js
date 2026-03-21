@@ -1160,7 +1160,15 @@ export const listarCampañas = async ({ limit = 20, offset = 0 } = {}, dependenc
   const CampaignModel = dependencies.CampaignModel || Campaign;
 
   if (CampaignModel === Campaign) {
-    await ensureCampaignsAvailable();
+    if (
+      typeof dependencies.isMongoConfigured === 'function'
+        ? !dependencies.isMongoConfigured()
+        : !isMongoConfigured()
+    ) {
+      return [];
+    }
+
+    await connectMongo();
   }
 
   const safeLimit = Math.min(parseInteger(limit) || 20, 100);

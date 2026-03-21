@@ -466,3 +466,14 @@ test('obtenerArchivoCampaña devuelve descriptor valido para descarga', async ()
     });
   }
 });
+
+test('listarCampañas devuelve lista vacia cuando Mongo no esta configurado', async () => {
+  const result = await campaignService.listarCampañas(
+    { limit: 50, offset: 0 },
+    {
+      isMongoConfigured: () => false
+    }
+  );
+
+  assert.deepEqual(result, []);
+});
