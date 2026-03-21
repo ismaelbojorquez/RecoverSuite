@@ -29,6 +29,7 @@ import FormActions from '../components/form/FormActions.jsx';
 import FormField from '../components/form/FormField.jsx';
 import FormSection from '../components/form/FormSection.jsx';
 import { Page, PageContent, PageHeader } from '../components/layout/Page.jsx';
+import useNavigation from '../hooks/useNavigation.js';
 import useNotify from '../hooks/useNotify.jsx';
 import usePermissions from '../hooks/usePermissions.js';
 import { buildRoutePath } from '../routes/paths.js';
@@ -38,6 +39,7 @@ import {
   listDictamenes,
   updateDictamen
 } from '../services/dictamenes.js';
+import { listPortfolios } from '../services/portfolios.js';
 
 const defaultForm = {
   nombre: '',
@@ -59,6 +61,13 @@ const defaultForm = {
 const parseInteger = (value) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? null : parsed;
+};
+
+const resolvePortafolioIdFromPath = (pathname) => {
+  const rawPath = String(pathname || '');
+  const search = rawPath.includes('?') ? rawPath.split('?')[1] : '';
+  const params = new URLSearchParams(search);
+  return parseInteger(params.get('portafolio_id'));
 };
 
 const normalizeNumber = (value) => {
@@ -173,22 +182,20 @@ function MetricCard({ icon, label, value, note }) {
 
 export default function Dictamenes() {
   const { hasPermission } = usePermissions();
+  const { pathname, navigate } = useNavigation();
   const { notify } = useNotify();
   const canRead = hasPermission('dictamenes.read');
   const canWrite = hasPermission('dictamenes.write');
-  const portafolioId = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    return parseInteger(params.get('portafolio_id'));
-  }, []);
+  const canReadPortfolios = hasPermission('portfolios.read');
+  const portafolioId = useMemo(() => resolvePortafolioIdFromPath(pathname), [pathname]);
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [portfolios, setPortfolios] = useState([]);
+  const [loadingPortfolios, setLoadingPortfolios] = useState(false);
+  const [portfolioError, setPortfolioError] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
@@ -241,6 +248,73 @@ export default function Dictamenes() {
     loadDictamenes(controller.signal);
     return () => controller.abort();
   }, [canRead, loadDictamenes]);
+
+  useEffect(() => {
+    if (!canRead || !canReadPortfolios) {
+      setPortfolios([]);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    const loadPortfolios = async () => {
+      setLoadingPortfolios(true);
+      setPortfolioError('');
+
+      try {
+        const data = await listPortfolios({
+          limit: 250,
+          offset: 0,
+          signal: controller.signal
+        });
+        setPortfolios(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setPortfolios([]);
+          setPortfolioError(err.message || 'No fue posible cargar los portafolios.');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingPortfolios(false);
+        }
+      }
+    };
+
+    loadPortfolios();
+
+    return () => controller.abort();
+  }, [canRead, canReadPortfolios]);
+
+  const portfolioOptions = useMemo(() => {
+    const normalizedRows = Array.isArray(portfolios) ? portfolios : [];
+    const sortedRows = [...normalizedRows].sort((left, right) =>
+      String(left?.name || '').localeCompare(String(right?.name || ''), 'es', {
+        sensitivity: 'base'
+      })
+    );
+
+    if (
+      portafolioId &&
+      !sortedRows.some((portfolio) => Number(portfolio?.id) === Number(portafolioId))
+    ) {
+      return [
+        {
+          id: portafolioId,
+          name: `Portafolio #${portafolioId}`,
+          is_active: true
+        },
+        ...sortedRows
+      ];
+    }
+
+    return sortedRows;
+  }, [portafolioId, portfolios]);
+
+  const selectedPortfolio = useMemo(
+    () =>
+      portfolioOptions.find((portfolio) => Number(portfolio?.id) === Number(portafolioId)) || null,
+    [portafolioId, portfolioOptions]
+  );
 
   const metrics = useMemo(() => {
     const total = rows.length;
@@ -299,6 +373,13 @@ export default function Dictamenes() {
 
   const reloadPageData = async () => {
     await loadDictamenes();
+  };
+
+  const handlePortfolioChange = (event) => {
+    const nextPortafolioId = parseInteger(event.target.value);
+    navigate(
+      buildRoutePath('dictamenes', {}, { portafolio_id: nextPortafolioId || undefined })
+    );
   };
 
   const handleSave = async () => {
@@ -523,7 +604,11 @@ export default function Dictamenes() {
           { label: 'Dictamenes' }
         ]}
         title="Dictámenes"
-        subtitle="Tablero operativo para administrar scores, riesgo y disponibilidad por canal."
+        subtitle={
+          selectedPortfolio?.name
+            ? `Catálogo operativo del portafolio ${selectedPortfolio.name}.`
+            : 'Tablero operativo para administrar scores, riesgo y disponibilidad por canal.'
+        }
         actions={
           canWrite ? (
             <Button
@@ -543,6 +628,12 @@ export default function Dictamenes() {
           {!portafolioId ? (
             <Alert severity="warning">
               Selecciona un portafolio para administrar su catálogo de dictámenes.
+            </Alert>
+          ) : null}
+
+          {portfolioError ? (
+            <Alert severity="error" onClose={() => setPortfolioError('')}>
+              {portfolioError}
             </Alert>
           ) : null}
 
@@ -595,13 +686,43 @@ export default function Dictamenes() {
                   Catálogo operativo
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Consulta y administra la base de dictámenes usada por el motor de decisiones.
+                  Selecciona el portafolio para administrar su catálogo de dictámenes y consulta la base usada por el motor de decisiones.
                 </Typography>
               </Stack>
 
               <Box sx={{ flexGrow: 1 }} />
 
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={1}
+                alignItems={{ lg: 'center' }}
+                useFlexGap
+              >
+                <Box sx={{ minWidth: { xs: '100%', sm: 300 } }}>
+                  <FormField
+                    select
+                    size="small"
+                    label="Portafolio / catálogo"
+                    value={portafolioId ? String(portafolioId) : ''}
+                    onChange={handlePortfolioChange}
+                    helperText={
+                      canReadPortfolios
+                        ? 'Selecciona el catálogo que deseas administrar.'
+                        : 'Abre esta vista desde un portafolio activo para cambiar el catálogo.'
+                    }
+                    disabled={!canReadPortfolios || loadingPortfolios}
+                  >
+                    <MenuItem value="">
+                      <em>Selecciona un portafolio</em>
+                    </MenuItem>
+                    {portfolioOptions.map((portfolio) => (
+                      <MenuItem key={portfolio.id} value={String(portfolio.id)}>
+                        {portfolio.name || `Portafolio #${portfolio.id}`}
+                        {portfolio.is_active === false ? ' (inactivo)' : ''}
+                      </MenuItem>
+                    ))}
+                  </FormField>
+                </Box>
                 <Typography variant="body2" color="text.secondary">
                   Incluir inactivos
                 </Typography>
@@ -635,7 +756,11 @@ export default function Dictamenes() {
             emptyContent={
               <EmptyState
                 title="Sin dictámenes"
-                description="Todavía no hay dictámenes registrados. Crea el primero para iniciar el catálogo."
+                description={
+                  portafolioId
+                    ? 'Todavía no hay dictámenes registrados. Crea el primero para iniciar el catálogo.'
+                    : 'Selecciona un portafolio para cargar y administrar su catálogo.'
+                }
                 icon={null}
                 dense
               />
